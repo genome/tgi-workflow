@@ -1,0 +1,24 @@
+<?xml version='1.0' standalone='yes'?>
+<workflow name="Example Workflow">
+  <link fromOperation="Example Inner Workflow" fromProperty="input string" toOperation="input connector" toProperty="test input" />
+  <link fromOperation="output connector" fromProperty="result" toOperation="Example Inner Workflow" toProperty="result" />
+  <link fromOperation="output connector" fromProperty="test output" toOperation="Example Inner Workflow" toProperty="output string" />
+  <operation name="Example Inner Workflow">
+    <link fromOperation="output connector" fromProperty="result" toOperation="echo" toProperty="result" />
+    <link fromOperation="echo" fromProperty="input" toOperation="input connector" toProperty="input string" />
+    <link fromOperation="output connector" fromProperty="output string" toOperation="echo" toProperty="output" />
+    <operation name="echo">
+      <operationtype commandClass="Workflow::Test::Command::Echo" typeClass="Workflow::OperationType::Command" />
+    </operation>
+    <operationtype typeClass="Workflow::OperationType::Model">
+      <inputproperty>input string</inputproperty>
+      <outputproperty>output string</outputproperty>
+      <outputproperty>result</outputproperty>
+    </operationtype>
+  </operation>
+  <operationtype typeClass="Workflow::OperationType::Model">
+    <inputproperty>test input</inputproperty>
+    <outputproperty>result</outputproperty>
+    <outputproperty>test output</outputproperty>
+  </operationtype>
+</workflow>
