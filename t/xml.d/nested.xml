@@ -1,12 +1,12 @@
 <?xml version='1.0' standalone='yes'?>
 <workflow name="Example Workflow">
-  <link fromOperation="Example Inner Workflow" fromProperty="input string" toOperation="input connector" toProperty="test input" />
-  <link fromOperation="output connector" fromProperty="result" toOperation="Example Inner Workflow" toProperty="result" />
-  <link fromOperation="output connector" fromProperty="test output" toOperation="Example Inner Workflow" toProperty="output string" />
+  <link fromOperation="Example Inner Workflow" fromProperty="result" toOperation="output connector" toProperty="result" />
+  <link fromOperation="input connector" fromProperty="test input" toOperation="Example Inner Workflow" toProperty="input string" />
+  <link fromOperation="Example Inner Workflow" fromProperty="output string" toOperation="output connector" toProperty="test output" />
   <operation name="Example Inner Workflow">
-    <link fromOperation="output connector" fromProperty="result" toOperation="echo" toProperty="result" />
-    <link fromOperation="echo" fromProperty="input" toOperation="input connector" toProperty="input string" />
-    <link fromOperation="output connector" fromProperty="output string" toOperation="echo" toProperty="output" />
+    <link fromOperation="echo" fromProperty="result" toOperation="output connector" toProperty="result" />
+    <link fromOperation="input connector" fromProperty="input string" toOperation="echo" toProperty="input" />
+    <link fromOperation="echo" fromProperty="output" toOperation="output connector" toProperty="output string" />
     <operation name="echo">
       <operationtype commandClass="Workflow::Test::Command::Echo" typeClass="Workflow::OperationType::Command" />
     </operation>
