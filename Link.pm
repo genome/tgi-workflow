@@ -27,10 +27,10 @@ sub create_from_xml_simple_structure {
     } $params{workflow_model}->operations;
 
     my $self = $class->create(
-        right_operation => $ops_by_name{$struct->{fromOperation}},
-        right_property => $struct->{fromProperty},
-        left_operation => $ops_by_name{$struct->{toOperation}},
-        left_property => $struct->{toProperty},
+        left_operation => $ops_by_name{$struct->{fromOperation}},
+        left_property => $struct->{fromProperty},
+        right_operation => $ops_by_name{$struct->{toOperation}},
+        right_property => $struct->{toProperty},
         %params
     );
 
@@ -41,10 +41,10 @@ sub as_xml_simple_structure {
     my $self = shift;
 
     my $struct = {
-        fromOperation => $self->right_operation->name,
-        fromProperty => $self->right_property,
-        toOperation => $self->left_operation->name,
-        toProperty => $self->left_property
+        fromOperation => $self->left_operation->name,
+        fromProperty => $self->left_property,
+        toOperation => $self->right_operation->name,
+        toProperty => $self->right_property
     };
 
     return $struct;
