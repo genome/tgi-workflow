@@ -267,6 +267,49 @@ sub validate {
 
 }
 
+# make a list of operations in the order of execution
+sub operations_in_series {
+    my $self = shift;
+    
+    my %operation_tiers = map {
+        $_->name => [0,$_]
+    } $self->operations;
+
+    my $move_deps_down;
+    $move_deps_down = sub {
+        my ($op,$tier) = @_;
+        $operation_tiers{$op->name}->[0] = $tier;
+        
+        for ($op->dependent_operations) {
+            my $new_tier = $tier + 1; #($old_tier > $tier + 1) ? $old_tier : $tier + 1;
+            $move_deps_down->($_,$new_tier);
+        }
+    };
+    
+    my $maxdepth = keys %operation_tiers;
+    foreach my $tier (0..$maxdepth) {
+        my @ops = map {
+            $operation_tiers{$_}->[1]
+        } grep {
+            $operation_tiers{$_}->[0] == $tier
+        } keys %operation_tiers;
+        
+        foreach my $operation (@ops) {
+            next if ($operation_tiers{$operation->name}->[0] != $tier); #it got moved
+            $move_deps_down->($operation,$tier);
+        }
+    }
+    
+    my @op_order = map {
+        $_->[1]
+    } sort {
+        $a->[0] <=> $b->[0] ||
+        $a->[1]->name cmp $b->[1]->name
+    } values %operation_tiers;
+
+    return @op_order;
+}
+
 sub execute {
     my $self = shift;
     my %inputs = (@_);
