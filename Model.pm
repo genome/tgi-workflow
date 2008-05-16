@@ -130,6 +130,7 @@ sub get_output_connector {
     return $output;
 }
 
+## needs to be pulled into a viewer
 sub graph {
     my $self = shift;
 
@@ -148,7 +149,7 @@ sub graph {
 
     return $g;
 }
-
+## needs to be pulled into a viewer
 sub add_gv_nodes {
     my ($self, $g, $cluster) = @_;
 
@@ -254,44 +255,66 @@ sub as_svg {
     return $self->graph->as_svg(@_);
 }
 
+sub validate {
+    my $self = shift;
+    
+# how would i manually validate a workflow
+#
+# Make sure there are no orphaned sections
+# 
+# Make sure there are no circular links (output->input on same node, or output->input on a prior)
+#
+
+}
+
 sub execute {
     my $self = shift;
     my %inputs = (@_);
 
+    # clear all inputs and outputs
+    foreach my $operation ($self->operations) {
+        $operation->inputs({});
+        $operation->outputs({}); 
+    }
+
     # connect all links on the operation objects
-    
     my @all_links = $self->links;
     foreach my $link (@all_links) {
         $link->set_inputs;
     }
 
     my $input_connector = $self->get_input_connector;
+    $input_connector->outputs({%inputs});
 
-    $input_connector->outputs({%inputs, result=>1});
-    
-    my @all_incomplete_operations = $self->operations;
-    my $loop_limit = 10_000;
-    while (scalar @all_incomplete_operations && $loop_limit) {
-        INNER: for my $i (0 .. $#all_incomplete_operations) {
-            my $op = $all_incomplete_operations[$i];
-            if ($op->is_ready && !$op->is_done) {
-                $self->status_message($op->name . " is ready, running it");
-                if ($op->Workflow::Operation::execute) {
-                    splice(@all_incomplete_operations,$i,1);
-                    last INNER;
-                }
-            }
-        }
-#        $self->status_message("still has incomplete operations");
-        $loop_limit--;
+    ## find operations that are ready right now
+    ## these should be ones that have no inputs
+    my @runq = sort {
+        $a->name cmp $b->name
+    } grep {
+        $_->is_ready && !$_->is_done
+    } $self->operations;
+
+    while (scalar @runq) {
+        my $operation = shift @runq;
+        $self->status_message('running: ' . $operation->name);
+        $operation->Workflow::Operation::execute;
+        push @runq, sort { 
+            $a->name cmp $b->name
+        } grep {
+            $_->is_ready && !$_->is_done
+        } $operation->dependent_operations;
     }
-    if (@all_incomplete_operations) {
-        $self->error_message("looped a lot and not finished");
+
+    my @incomplete_operations = grep {
+        !$_->is_done
+    } $self->operations;
+    
+    if (@incomplete_operations) {
+        $self->error_message("didnt finish all operations!");
         return;
     }
 
     my $output_connector = $self->get_output_connector;
-
     my $final_outputs = $output_connector->inputs();
     foreach my $output_name (%$final_outputs) {
         if (UNIVERSAL::isa($final_outputs->{$output_name},'Workflow::Link')) {

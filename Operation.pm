@@ -16,6 +16,16 @@ class Workflow::Operation {
     ]
 };
 
+sub dependent_operations {
+    my $self = shift;
+    
+    my @operations = map {
+        $_->right_operation
+    } Workflow::Link->get(left_operation => $self);
+    
+    return @operations;
+}
+
 sub is_ready {
     my $self = shift;
 
@@ -37,9 +47,11 @@ sub is_ready {
             push @unfinished_inputs, $input_name;
         }
     }
-
-    $self->status_message($self->name . " still needs: " . join(',', @unfinished_inputs))
-        if (scalar @unfinished_inputs > 0);
+    if (scalar @unfinished_inputs > 0) {
+        $self->debug_message($self->name . " still needs: " . join(',', @unfinished_inputs))
+    } else {
+        $self->debug_message($self->name . ' is ready');
+    }
 
     if (scalar @unfinished_inputs == 0) {
         return 1;
@@ -87,7 +99,6 @@ sub execute {
     my $self = shift;
 
     my $operation_type = $self->operation_type;
-
     my %current_inputs = ();
     if ( defined $self->inputs ) {
         %current_inputs = %{ $self->inputs };
