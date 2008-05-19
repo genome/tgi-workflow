@@ -15,6 +15,7 @@ class Workflow::Model {
         operations => { is => 'Workflow::Operation', is_many => 1 },
         links => { is => 'Workflow::Link', is_many => 1 },
         is_valid => { },
+        parallel_by => { },
     ]
 };
 
@@ -76,6 +77,10 @@ sub create_from_xml_simple_structure {
     my $operations = delete $struct->{operation};
     my $links = delete $struct->{link};
 
+    if (my $par = delete $struct->{parallelBy}) {
+        $params{parallel_by} = $par;
+    }
+
     my $self = $class->SUPER::create_from_xml_simple_structure($struct,%params);
 
     foreach my $op_struct (@$operations) {
@@ -93,6 +98,8 @@ sub as_xml_simple_structure {
     my $self = shift;
 
     my $struct = $self->SUPER::as_xml_simple_structure;
+
+    $struct->{parallelBy} = $self->parallel_by if ($self->parallel_by);
 
     $struct->{operation} = [
         map {
@@ -416,10 +423,34 @@ sub execute {
         }
     }
 
+    my $output = {};
+    
+    if (my $parallel_by = $self->parallel_by) {
+        my @par_input= @{ delete $inputs{$parallel_by} };
+        foreach my $value (@par_input) {
+            my $this_out = $self->_execute(%inputs,$parallel_by => $value);
+            
+            while (my ($k,$v) = each(%{ $this_out })) {
+                $output->{$k} ||= [];
+                push @{ $output->{$k} }, $v;
+            }
+        }
+    } else {
+        $output = $self->_execute(@_);
+    }
+    
+    return $output;
+}
+
+sub _execute {
+    my $self = shift;
+    my %inputs = (@_);
+    
     # clear all inputs and outputs
     foreach my $operation ($self->operations) {
         $operation->inputs({});
-        $operation->outputs({}); 
+        $operation->outputs({});
+        $operation->is_done(0);
     }
 
     # connect all links on the operation objects
@@ -441,13 +472,20 @@ sub execute {
 
     while (scalar @runq) {
         my $operation = shift @runq;
-        $self->status_message('running: ' . $operation->name);
+        $self->status_message('running: ' . $self->name . '/' . $operation->name);
         $operation->Workflow::Operation::execute;
+        my %uniq_deps = map {
+            $_->name => $_
+        } $operation->dependent_operations;
+
         push @runq, sort { 
             $a->name cmp $b->name
         } grep {
-            $_->is_ready && !$_->is_done
-        } $operation->dependent_operations;
+            my $op = $_;
+            $op->is_ready && 
+            !$op->is_done &&
+            !(scalar grep { $op->name eq $_->name } @runq)
+        } values %uniq_deps;
     }
 
     my @incomplete_operations = grep {
