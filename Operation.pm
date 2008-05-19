@@ -26,6 +26,16 @@ sub dependent_operations {
     return @operations;
 }
 
+sub depended_on_by {
+    my $self = shift;
+    
+    my @operations = map {
+        $_->left_operation
+    } Workflow::Link->get(right_operation => $self);
+    
+    return @operations;
+}
+
 sub is_ready {
     my $self = shift;
 

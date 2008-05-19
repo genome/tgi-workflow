@@ -14,6 +14,7 @@ class Workflow::Model {
     has => [
         operations => { is => 'Workflow::Operation', is_many => 1 },
         links => { is => 'Workflow::Link', is_many => 1 },
+        is_valid => { },
     ]
 };
 
@@ -258,35 +259,129 @@ sub as_svg {
 sub validate {
     my $self = shift;
     
-# how would i manually validate a workflow
-#
-# Make sure there are no orphaned sections
-# 
-# Make sure there are no circular links (output->input on same node, or output->input on a prior)
-#
+    my @errors = ();
+    foreach my $operation ($self->operations) {  ## unique names
+        my @ops_with_this_name = Workflow::Operation->get(
+            workflow_model => $self,
+            name => $operation->name
+        );
+        if (scalar @ops_with_this_name > 1) {
+            push @errors, "Operation name not unique: " . $self->name . '/' . $operation->name;
+        }
+    }
 
+    { ## orphans 
+        my @orphans = ();
+        my %possible_orphans = map { $_ => $_ } $self->operations;
+        my $input = $self->get_input_connector;
+        my $output = $self->get_output_connector;
+        
+        delete $possible_orphans{$input};
+        delete $possible_orphans{$output};
+        
+        my %looked_at = ();
+        
+        my @opq = ($output);
+        while (scalar @opq) {
+            my $op = shift @opq;
+            unless ($looked_at{$op}) {
+                my @depended_on_by = $op->depended_on_by;
+
+                for (@depended_on_by) {
+                    delete $possible_orphans{$_};
+                }
+                push @opq, @depended_on_by;
+            }
+            $looked_at{$op} = 1;
+        }
+        foreach my $operation (values %possible_orphans) {
+            push @errors, "Operation or its branch disconnected: " . $self->name . '/' . $operation->name;
+        }
+    }
+
+    { ## circular links
+        #this is so terrible, but its easy
+        
+        eval {
+            $self->is_valid(1);
+            my @ops = $self->operations_in_series;
+            $self->is_valid(0);
+            
+        };
+        if ($@ =~ /^circular links near: '(.+?)'/) {
+            push @errors, 'Operation involved in circular link: ' . $self->name . "/$1";
+        } elsif ($@) {
+            die $@;
+        }
+    }
+    
+    { ## connections to output
+        my $output = $self->get_output_connector;
+        my @depended_on_by = $output->depended_on_by;
+        
+        if (@depended_on_by == 0) {
+            push @errors, 'Nothing connected to: ' . $self->name . '/' . $output->name;
+        }
+    }
+        
+    ## sub_models
+    {
+        my @submodels = Workflow::Model->get(
+            workflow_model => $self  ## this is confusing, workflow_model is actually the parent
+        );
+        
+        foreach my $m (@submodels) {
+            my @e = $m->validate;
+            push @errors, @e;
+        }
+    }
+    
+    ## dangling links
+    
+    
+    if (@errors == 0) {
+        $self->is_valid(1);
+    } else {
+        $self->is_valid(0);
+    }
+    
+    return @errors;
 }
 
 # make a list of operations in the order of execution
 sub operations_in_series {
     my $self = shift;
+
+    unless ($self->is_valid) {
+        my @errors = $self->validate;
+        unless (@errors == 0) {
+            die 'cannot build an operations series for invalid workflow';
+        }
+    }
     
     my %operation_tiers = map {
         $_->name => [0,$_]
     } $self->operations;
 
+    my $maxdepth = keys %operation_tiers;
+    my $depth = 0;
     my $move_deps_down;
     $move_deps_down = sub {
         my ($op,$tier) = @_;
-        $operation_tiers{$op->name}->[0] = $tier;
         
+        if ($depth > $maxdepth) {
+            die 'circular links near: \'' . $op->name . '\'';
+        }
+        $operation_tiers{$op->name}->[0] = $tier;
+
         for ($op->dependent_operations) {
-            my $new_tier = $tier + 1; #($old_tier > $tier + 1) ? $old_tier : $tier + 1;
+            my $new_tier = $tier + 1;
+            $depth++; ## stupid way of detecting recursion
             $move_deps_down->($_,$new_tier);
+            $depth--;
         }
     };
     
-    my $maxdepth = keys %operation_tiers;
     foreach my $tier (0..$maxdepth) {
         my @ops = map {
             $operation_tiers{$_}->[1]
@@ -313,6 +408,13 @@ sub operations_in_series {
 sub execute {
     my $self = shift;
     my %inputs = (@_);
+
+    unless ($self->is_valid) {
+        my @errors = $self->validate;
+        unless (@errors == 0) {
+            die 'cannot execute invalid workflow';
+        }
+    }
 
     # clear all inputs and outputs
     foreach my $operation ($self->operations) {
