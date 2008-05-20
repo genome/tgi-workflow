@@ -79,7 +79,7 @@ sub create_from_xml_simple_structure {
 
     ## i dont like this at all
     ## delegate sub-models
-    if ($class eq __PACKAGE__ && $struct->{operationtype}->{typeClass} eq 'Workflow::OperationType::Model') {
+    if ($class eq __PACKAGE__ && (exists $struct->{operationtype} && $struct->{operationtype}->{typeClass} eq 'Workflow::OperationType::Model' || $struct->{workflowFile})) {
 
         $self = Workflow::Model->create_from_xml_simple_structure($struct,%params);
     } else {

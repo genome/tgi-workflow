@@ -5,6 +5,7 @@ use strict;
 use warnings;
 use GraphViz;
 use XML::Simple;
+use File::Basename;
 
 use above 'Workflow';
 
@@ -16,6 +17,7 @@ class Workflow::Model {
         links => { is => 'Workflow::Link', is_many => 1 },
         is_valid => { },
         parallel_by => { },
+        filename => { },
     ]
 };
 
@@ -57,7 +59,7 @@ sub create_from_xml {
     my ($class, $filename) = @_;
 
     my $struct = XMLin($filename, KeyAttr=>[], ForceArray=>[qw/operation property inputproperty outputproperty link/]);
-    my $self = $class->create_from_xml_simple_structure($struct);
+    my $self = $class->create_from_xml_simple_structure($struct,filename=>$filename);
 
     return $self;
 }
@@ -74,21 +76,30 @@ sub create_from_xml_simple_structure {
     my $struct = shift;
     my %params = (@_);
 
-    my $operations = delete $struct->{operation};
-    my $links = delete $struct->{link};
+    my $self;
+    if ($struct->{workflowFile}) {
+        my $file_basepath = dirname($params{workflow_model}->filename);
 
-    if (my $par = delete $struct->{parallelBy}) {
-        $params{parallel_by} = $par;
-    }
+        $self = $class->create_from_xml($file_basepath . '/' . $struct->{workflowFile});
+        $self->name($struct->{name});
+        $self->workflow_model($params{workflow_model});
+    } else {
+        my $operations = delete $struct->{operation};
+        my $links = delete $struct->{link};
 
-    my $self = $class->SUPER::create_from_xml_simple_structure($struct,%params);
+        if (my $par = delete $struct->{parallelBy}) {
+            $params{parallel_by} = $par;
+        }
 
-    foreach my $op_struct (@$operations) {
-        my $op = Workflow::Operation->create_from_xml_simple_structure($op_struct,workflow_model=>$self);
-    }
+        $self = $class->SUPER::create_from_xml_simple_structure($struct,%params);
 
-    foreach my $link_struct (@$links) {
-        my $link = Workflow::Link->create_from_xml_simple_structure($link_struct,workflow_model=>$self);
+        foreach my $op_struct (@$operations) {
+            my $op = Workflow::Operation->create_from_xml_simple_structure($op_struct,workflow_model=>$self);
+        }
+
+        foreach my $link_struct (@$links) {
+            my $link = Workflow::Link->create_from_xml_simple_structure($link_struct,workflow_model=>$self);
+        }
     }
 
     return $self;
@@ -425,7 +436,7 @@ sub execute {
 
     my $output = {};
     
-    if (my $parallel_by = $self->parallel_by) {
+    if (my $parallel_by = $self->parallel_by && ref($inputs{$self->parallel_by}) eq 'ARRAY') {
         my @par_input= @{ delete $inputs{$parallel_by} };
         foreach my $value (@par_input) {
             my $this_out = $self->_execute(%inputs,$parallel_by => $value);
