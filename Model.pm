@@ -15,6 +15,7 @@ class Workflow::Model {
     has => [
         operations => { is => 'Workflow::Operation', is_many => 1 },
         links => { is => 'Workflow::Link', is_many => 1 },
+        executor => { is => 'Workflow::Executor', id_by => 'workflow_executor_id' },
         is_valid => { },
         parallel_by => { },
         filename => { },
@@ -33,6 +34,11 @@ sub create {
         );
 
         $params{operation_type} = $optype;
+    }
+
+    unless ($params{executor}) {
+        my $executor = Workflow::Executor::Serial->create();
+        $params{executor} = $executor;
     }
 
     my $self = $class->SUPER::create(%params);
@@ -425,7 +431,7 @@ sub operations_in_series {
 
 sub execute {
     my $self = shift;
-    my %inputs = (@_);
+    my %params = (@_);
 
     unless ($self->is_valid) {
         my @errors = $self->validate;
@@ -434,89 +440,155 @@ sub execute {
         }
     }
 
-    my $output = {};
+    my $data = Workflow::Operation::Data->create(
+        operation => $self,
+        input => $params{input} || {},
+        output => {}
+    );
     
-    if (my $parallel_by = $self->parallel_by && ref($inputs{$self->parallel_by}) eq 'ARRAY') {
-        my @par_input= @{ delete $inputs{$parallel_by} };
-        foreach my $value (@par_input) {
-            my $this_out = $self->_execute(%inputs,$parallel_by => $value);
-            
-            while (my ($k,$v) = each(%{ $this_out })) {
-                $output->{$k} ||= [];
-                push @{ $output->{$k} }, $v;
+    if (my $parallel_by = $self->parallel_by && ref($data->input->{$self->parallel_by}) eq 'ARRAY') {
+        my %data_not_finished = ();
+        my @all_data = ();
+        my @par_input= @{ $data->input->{$parallel_by} };
+        my $output = {};
+
+        my $callback = sub {
+            my ($opdata) = @_;
+
+            delete $data_not_finished{$opdata->id};
+            if (scalar keys %data_not_finished == 0) {
+                ## doing this in a "last man out shuts the lights off" method
+                #  preserves the original input order
+                my %newoutput = ();
+                foreach my $this_data (@all_data) {
+                    foreach my $k (keys %{ $this_data->output }) {
+                        $newoutput{$k} ||= [];
+                        push @{ $newoutput{$k} }, $this_data->output->{$k};
+                    }
+                }
+                $data->output(\%newoutput);
+                return $params{output_cb}->($data);
             }
+        };
+
+        foreach my $value (@par_input) {
+            my $this_data = Workflow::Operation::Data->create(
+                operation => $self,
+                input => { %{ $params{input} || {} }, $parallel_by => $value },
+                output => {}
+            );
+            
+            push @all_data, $this_data;
+            $data_not_finished{$this_data->id} = $this_data;
+            
+            $self->_execute(
+                operation_data => $this_data,
+                output_cb => $callback,
+            );
         }
     } else {
-        $output = $self->_execute(@_);
+        $self->_execute(
+            operation_data => $data,
+            output_cb => $params{output_cb}
+        );
     }
     
-    return $output;
+    return $data;
 }
 
 sub _execute {
     my $self = shift;
-    my %inputs = (@_);
-    
-    # clear all inputs and outputs
-    foreach my $operation ($self->operations) {
-        $operation->inputs({});
-        $operation->outputs({});
-        $operation->is_done(0);
-    }
+    my %params = (@_);
 
-    # connect all links on the operation objects
-    my @all_links = $self->links;
-    foreach my $link (@all_links) {
-        $link->set_inputs;
-    }
+    my $dataset = Workflow::Operation::DataSet->create(
+        workflow_model => $self
+    );
 
+    my $data = $params{operation_data};
     my $input_connector = $self->get_input_connector;
-    $input_connector->outputs({%inputs});
+
+    my @all_data = map {
+        my $this_data = Workflow::Operation::Data->create(
+            operation => $_,
+            dataset => $dataset,
+            input => {},
+            output => {},
+        );
+        if ($_ == $input_connector) {
+            $this_data->output(
+                $data->input
+            );
+        }
+        $this_data->set_input_links;
+        $this_data;
+    } $self->operations;
 
     ## find operations that are ready right now
     ## these should be ones that have no inputs
     my @runq = sort {
-        $a->name cmp $b->name
+        $a->operation->name cmp $b->operation->name
     } grep {
         $_->is_ready && !$_->is_done
-    } $self->operations;
+    } @all_data;
 
-    while (scalar @runq) {
-        my $operation = shift @runq;
-        $self->status_message('running: ' . $self->name . '/' . $operation->name);
-        $operation->Workflow::Operation::execute;
+    my $callback;
+    $callback = sub {
+        my ($opdata) = @_;
         my %uniq_deps = map {
-            $_->name => $_
-        } $operation->dependent_operations;
+            my ($this_data) = Workflow::Operation::Data->get(
+                operation => $_,
+                dataset => $opdata->dataset
+            );
+            $_->name => $this_data
+        } $opdata->operation->dependent_operations;
 
-        push @runq, sort { 
-            $a->name cmp $b->name
-        } grep {
-            my $op = $_;
-            $op->is_ready && 
-            !$op->is_done &&
-            !(scalar grep { $op->name eq $_->name } @runq)
-        } values %uniq_deps;
-    }
+        my @incomplete_operations = grep {
+            !$_->is_done
+        } @all_data;
 
-    my @incomplete_operations = grep {
-        !$_->is_done
-    } $self->operations;
-    
-    if (@incomplete_operations) {
-        $self->error_message("didnt finish all operations!");
-        return;
-    }
+        if (@incomplete_operations) {
+            my @newq = sort { 
+                $a->operation->name cmp $b->operation->name
+            } grep {
+                my $this_data = $_;
+                $this_data->is_ready && 
+                !$this_data->is_done &&
+                !(scalar grep { $this_data->id eq $_->id } @runq)
+            } values %uniq_deps;
 
-    my $output_connector = $self->get_output_connector;
-    my $final_outputs = $output_connector->inputs();
-    foreach my $output_name (%$final_outputs) {
-        if (UNIVERSAL::isa($final_outputs->{$output_name},'Workflow::Link')) {
-            $final_outputs->{$output_name} = $final_outputs->{$output_name}->left_value;
+            foreach my $this_data (@newq) {
+                $this_data->operation->Workflow::Operation::execute(
+                    operation_data => $this_data,
+                    output_cb => $callback
+                );
+            }        
+        } else {
+            my $output_data = Workflow::Operation::Data->get(
+                operation => $self->get_output_connector,
+                dataset => $opdata->dataset
+            );
+            
+            my $final_outputs = $output_data->input;
+            foreach my $output_name (%$final_outputs) {
+                if (UNIVERSAL::isa($final_outputs->{$output_name},'Workflow::Link')) {
+                    $final_outputs->{$output_name} = $final_outputs->{$output_name}->left_value($opdata->dataset);
+                }
+            }
+            $data->output($final_outputs);
+            $data->is_done(1);
+            
+            $params{output_cb}->($data);
         }
+    };
+
+    foreach my $this_data (@runq) {
+        $this_data->operation->Workflow::Operation::execute(
+            operation_data => $this_data,
+            output_cb => $callback
+        );
     }
 
-    return $final_outputs;
+    return $data;
 }
 
 1;

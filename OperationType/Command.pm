@@ -72,9 +72,12 @@ sub _validate_property {
     }
 }
 
+# delegate to wrapped command class
 sub execute {
     my $self = shift;
     my %properties = @_;
+
+    $DB::single=1;
 
     my $command_name = $self->command_class_name;
 

@@ -50,31 +50,42 @@ sub as_xml_simple_structure {
     return $struct;
 }
 
-sub set_inputs {
-    my $self = shift;
-
-    my $current_inputs = $self->right_operation->inputs || {};
-
-    $self->right_operation->inputs({ 
-        %{ $current_inputs }, 
-        $self->right_property => $self
-    });
-}
-
 sub right_value {
     my $self = shift;
+    my $dataset = shift;
 
-    my $right_outputs = $self->right_operation->outputs;
-    return $right_outputs->{$self->right_property} if ($right_outputs);
-    return undef;
+    return $self->right_data($dataset)->input->{ $self->right_property };
 }
 
 sub left_value {
     my $self = shift;
+    my $dataset = shift;
 
-    my $left_outputs = $self->left_operation->outputs;
-    return $left_outputs->{$self->left_property} if ($left_outputs);
-    return undef;
+    return $self->left_data($dataset)->output->{ $self->left_property };
+}
+
+sub right_data {
+    my $self = shift;
+    my $dataset = shift;
+
+    my $right_data = Workflow::Operation::Data->get(
+        operation => $self->right_operation,
+        dataset => $dataset
+    );
+
+    return $right_data;
+}
+
+sub left_data {
+    my $self = shift;
+    my $dataset = shift;
+
+    my $left_data = Workflow::Operation::Data->get(
+        operation => $self->left_operation,
+        dataset => $dataset
+    );
+
+    return $left_data;
 }
 
 1;
