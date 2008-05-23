@@ -13,7 +13,7 @@ my @foo = qw/a b c d e f/;
 my @pipeline_inputs = map {
     my %hash = (
         'model input string' => $_,
-        'sleep time' => 3,
+        'sleep time' => 15,
     );
     \%hash;
 } @foo;
@@ -31,6 +31,6 @@ foreach my $inputs (@pipeline_inputs) {
     );
 }
 
-#$w->wait_for_output;
+$w->wait;
 
 print Data::Dumper->new(\@pipeline_outputs)->Dump;

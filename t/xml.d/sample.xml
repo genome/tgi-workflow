@@ -1,5 +1,5 @@
 <?xml version='1.0' standalone='yes'?>
-<workflow name="Example Workflow">
+<workflow name="Example Workflow" executor="Workflow::Executor::Fork">
   <link fromOperation="input connector" fromProperty="sleep time" toOperation="sleep" toProperty="seconds" />
   <link fromOperation="echo" fromProperty="result" toOperation="wait for sleep and echo" toProperty="echo result" />
   <link fromOperation="wait for sleep and echo" fromProperty="echo result" toOperation="output connector" toProperty="result" />

@@ -10,4 +10,8 @@ class Workflow::Executor {
     ]
 };
 
+sub wait {
+    1;
+}
+
 1;

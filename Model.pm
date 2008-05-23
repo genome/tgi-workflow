@@ -97,6 +97,10 @@ sub create_from_xml_simple_structure {
             $params{parallel_by} = $par;
         }
 
+        if (my $executor_class = delete $struct->{executor}) {
+            $params{executor} = $executor_class->create();
+        }
+
         $self = $class->SUPER::create_from_xml_simple_structure($struct,%params);
 
         foreach my $op_struct (@$operations) {
@@ -589,6 +593,12 @@ sub _execute {
     }
 
     return $data;
+}
+
+sub wait {
+    my $self = shift;
+    
+    $self->executor->wait;
 }
 
 1;
