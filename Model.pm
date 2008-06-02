@@ -598,7 +598,13 @@ sub _execute {
 sub wait {
     my $self = shift;
     
-    $self->executor->wait;
+    $self->executor->wait($self);
+}
+
+sub detach {
+    my $self = shift;
+    
+    $self->executor->detach($self);
 }
 
 1;

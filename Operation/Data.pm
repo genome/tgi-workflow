@@ -11,6 +11,7 @@ class Workflow::Operation::Data {
         dataset => { is => 'Workflow::Operation::DataSet', id_by => 'workflow_operation_dataset_id' },
         output => { is => 'HASH' },
         input => { is => 'HASH' },
+        executor_heap => { is => 'HASH' },
         is_done => { },
     ]
 };
