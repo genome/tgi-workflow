@@ -25,8 +25,9 @@ sub run_commands {
         [@_]
     );
     
+    $self->{quit_after_results} = 1;
+    
     POE::Kernel->run();
-    exit;
 }
 
 sub create {
@@ -39,13 +40,13 @@ sub create {
         RemoteAddress => 'localhost',
         RemotePort => 15243,
         Filter => 'POE::Filter::Reference',
-        ServerInput => \&server_input,
+        ServerInput => \&_server_input,
         Connected => \&_connect,
         Disconnected => \&_disconnect,
         Started => \&_start,
         Args => [$yc],
         ObjectStates => [
-            $self => [ '_next_command', 'execute', 'send_command_result' ]
+            $self => [ '_next_command', 'execute', 'send_command_result', 'hangup', 'server_input' ]
         ]
     );
 
@@ -54,8 +55,12 @@ sub create {
     return $self;
 }
 
+sub _server_input {    
+    $poe_kernel->call($_[SESSION], 'server_input', @_[ARG0..$#_]);
+}
+
 sub server_input {
-    my ($input, $s, $h, $k) = @_[ARG0, SESSION, HEAP, KERNEL];
+    my ($self, $input, $s, $h, $k) = @_[OBJECT, ARG0, SESSION, HEAP, KERNEL];
     
     print Data::Dumper->new([$input])->Dump;
 
@@ -69,6 +74,13 @@ sub server_input {
             
             if (scalar @{ $h->{command_on_connect} }) {
                 $k->yield('_next_command', @{ $input->heap->{result} });
+            }
+            
+            if (scalar @{ $h->{command_on_connect} } == 0 &&
+                scalar keys %{ $h->{wait_for} } == 0 &&
+                $self->{quit_after_results}) {
+                
+                $k->yield('hangup');
             }
         } else {
             warn 'unusual response';
@@ -151,6 +163,13 @@ sub _next_command {
 sub _disconnect {
     my ($s) = @_[SESSION];
     print $s->ID . " disconnect\n";
+}
+
+sub hangup {
+    my ($k) = @_[KERNEL];
+    
+    print "hanging up now\n";
+    $k->yield('shutdown');
 }
 
 

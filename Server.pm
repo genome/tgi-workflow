@@ -32,7 +32,7 @@ sub create {
         Alias => 'workflow server',
         Port => 15243,
         ClientFilter => 'POE::Filter::Reference',
-        ClientInput => \&_client_input_stub,
+        ClientInput => \&_client_input,
         ClientConnected => \&_client_connect,
         ClientDisconnected => \&_client_disconnect,
         ObjectStates => [
@@ -76,7 +76,7 @@ sub _client_disconnect {
     $poe_kernel->call($_[SESSION], 'client_disconnect', @_[ARG0..$#_]);
 }
 
-sub _client_input_stub {    
+sub _client_input {    
     $poe_kernel->call($_[SESSION], 'client_input', @_[ARG0..$#_]);
 }
 
@@ -106,7 +106,7 @@ sub client_connect {
 }
 
 sub client_disconnect {
-    my ($self, $s) = @_[OBJECT, SESSION];
+    my ($self, $s, $k) = @_[OBJECT, SESSION, KERNEL];
     print $s->ID . " disconnect\n";
     
     my @workers = grep { $_ != $s } 
@@ -115,6 +115,14 @@ sub client_disconnect {
     $self->{workers} = \@workers;
     
     delete $self->{wait_for}->{$s->ID};
+    
+    if (my $execargs = delete $self->{worker_op}->{$s->ID}) {
+        ## something disconnected without finishing its stuff?  Just requeue it at the front.
+        
+        unshift @{ $self->{pending_ops} }, $execargs;
+    }
+    
+    $k->alarm_remove_all;
 }
 
 sub client_input {
@@ -160,9 +168,11 @@ sub send_command_result {
 }
 
 sub announce_worker {
-    my ($self, $postback, $s, $k) = @_[OBJECT, ARG0, SESSION, KERNEL];
+    my ($self, $postback, $s, $k, $h) = @_[OBJECT, ARG0, SESSION, KERNEL, HEAP];
     
     push @{ $self->{workers} }, $s;
+
+    $h->{try_count} = 0;
 
     $k->yield('try_to_execute');
     
@@ -170,9 +180,11 @@ sub announce_worker {
 }
 
 sub try_to_execute { 
-    my ($self, $s, $k) = @_[OBJECT, SESSION, KERNEL];
+    my ($self, $s, $k, $h) = @_[OBJECT, SESSION, KERNEL, HEAP];
 
-    print "trying " . $s->ID . "\n";
+    print "trying " . $s->ID . ":" . $h->{try_count} . "\n";
+
+    $h->{try_count}++;
     
     if (my $exec_args = shift @{ $self->{pending_ops} }) {
         $self->{worker_op}->{$s->ID} = $exec_args;
@@ -185,6 +197,17 @@ sub try_to_execute {
             'send_operation', $op, $opdata, $edited_input, sub { $callback->($opdata) }
         );
 
+        $h->{try_count} = 0;
+    } elsif ($h->{try_count} > 5) {
+        my $message = Workflow::Server::Message->create(
+            type => 'command',
+            heap => {
+                command => 'hangup',
+                args => []
+            }
+        );
+
+        $h->{client}->put($message);
     } else {
         $k->delay_set('try_to_execute', 5);
     }
