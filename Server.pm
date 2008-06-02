@@ -10,7 +10,7 @@ our $server_singleton;
 sub new {
     my $class = shift;
     
-    return bless({},$class);
+    return $server_singleton || bless({},$class);
 }
 
 sub run {
@@ -33,8 +33,8 @@ sub create {
         Port => 15243,
         ClientFilter => 'POE::Filter::Reference',
         ClientInput => \&_client_input_stub,
-        ClientConnected => \&client_connect,
-        ClientDisconnected => \&client_disconnect,
+        ClientConnected => \&_client_connect,
+        ClientDisconnected => \&_client_disconnect,
         ObjectStates => [
             $self => [ 
                 'send_command_result',
@@ -45,22 +45,76 @@ sub create {
                 'execute_workflow',
                 'send_operation',
                 'finish_operation',
-                'client_input'
+                'client_input',
+                'client_connect',
+                'client_disconnect',
+                'run_operation',
+                'try_to_execute'
             ]
         ]
     );
 
     $self->{workers} = [];
-    $self->{worker_status} = {};
+    $self->{worker_op} = {};
     $self->{workflows} = [];
     $self->{wait_for} = {};
+    
+    $self->{pending_ops} = [];
+    
     $self->{session} = $session;
     
     return $self;
 }
 
+### pure perl functions, poe calls them
+
+sub _client_connect {
+    $poe_kernel->call($_[SESSION], 'client_connect', @_[ARG0..$#_]);
+}
+
+sub _client_disconnect {
+    $poe_kernel->call($_[SESSION], 'client_disconnect', @_[ARG0..$#_]);
+}
+
 sub _client_input_stub {    
-    $poe_kernel->yield('client_input', @_[ARG0..$#_]);
+    $poe_kernel->call($_[SESSION], 'client_input', @_[ARG0..$#_]);
+}
+
+### server object methods
+
+sub run_operation {
+    my ($self, $opdata, $callback, $edited_input) = @_;
+    
+    push @{ $self->{pending_ops} }, [$opdata, $callback, $edited_input];
+    
+#    my $session = $self->{workers}->[0];   
+#    my $op = $opdata->operation;
+#    $op->status_message('exec/' . $opdata->dataset->id . '/' . $op->name);
+#    $poe_kernel->post(
+#        $session, 'send_operation', $op, $opdata, $edited_input, sub { $callback->($opdata) }
+#    );
+     
+}
+
+### poe single connection events
+
+sub client_connect {
+    my ($self, $s) = @_[OBJECT, SESSION];
+    print $s->ID . " connect\n";
+    
+    $self->{wait_for}->{$s->ID} = {};
+}
+
+sub client_disconnect {
+    my ($self, $s) = @_[OBJECT, SESSION];
+    print $s->ID . " disconnect\n";
+    
+    my @workers = grep { $_ != $s } 
+        @{ $self->{workers} };
+        
+    $self->{workers} = \@workers;
+    
+    delete $self->{wait_for}->{$s->ID};
 }
 
 sub client_input {
@@ -69,16 +123,16 @@ sub client_input {
     print Data::Dumper->new([$input])->Dump;
     if ($input->type eq 'response') {
         if ($input->heap->{original_message_id} &&
-            $self->{wait_for}->{ $input->heap->{original_message_id} }) {
+            $self->{wait_for}->{$s->ID}->{ $input->heap->{original_message_id} }) {
 
-            my $sub = $self->{wait_for}->{ $input->heap->{original_message_id} };
-            delete $self->{wait_for}->{ $input->heap->{original_message_id} };
+            my $sub = $self->{wait_for}->{$s->ID}->{ $input->heap->{original_message_id} };
+            delete $self->{wait_for}->{$s->ID}->{ $input->heap->{original_message_id} };
             if (ref($sub) && ref($sub) eq 'POE::Session::AnonEvent') {
                 $sub->($input);
             }
         } else {
             warn 'unusual response';
-            print STDERR Data::Dumper->new([$self->{wait_for}])->Dump;
+            print STDERR Data::Dumper->new([$self->{wait_for}->{$s->ID}])->Dump;
         }
     } elsif ($input->type eq 'command') {
         my $cb = $s->postback('send_command_result', $input);
@@ -106,11 +160,34 @@ sub send_command_result {
 }
 
 sub announce_worker {
-    my ($self, $postback, $s) = @_[OBJECT, ARG0, SESSION];
+    my ($self, $postback, $s, $k) = @_[OBJECT, ARG0, SESSION, KERNEL];
     
     push @{ $self->{workers} }, $s;
+
+    $k->yield('try_to_execute');
     
     $postback->(1);
+}
+
+sub try_to_execute { 
+    my ($self, $s, $k) = @_[OBJECT, SESSION, KERNEL];
+
+    print "trying " . $s->ID . "\n";
+    
+    if (my $exec_args = shift @{ $self->{pending_ops} }) {
+        $self->{worker_op}->{$s->ID} = $exec_args;
+        
+        my ($opdata,$callback,$edited_input) = @$exec_args;
+
+        my $op = $opdata->operation;
+        $op->status_message('exec/' . $opdata->dataset->id . '/' . $op->name);
+        $k->yield(
+            'send_operation', $op, $opdata, $edited_input, sub { $callback->($opdata) }
+        );
+
+    } else {
+        $k->delay_set('try_to_execute', 5);
+    }
 }
 
 sub list_workers {
@@ -122,6 +199,7 @@ sub list_workers {
     
     $postback->(@list);
 }
+
 
 sub load_workflow {
     my ($self, $postback, $s, $xml_file) = @_[OBJECT, ARG0, SESSION, ARG1];
@@ -167,19 +245,22 @@ sub send_operation {
         }
     );
 
-    $self->{wait_for}->{$message->id} = $s->postback('finish_operation',$callback,$opdata);
+    $self->{wait_for}->{$s->ID}->{$message->id} = $s->postback('finish_operation',$callback,$opdata);
     $h->{client}->put($message);
 
 }
 
 sub finish_operation {
-    my ($self, $creation_args, $called_args) = @_[OBJECT, ARG0, ARG1];
+    my ($self, $creation_args, $called_args, $s, $k) = @_[OBJECT, ARG0, ARG1, SESSION, KERNEL];
     my $callback = $creation_args->[0];
     my $opdata = $creation_args->[1];
     my $message = $called_args->[0];
 
     $opdata->output({ %{ $opdata->output }, @{ $message->heap->{result} } });
     $opdata->is_done(1);
+
+    delete $self->{worker_op}->{$s->ID};
+    $k->yield('try_to_execute');
     
     $callback->($opdata);
 }
@@ -190,20 +271,6 @@ sub test_response {
     $postback->('hello world!');
 }
 
-sub client_connect {
-    my ($s) = @_[SESSION];
-    print $s->ID . " connect\n";
-}
-
-sub client_disconnect {
-    my ($s) = @_[SESSION];
-    print $s->ID . " disconnect\n";
-    
-    my @workers = grep { $_ != $s } 
-        @{ $server_singleton->{workers} };
-        
-    $server_singleton->{workers} = \@workers;
-}
 
 
 1;

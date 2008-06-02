@@ -16,18 +16,13 @@ sub execute {
     my $self = shift;
     my %params = @_;
 
-## session selection code needs to go here or somewhere.
-    my $session = $self->server->{workers}->[0];
+    ## delegate back to the server
     
-    my $op = $params{operation};
-    my $opdata = $params{operation_data};
-    my $callback = $params{output_cb};
-
-    $self->status_message('exec/' . $opdata->dataset->id . '/' . $op->name);
-    $poe_kernel->post(
-        $session, 'send_operation', $op, $opdata, $params{edited_input}, sub { $callback->($opdata) }
+    $self->server->run_operation(
+        $params{operation_data},
+        sub { $params{output_cb}->($params{operation_data}) },
+        $params{edited_input}
     );
-
 
     return;
 }
