@@ -6,14 +6,21 @@ use warnings;
 
 class Workflow::OperationType::Block {
     isa => 'Workflow::OperationType',
+    has => [
+        executor => { is => 'Workflow::Executor' },
+    ]
 };
 
 sub create_from_xml_simple_structure {
     my ($class,$struct) = @_;
 
+    my $serial_executor = Workflow::Executor::Serial->create;
+
     my $self = $class->create(
         properties => $struct->{property}
     );
+    
+    $self->executor($serial_executor);
 
     return $self;
 }

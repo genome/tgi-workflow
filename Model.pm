@@ -36,9 +36,10 @@ sub create {
         $params{operation_type} = $optype;
     }
 
+    my $serial_executor = Workflow::Executor::Serial->create();
+
     unless ($params{executor}) {
-        my $executor = Workflow::Executor::Serial->create();
-        $params{executor} = $executor;
+        $params{executor} = $serial_executor;
     }
 
     my $self = $class->SUPER::create(%params);
@@ -47,7 +48,8 @@ sub create {
         name => 'input connector',
         operation_type => Workflow::OperationType::ModelInput->create(
             input_properties => [],
-            output_properties => $optype->input_properties
+            output_properties => $optype->input_properties,
+            executor => $serial_executor
         ),
     );
     $self->add_operation(
@@ -55,6 +57,7 @@ sub create {
         operation_type => Workflow::OperationType::ModelOutput->create(
             input_properties => $optype->output_properties,
             output_properties => [],
+            executor => $serial_executor
         ),
     );
 
@@ -538,6 +541,8 @@ sub _execute {
     my $callback;
     $callback = sub {
         my ($opdata) = @_;
+
+#$self->status_message("just ran " . $opdata->operation->name);
         my %uniq_deps = map {
             my ($this_data) = Workflow::Operation::Data->get(
                 operation => $_,
@@ -550,6 +555,12 @@ sub _execute {
             !$_->is_done
         } @all_data;
 
+#        my @not_done_names = map {
+#            $_->operation->name
+#        } @incomplete_operations;
+        
+#$self->status_message("still isnt done: " . join(',',@not_done_names));
+
         if (@incomplete_operations) {
             my @newq = sort { 
                 $a->operation->name cmp $b->operation->name
@@ -560,6 +571,11 @@ sub _execute {
                 !(scalar grep { $this_data->id eq $_->id } @runq)
             } values %uniq_deps;
 
+#            my @newq_names = map {
+#                $_->operation->name
+#            } @newq; 
+
+#$self->status_message("want to run: " . join(',',@newq_names));
             foreach my $this_data (@newq) {
                 $this_data->operation->Workflow::Operation::execute(
                     operation_data => $this_data,

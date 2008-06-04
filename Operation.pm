@@ -86,7 +86,13 @@ sub execute {
         }
     }
 
-    $self->workflow_model->executor->execute(
+    my $executor = $self->workflow_model->executor;
+    
+    if ($operation_type->can('executor')) {
+        $executor = $operation_type->executor;
+    }
+    
+    $executor->execute(
         operation => $self,
         operation_data => $data,
         edited_input => \%current_inputs,

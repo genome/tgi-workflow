@@ -49,7 +49,8 @@ sub create {
                 'client_connect',
                 'client_disconnect',
                 'run_operation',
-                'try_to_execute'
+                'try_to_execute',
+                'finish_workflow'
             ]
         ]
     );
@@ -128,7 +129,7 @@ sub client_disconnect {
 sub client_input {
     my ($input,$k,$s,$h,$self) = @_[ARG0, KERNEL, SESSION, HEAP, OBJECT];
 
-    print Data::Dumper->new([$input])->Dump;
+#    print Data::Dumper->new([$input])->Dump;
     if ($input->type eq 'response') {
         if ($input->heap->{original_message_id} &&
             $self->{wait_for}->{$s->ID}->{ $input->heap->{original_message_id} }) {
@@ -182,7 +183,7 @@ sub announce_worker {
 sub try_to_execute { 
     my ($self, $s, $k, $h) = @_[OBJECT, SESSION, KERNEL, HEAP];
 
-    print "trying " . $s->ID . ":" . $h->{try_count} . "\n";
+#    print "trying " . $s->ID . ":" . $h->{try_count} . "\n";
 
     $h->{try_count}++;
     
@@ -236,10 +237,11 @@ sub load_workflow {
 sub execute_workflow {
     my ($self, $postback, $s, $workflow_id, $inputs) = @_[OBJECT, ARG0, SESSION, ARG2, ARG1];
     my $workflow = Workflow::Model->get($workflow_id);
+
+    my $executor = Workflow::Executor::Server->create;
+    $executor->server($self);
     
-    $workflow->executor(Workflow::Executor::Server->create);
-    $workflow->executor->server($self);
-    
+    $workflow->executor($executor);
     
     my $cb = sub {
         my ($data) = @_;
@@ -247,14 +249,36 @@ sub execute_workflow {
         warn Data::Dumper->new([$data])->Dump;
     };
 
-    $workflow->execute(
+    my $cb = $s->postback('finish_workflow',$workflow_id);
+
+    my $wfdata = $workflow->execute(
         input => $inputs,
         output_cb => $cb
     );
 
     $workflow->wait;
     
-    $postback->(1);
+    $postback->($wfdata);
+}
+
+sub finish_workflow {
+    my ($self, $creation_args, $called_args, $s, $k, $h) = @_[OBJECT, ARG0, ARG1, SESSION, KERNEL, HEAP];
+    my $workflow_id = $creation_args->[0];
+    my $data = $called_args->[0];
+ 
+    if (defined $h->{client}) {
+    
+        my $message = Workflow::Server::Message->create(
+            type => 'command',
+            heap => {
+                command => 'workflow_finished',
+                args => [ $workflow_id, $data ]
+            }
+        );    
+
+        $self->{wait_for}->{$s->ID}->{$message->id} = 1;
+        $h->{client}->put($message);
+    }
 }
 
 sub send_operation {

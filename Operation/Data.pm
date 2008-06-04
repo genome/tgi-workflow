@@ -53,9 +53,9 @@ sub is_ready {
         }
     }
     if (scalar @unfinished_inputs > 0) {
-        $self->debug_message($self->operation->name . " still needs: " . join(',', @unfinished_inputs))
+#        $self->status_message($self->operation->name . " still needs: " . join(',', @unfinished_inputs))
     } else {
-        $self->debug_message($self->operation->name . ' is ready');
+#        $self->status_message($self->operation->name . ' is ready');
     }
 
     if (scalar @unfinished_inputs == 0) {

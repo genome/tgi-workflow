@@ -16,7 +16,6 @@ sub run_worker {
     );
 
     POE::Kernel->run();
-    exit;
 }
 
 sub run_commands {
@@ -28,6 +27,35 @@ sub run_commands {
     $self->{quit_after_results} = 1;
     
     POE::Kernel->run();
+}
+
+#
+#   Workflow::Client->execute_workflow(
+#       xml_file => 'xml.d/sample.xml',
+#       input => {
+#
+#       },
+#       output_cb => sub { }
+#   );
+#
+
+sub execute_workflow {
+    my $class = shift;
+    my %args = @_;
+    
+    my $self = $class->create([
+        ['load_workflow', $args{xml_file}],
+        ['execute_workflow', $args{input}]
+    ]);
+    
+    if ($args{output_cb}) {
+        $self->{output_cb} = $args{output_cb};
+        $self->{quit_after_workflow_finished} = 1;
+    } else {
+        $self->{quit_after_results} = 1;
+    }
+
+    POE::Kernel->run() unless (exists $args{no_run});
 }
 
 sub create {
@@ -46,7 +74,14 @@ sub create {
         Started => \&_start,
         Args => [$yc],
         ObjectStates => [
-            $self => [ '_next_command', 'execute', 'send_command_result', 'hangup', 'server_input' ]
+            $self => [ 
+                '_next_command', 
+                'execute', 
+                'send_command_result', 
+                'hangup', 
+                'server_input',
+                'workflow_finished',
+            ]
         ]
     );
 
@@ -124,6 +159,18 @@ sub execute {
     my $outputs = $optype->execute(%inputs);
     
     $postback->(%$outputs);
+}
+
+sub workflow_finished {
+    my ($self, $k, $postback, $workflow_id, $data) = @_[OBJECT, KERNEL, ARG0, ARG1, ARG2];
+
+    if ($self->{output_cb} && ref($self->{output_cb}) eq 'CODE') {
+        $self->{output_cb}->($data);
+    }
+
+    $postback->(1);
+    
+    $k->yield('shutdown');
 }
 
 sub _start {
