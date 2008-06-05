@@ -14,14 +14,10 @@ class Workflow::OperationType::Block {
 sub create_from_xml_simple_structure {
     my ($class,$struct) = @_;
 
-    my $serial_executor = Workflow::Executor::Serial->create;
-
     my $self = $class->create(
         properties => $struct->{property}
     );
     
-    $self->executor($serial_executor);
-
     return $self;
 }
 
@@ -38,18 +34,23 @@ sub as_xml_simple_structure {
 }
 
 sub create {
-    my $self = shift;
+    my $class = shift;
     my %args = @_;
     
     unless ($args{properties}) { 
-        $self->error_message("property list not provided");
+        $class->error_message("property list not provided");
         return;
     }
-    
-    return $self->SUPER::create(
+
+    my $self = $class->SUPER::create(
         input_properties => \@{ $args{properties} },
         output_properties => \@{ $args{properties} },
     );
+
+    my $serial_executor = Workflow::Executor::Serial->create;
+    $self->executor($serial_executor);
+
+    return $self;
 }
 
 sub execute {

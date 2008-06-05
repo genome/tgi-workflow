@@ -3,7 +3,7 @@ package Workflow::Command::Create::Operation;
 use strict;
 use warnings;
 
-use above "Workflow";
+use Workflow;
 use Command; 
 use YAML;
 

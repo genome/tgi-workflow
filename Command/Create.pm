@@ -4,7 +4,7 @@ package Workflow::Command::Create;
 
 use warnings;
 use strict;
-use above 'Workflow';
+use Workflow;
 
 UR::Object::Type->define(
     class_name => __PACKAGE__,

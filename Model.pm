@@ -7,7 +7,7 @@ use GraphViz;
 use XML::Simple;
 use File::Basename;
 
-use above 'Workflow';
+use Workflow;
 
 class Workflow::Model {
     isa => 'Workflow::Operation',
@@ -597,6 +597,18 @@ sub _execute {
             $data->output($final_outputs);
             $data->is_done(1);
             
+            my $dataset = $output_data->dataset;
+            undef $output_data;
+            my @all_data = Workflow::Operation::Data->get(
+                dataset => $dataset
+            );
+            foreach my $d (@all_data) {
+                $d->delete;
+            }
+            $dataset->delete;
+            ## dont like messing in UR internals.
+            delete $UR::Object::all_objects_loaded->{ref($data)}->{$data->{id}};
+
             $params{output_cb}->($data);
         }
     };

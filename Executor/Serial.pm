@@ -16,7 +16,7 @@ sub execute {
     my $opdata = $params{operation_data};
     my $callback = $params{output_cb};
 
-    $self->status_message('exec/' . $opdata->dataset->id . '/' . $op->name);
+#    $self->status_message('exec/' . $opdata->dataset->id . '/' . $op->name);
     my $outputs = $op->operation_type->execute(%{ $opdata->input }, %{ $params{edited_input} });
 
     $opdata->output({ %{ $opdata->output }, %{ $outputs } });

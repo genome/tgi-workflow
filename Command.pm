@@ -3,7 +3,7 @@ package Workflow::Command;
 
 use strict;
 use warnings;
-use above "Workflow";
+use Workflow;
 
 class Workflow::Command {
     is => ['Command'],
