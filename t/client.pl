@@ -11,7 +11,7 @@ my @pipeline_outputs = ();
 foreach my $i (qw/a b c/) {
 
 Workflow::Client->execute_workflow(
-    xml_file => 'xml.d/sample.xml',
+    xml_file => 'xml.d/10_basic.xml',
     input => {
         'model input string' => 'hello this is echo test: ' . $i,
         'sleep time' => 1

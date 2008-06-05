@@ -1,10 +1,10 @@
 <?xml version='1.0' standalone='yes'?>
 <workflow name="Example Workflow">
   <link fromOperation="input connector" fromProperty="sleep time" toOperation="sleep" toProperty="seconds" />
-  <link fromOperation="input connector" fromProperty="model input string" toOperation="echo" toProperty="input" />
-  <link fromOperation="wait for sleep and echo" fromProperty="sleep result" toOperation="wait for sleep and echo" toProperty="echo result" />
-  <link fromOperation="echo" fromProperty="output" toOperation="output connector" toProperty="model output string" />
+  <link fromOperation="wait for sleep and echo" fromProperty="sleep result" toOperation="echo" toProperty="input" />
+  <link fromOperation="input connector" fromProperty="model input string" toOperation="output connector" toProperty="model output string" />
   <link fromOperation="sleep" fromProperty="result" toOperation="wait for sleep and echo" toProperty="sleep result" />
+  <link fromOperation="echo" fromProperty="result" toOperation="wait for sleep and echo" toProperty="echo result" />
   <link fromOperation="time" fromProperty="today" toOperation="output connector" toProperty="today" />
   <link fromOperation="wait for sleep and echo" fromProperty="echo result" toOperation="output connector" toProperty="result" />
   <operation name="wait for sleep and echo">

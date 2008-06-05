@@ -6,6 +6,8 @@ use above 'Workflow';
 
 use Workflow::Server;
 
-Workflow::Server->run();
+my $server = Workflow::Server->create;
+
+POE::Kernel->run();
 
 

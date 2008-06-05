@@ -4,11 +4,11 @@ use strict;
 use warnings;
 
 use Test::More tests => 25;
-use above 'Workflow';
+use Workflow;
 
 require_ok('Workflow::Model');
 
-can_ok('Workflow::Model',qw/create add_operation get_input_connector get_output_connector add_link validate execute/);
+can_ok('Workflow::Model',qw/create add_operation get_input_connector get_output_connector add_link validate is_valid execute/);
 
 my $w = Workflow::Model->create(
     name => 'Example Workflow',
