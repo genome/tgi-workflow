@@ -6,7 +6,7 @@ use warnings;
 use above 'Workflow';
 use Data::Dumper;
 
-my $w = Workflow::Model->create_from_xml($ARGV[0] || 'sample.xml');
+my $w = Workflow::Model->create_from_xml($ARGV[0] || 'xml.d/00_basic.xml');
 
 my @foo = qw/a/;
 
