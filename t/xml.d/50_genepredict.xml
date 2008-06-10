@@ -1,0 +1,41 @@
+<?xml version='1.0' standalone='yes'?>
+<workflow name="gene prediction pipeline">
+  <link fromOperation="input connector" fromProperty="seq set id" toOperation="get sequence fasta files" toProperty="seq_set_id" />
+  <link fromOperation="get sequence fasta files" fromProperty="fasta_files" toOperation="build glimmer3 data" toProperty="fasta files" />
+  <link fromOperation="get sequence fasta files" fromProperty="fasta_files" toOperation="calculate gc percent" toProperty="fasta files" />
+  <link fromOperation="get sequence fasta files" fromProperty="fasta_files" toOperation="contig predict genes" toProperty="fasta file" />
+  <link fromOperation="build glimmer3 data" fromProperty="model file" toOperation="contig predict genes" toProperty="glimmer3 model" />
+  <link fromOperation="build glimmer3 data" fromProperty="pwm file" toOperation="contig predict genes" toProperty="glimmer3 pwm" />
+  <link fromOperation="calculate gc percent" fromProperty="gc percent" toOperation="contig predict genes" toProperty="gc content" />
+  <link fromOperation="contig predict genes" fromProperty="bio seq feature" toOperation="database upload" toProperty="bio seq features" />
+  <link fromOperation="database upload" fromProperty="result" toOperation="output connector" toProperty="result" />
+  <operation name="get sequence fasta files">
+    <operationtype commandClass="MGAP::Command::GetFastaFiles" typeClass="Workflow::OperationType::Command" />
+  </operation>
+  <operation name="build glimmer3 data">
+    <operationtype typeClass="Workflow::OperationType::Dummy">
+      <inputproperty>fasta files</inputproperty>
+      <outputproperty>model file</outputproperty>
+      <outputproperty>pwn file</outputproperty>
+      <outputproperty>result</outputproperty>
+    </operationtype>
+  </operation>
+  <operation name="calculate gc percent">
+    <operationtype typeClass="Workflow::OperationType::Dummy">
+      <inputproperty>fasta files</inputproperty>
+      <outputproperty>gc percent</outputproperty>
+      <outputproperty>result</outputproperty>
+    </operationtype>
+  </operation>
+  <operation name="contig predict genes" workflowFile="50.1_contig.xml" />
+  <operation name="database upload">
+    <operationtype typeClass="Workflow::OperationType::Dummy">
+      <inputproperty>bio seq features</inputproperty>
+      <outputproperty>result</outputproperty>
+    </operationtype>
+  </operation>
+  <operationtype typeClass="Workflow::OperationType::Model">
+    <inputproperty>seq set id</inputproperty>
+    <outputproperty>result</outputproperty>
+  </operationtype>
+</workflow>
