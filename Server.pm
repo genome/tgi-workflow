@@ -2,8 +2,20 @@
 package Workflow::Server;
 
 use strict;
+use lib '/gscuser/eclark/poe_install/lib/perl5/site_perl/5.8.7';
+
 use POE qw(Component::Server::TCP Filter::Reference);
+use Sys::Hostname;
 use Workflow;
+
+# glueing lsf stuff right inside for now.
+
+my $server_host = hostname;
+my $server_port = 15243;
+
+my $client_start_cmd = 'bsub -q short -N -u "eclark@genome.wustl.edu" ' . 
+    'perl -e \'BEGIN { delete $ENV{PERL_USED_ABOVE}; } use above "Workflow"; use Workflow::Client; Workflow::Client->run_worker("' .
+    $server_host . '",' . $server_port . ')\''; 
 
 our $server_singleton;
 
@@ -30,7 +42,7 @@ sub create {
 
     my $session = POE::Component::Server::TCP->new(
         Alias => 'workflow server',
-        Port => 15243,
+        Port => $server_port,
         ClientFilter => 'POE::Filter::Reference',
         ClientInput => \&_client_input,
         ClientConnected => \&_client_connect,
@@ -50,7 +62,8 @@ sub create {
                 'client_disconnect',
                 'run_operation',
                 'try_to_execute',
-                'finish_workflow'
+                'finish_workflow',
+                'hangup'
             ]
         ]
     );
@@ -88,13 +101,15 @@ sub run_operation {
     
     push @{ $self->{pending_ops} }, [$opdata, $callback, $edited_input];
     
-#    my $session = $self->{workers}->[0];   
-#    my $op = $opdata->operation;
-#    $op->status_message('exec/' . $opdata->dataset->id . '/' . $op->name);
-#    $poe_kernel->post(
-#        $session, 'send_operation', $op, $opdata, $edited_input, sub { $callback->($opdata) }
-#    );
-     
+    unless ($opdata->operation->operation_type->can('executor') && defined $opdata->operation->operation_type->executor) {
+
+        $opdata->operation->status_message('starting a blade job for: ' . $opdata->operation->name);
+        $self->start_new_worker;  ## start a blade job if it doesnt have an exception
+    }     
+}
+
+sub start_new_worker {
+    system($client_start_cmd);
 }
 
 ### poe single connection events
@@ -199,19 +214,25 @@ sub try_to_execute {
         );
 
         $h->{try_count} = 0;
-    } elsif ($h->{try_count} > 5) {
-        my $message = Workflow::Server::Message->create(
-            type => 'command',
-            heap => {
-                command => 'hangup',
-                args => []
-            }
-        );
-
-        $h->{client}->put($message);
+    } elsif ($h->{try_count} > 50) {
+        $k->yield('hangup');
     } else {
         $k->delay_set('try_to_execute', 5);
     }
+}
+
+sub hangup {
+    my ($self, $s, $k, $h) = @_[OBJECT, SESSION, KERNEL, HEAP];
+
+    my $message = Workflow::Server::Message->create(
+        type => 'command',
+        heap => {
+            command => 'hangup',
+            args => []
+        }
+    );
+
+    $h->{client}->put($message);
 }
 
 sub list_workers {
@@ -307,7 +328,7 @@ sub finish_operation {
     $opdata->is_done(1);
 
     delete $self->{worker_op}->{$s->ID};
-    $k->yield('try_to_execute');
+    $k->yield('hangup');
     
     $callback->($opdata);
 }

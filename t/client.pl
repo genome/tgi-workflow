@@ -8,10 +8,10 @@ use POE;
 
 my @pipeline_outputs = ();
 
-foreach my $i (qw/a b c/) {
+foreach my $i (qw/a/) {
 
 Workflow::Client->execute_workflow(
-    xml_file => 'xml.d/10_basic.xml',
+    xml_file => 'xml.d/00_basic.xml',
     input => {
         'model input string' => 'hello this is echo test: ' . $i,
         'sleep time' => 1

@@ -6,6 +6,7 @@ use warnings;
 use GraphViz;
 use XML::Simple;
 use File::Basename;
+use Scalar::Util qw/weaken/;
 
 use Workflow;
 
@@ -452,7 +453,7 @@ sub execute {
         input => $params{input} || {},
         output => {}
     );
-    
+ 
     if (my $parallel_by = $self->parallel_by && ref($data->input->{$self->parallel_by}) eq 'ARRAY') {
         my %data_not_finished = ();
         my @all_data = ();
@@ -607,7 +608,8 @@ sub _execute {
             }
             $dataset->delete;
             ## dont like messing in UR internals.
-            delete $UR::Object::all_objects_loaded->{ref($data)}->{$data->{id}};
+#            delete $UR::Object::all_objects_loaded->{ref($data)}->{$data->{id}};
+            weaken($UR::Object::all_objects_loaded->{ref($data)}->{$data->{id}});
 
             $params{output_cb}->($data);
         }

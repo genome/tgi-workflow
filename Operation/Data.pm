@@ -65,4 +65,10 @@ sub is_ready {
     }
 }
 
+sub DESTROY {
+    my $self = shift;
+    warn "Workflow::Operation::Data::DESTROY\n";
+    $self->SUPER::DESTROY(@_);
+}
+
 1;

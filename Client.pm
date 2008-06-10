@@ -2,6 +2,8 @@
 package Workflow::Client;
 
 use strict;
+use lib '/gscuser/eclark/poe_install/lib/perl5/site_perl/5.8.7';
+
 use POE qw(Component::Client::TCP Filter::Reference);
 
 sub new {
@@ -11,7 +13,9 @@ sub new {
 }
 
 sub run_worker {
-    my $self = shift->create(
+    my ($class, $host, $port) = (shift, shift, shift);
+    my $self = $class->create(
+        $host, $port,
         [['announce_worker']]
     );
 
@@ -19,8 +23,9 @@ sub run_worker {
 }
 
 sub run_commands {
-    my $class = shift;
+    my ($class, $host, $port) = (shift, shift, shift);
     my $self = $class->create(
+        $host, $port,
         [@_]
     );
     
@@ -43,10 +48,13 @@ sub execute_workflow {
     my $class = shift;
     my %args = @_;
     
-    my $self = $class->create([
-        ['load_workflow', $args{xml_file}],
-        ['execute_workflow', $args{input}]
-    ]);
+    my $self = $class->create(
+        'localhost', 15243,
+        [
+            ['load_workflow', $args{xml_file}],
+            ['execute_workflow', $args{input}]
+        ]
+    );
     
     if ($args{output_cb}) {
         $self->{output_cb} = $args{output_cb};
@@ -60,13 +68,15 @@ sub execute_workflow {
 
 sub create {
     my $class = shift;
+    my $host = shift;
+    my $port = shift;
     my $yc = shift;
     my $self = $class->new();
 
     my $session = POE::Component::Client::TCP->new(
         Alias => 'workflow client',
-        RemoteAddress => 'localhost',
-        RemotePort => 15243,
+        RemoteAddress => $host,
+        RemotePort => $port,
         Filter => 'POE::Filter::Reference',
         ServerInput => \&_server_input,
         Connected => \&_connect,
