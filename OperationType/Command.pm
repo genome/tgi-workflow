@@ -15,6 +15,9 @@ sub create_from_xml_simple_structure {
     my ($class, $struct) = @_;
 
     my $command = delete $struct->{commandClass};
+
+    eval "use $command"; 
+
     my $self = $command->operation;
  
     return $self;

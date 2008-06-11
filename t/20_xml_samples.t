@@ -26,7 +26,7 @@ ok(do{
 
 ok(@files,'finding XX_yyyy.xml files');
 
-foreach my $file (@files) {
+foreach my $file (sort @files) {
     ok( do {
         my $w = Workflow::Model->create_from_xml($dir . '/' . $file);
         $w->validate;

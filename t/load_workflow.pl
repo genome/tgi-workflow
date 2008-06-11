@@ -8,6 +8,8 @@ use Data::Dumper;
 
 my $w = Workflow::Model->create_from_xml($ARGV[0] || 'sample.xml');
 
+print join("\n", $w->validate) . "\n";
+
 print $w->as_png("/tmp/test.png");
 
 #my $out = $w->execute(

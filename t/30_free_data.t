@@ -2,7 +2,6 @@
 
 use strict;
 use warnings;
-use lib '/gscuser/eclark/lib';
 
 use Test::More tests => 6;
 use Devel::Size qw(size total_size);
