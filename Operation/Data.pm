@@ -3,6 +3,7 @@ package Workflow::Operation::Data;
 
 use strict;
 use warnings;
+use Workflow;
 
 class Workflow::Operation::Data {
     is_transactional => 0,
