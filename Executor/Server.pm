@@ -20,7 +20,6 @@ sub execute {
     
     $self->server->run_operation(
         $params{operation_data},
-        sub { $params{output_cb}->($params{operation_data}) },
         $params{edited_input}
     );
 

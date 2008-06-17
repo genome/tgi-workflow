@@ -71,12 +71,9 @@ sub as_xml_simple_structure {
 #
 # This delegates to the executor after fixing up some inputs
 sub execute {
-    my $self = shift;
-    my %params = @_;
-    
-    my $data = $params{operation_data};
+    my ($self, $data) = (shift,shift);
+
     my $operation_type = $self->operation_type;
-    my $callback = $params{output_cb};
 
     ## rewrite inputs
     my %current_inputs = ();
@@ -88,15 +85,13 @@ sub execute {
 
     my $executor = $self->workflow_model->executor;
     
-    if ($operation_type->can('executor')) {
+    if ($operation_type->can('executor') && defined $operation_type->executor) {
         $executor = $operation_type->executor;
     }
     
     $executor->execute(
-        operation => $self,
         operation_data => $data,
-        edited_input => \%current_inputs,
-        output_cb => $callback
+        edited_input => \%current_inputs
     );
     
     return $data;

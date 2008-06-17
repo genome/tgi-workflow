@@ -46,7 +46,6 @@ EOS
 sub execute {
     my $self = shift;
 
-    $DB::single=1;
     1;
 }
  

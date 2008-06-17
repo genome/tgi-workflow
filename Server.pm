@@ -97,9 +97,9 @@ sub _client_input {
 ### server object methods
 
 sub run_operation {
-    my ($self, $opdata, $callback, $edited_input) = @_;
+    my ($self, $opdata, $edited_input) = @_;
     
-    push @{ $self->{pending_ops} }, [$opdata, $callback, $edited_input];
+    push @{ $self->{pending_ops} }, [$opdata, $edited_input];
     
     unless ($opdata->operation->operation_type->can('executor') && defined $opdata->operation->operation_type->executor) {
 
@@ -205,12 +205,12 @@ sub try_to_execute {
     if (my $exec_args = shift @{ $self->{pending_ops} }) {
         $self->{worker_op}->{$s->ID} = $exec_args;
         
-        my ($opdata,$callback,$edited_input) = @$exec_args;
+        my ($opdata,$edited_input) = @$exec_args;
 
         my $op = $opdata->operation;
         $op->status_message('exec/' . $opdata->dataset->id . '/' . $op->name);
         $k->yield(
-            'send_operation', $op, $opdata, $edited_input, sub { $callback->($opdata) }
+            'send_operation', $op, $opdata, $edited_input, sub { $opdata->do_completion; }
         );
 
         $h->{try_count} = 0;

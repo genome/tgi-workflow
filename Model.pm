@@ -508,121 +508,110 @@ sub _execute {
     my $self = shift;
     my %params = (@_);
 
-    my $dataset = Workflow::Operation::DataSet->create(
-        workflow_model => $self
-    );
-
     my $data = $params{operation_data};
-    my $input_connector = $self->get_input_connector;
+    my $dataset = Workflow::Operation::DataSet->create(
+        workflow_model => $self,
+        parent_data => $data
+    );
+    $dataset->output_cb($params{output_cb});
 
-    my @all_data = map {
+    my @runq = $self->create_and_runq($dataset);
+
+    # set them all running so when others look at whats running (during execute) its correct.
+    foreach my $this_data (@runq) {
+        $this_data->is_running(1);
+    }
+
+    foreach my $this_data (@runq) {
+        $this_data->execute;
+    }
+
+    return $params{operation_data};
+}
+
+sub operation_completed {
+    my ($self, $opdata) = (shift,shift);
+    my $dataset = $opdata->dataset;
+
+    $opdata->is_running(0);
+
+    my @incomplete_operations = $dataset->incomplete_operation_data;
+
+    if (@incomplete_operations) {
+        my @runq = $self->get_deps_runq($opdata);
+
+        foreach my $this_data (@runq) {
+            $this_data->is_running(1);
+        }
+
+        foreach my $this_data (@runq) {
+            $this_data->execute;
+        }        
+    } else {
+        $dataset->do_completion;
+        $dataset->output_cb->($dataset->parent_data)
+            if (defined $dataset->output_cb);
+        $dataset->delete;
+    }
+
+    return;
+}
+
+sub create_and_runq {
+    my ($self, $dataset) = (shift,shift);
+    my $data = $dataset->parent_data;
+
+    my @all_data;
+    foreach ($self->operations) {
         my $this_data = Workflow::Operation::Data->create(
             operation => $_,
             dataset => $dataset,
-            input => {},
-            output => {},
+            is_done => 0
         );
-        if ($_ == $input_connector) {
+        $this_data->input({});
+        $this_data->output({});
+        if ($_ == $self->get_input_connector) {
             $this_data->output(
                 $data->input
             );
         }
         $this_data->set_input_links;
-        $this_data;
-    } $self->operations;
+        push @all_data, $this_data;
+    }
 
-    ## find operations that are ready right now
+    ## return operations that are ready right now
     ## these should be ones that have no inputs
+  print Data::Dumper->new([\@all_data])->Dump;
+ 
+    return $self->runq_from_opdata_list(@all_data);
+}
+
+sub get_deps_runq {
+    my ($self, $opdata) = @_;
+
+    my %uniq_deps = map {
+        my ($this_data) = Workflow::Operation::Data->get(
+            operation => $_,
+            dataset => $opdata->dataset
+        );
+        $_->name => $this_data
+    } $opdata->operation->dependent_operations;
+
+    return $self->runq_from_opdata_list(values %uniq_deps);
+}
+
+sub runq_from_opdata_list {
+    my $self = shift;
+
     my @runq = sort {
         $a->operation->name cmp $b->operation->name
     } grep {
-        $_->is_ready && !$_->is_done
-    } @all_data;
-
-    my $callback;
-    $callback = sub {
-        my ($opdata) = @_;
-
-#$self->status_message("just ran " . $opdata->operation->name);
-        my %uniq_deps = map {
-            my ($this_data) = Workflow::Operation::Data->get(
-                operation => $_,
-                dataset => $opdata->dataset
-            );
-            $_->name => $this_data
-        } $opdata->operation->dependent_operations;
-
-        my @incomplete_operations = grep {
-            !$_->is_done
-        } @all_data;
-
-#        my @not_done_names = map {
-#            $_->operation->name
-#        } @incomplete_operations;
-        
-#$self->status_message("still isnt done: " . join(',',@not_done_names));
-
-        if (@incomplete_operations) {
-            my @newq = sort { 
-                $a->operation->name cmp $b->operation->name
-            } grep {
-                my $this_data = $_;
-                $this_data->is_ready && 
-                !$this_data->is_done &&
-                !(scalar grep { $this_data->id eq $_->id } @runq)
-            } values %uniq_deps;
-
-#            my @newq_names = map {
-#                $_->operation->name
-#            } @newq; 
-
-#$self->status_message("want to run: " . join(',',@newq_names));
-            foreach my $this_data (@newq) {
-                $this_data->operation->Workflow::Operation::execute(
-                    operation_data => $this_data,
-                    output_cb => $callback
-                );
-            }        
-        } else {
-            my $output_data = Workflow::Operation::Data->get(
-                operation => $self->get_output_connector,
-                dataset => $opdata->dataset
-            );
-            
-            my $final_outputs = $output_data->input;
-            foreach my $output_name (%$final_outputs) {
-                if (UNIVERSAL::isa($final_outputs->{$output_name},'Workflow::Link')) {
-                    $final_outputs->{$output_name} = $final_outputs->{$output_name}->left_value($opdata->dataset);
-                }
-            }
-            $data->output($final_outputs);
-            $data->is_done(1);
-            
-            my $dataset = $output_data->dataset;
-            undef $output_data;
-            my @all_data = Workflow::Operation::Data->get(
-                dataset => $dataset
-            );
-            foreach my $d (@all_data) {
-                $d->delete;
-            }
-            $dataset->delete;
-            ## dont like messing in UR internals.
-#            delete $UR::Object::all_objects_loaded->{ref($data)}->{$data->{id}};
-            weaken($UR::Object::all_objects_loaded->{ref($data)}->{$data->{id}});
-
-            $params{output_cb}->($data);
-        }
-    };
-
-    foreach my $this_data (@runq) {
-        $this_data->operation->Workflow::Operation::execute(
-            operation_data => $this_data,
-            output_cb => $callback
-        );
-    }
-
-    return $data;
+        $_->is_ready &&
+        !$_->is_done &&
+        !$_->is_running
+    } @_;
+    
+    return @runq;
 }
 
 sub wait {

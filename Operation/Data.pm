@@ -12,8 +12,8 @@ class Workflow::Operation::Data {
         dataset => { is => 'Workflow::Operation::DataSet', id_by => 'workflow_operation_dataset_id' },
         output => { is => 'HASH' },
         input => { is => 'HASH' },
-        executor_heap => { is => 'HASH' },
         is_done => { },
+        is_running => { },
     ]
 };
 
@@ -66,10 +66,16 @@ sub is_ready {
     }
 }
 
-sub DESTROY {
+sub execute {
     my $self = shift;
-    warn "Workflow::Operation::Data::DESTROY\n";
-    $self->SUPER::DESTROY(@_);
+
+    $self->operation->Workflow::Operation::execute($self);
+}
+
+sub do_completion {
+    my $self = shift;
+    
+    $self->operation->workflow_model->operation_completed($self);
 }
 
 1;
