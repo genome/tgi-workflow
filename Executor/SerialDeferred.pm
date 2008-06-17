@@ -19,7 +19,7 @@ sub execute {
         $self->queue([]);
     }
 
-    push @{ $self->queue }, [ @params{'operation_data','output_cb','edited_input'} ];
+    push @{ $self->queue }, [ @params{'operation_data','edited_input'} ];
 
     return;
 }
@@ -29,7 +29,7 @@ sub wait {
 
     while (scalar @{ $self->queue } > 0) {
 
-        my ($opdata, $callback, $edited_input) = @{ shift @{ $self->queue } };
+        my ($opdata, $edited_input) = @{ shift @{ $self->queue } };
 
 #        $self->status_message('exec/' . $opdata->dataset->id . '/' . $opdata->operation->name);
         my $outputs = $opdata->operation->operation_type->execute(%{ $opdata->input }, %{ $edited_input });

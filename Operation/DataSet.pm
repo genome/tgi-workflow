@@ -10,6 +10,7 @@ class Workflow::Operation::DataSet {
         workflow_model => { is => 'Workflow::Model', id_by => 'workflow_model_id' },
         operation_datas => { is => 'Workflow::Operation::Data', is_many => 1 },
         parent_data => { is => 'Workflow::Operation::Data', id_by => 'parent_data_id' },
+        parent_data_wrapped => { is => 'Object::Destroyer', doc => 'Workflow::Operation::Data objected wrapped by Object::Destroyer' },
         output_cb => { is => 'CODE' },
     ]
 };

@@ -24,13 +24,12 @@ ok(do {
     $w->is_valid;
 },'validate');
 
-foreach my $i (1..1) {
+foreach my $i (1..10) {
 
     my $collector = sub {
         my $data = shift;
 
-        $data->delete;
-#        Dump($data);
+        # just let it leave scope
     };
 
     $w->execute(
@@ -48,8 +47,4 @@ foreach my $i (1..1) {
 my $size = total_size($UR::Object::all_objects_loaded->{'Workflow::Operation::Data'});
 
 ok($size <= $firstsize, 'no cache growth');
-
-print "Last thing happening\n";
-
-print "should have been destroyed by now\n";
 

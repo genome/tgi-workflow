@@ -27,7 +27,6 @@ sub execute {
 
     my $op = $params{operation};
     my $opdata = $params{operation_data};
-    my $callback = $params{output_cb};
 
     $opdone{$opdata->id} = 0;
     share($opdone{$opdata->id});
@@ -42,7 +41,7 @@ sub execute {
         return $outputs;
     });
 
-    $self->threads([@{ $self->threads }, [$thread,$opdata,$callback]]);
+    $self->threads([@{ $self->threads }, [$thread,$opdata]]);
 
     return;
 }
@@ -53,7 +52,7 @@ sub wait {
     while (1) {
         my @bucket = ();
         while (my $v = shift @{ $self->threads }) {
-            my ($thread,$opdata,$callback) = @{ $v };
+            my ($thread,$opdata) = @{ $v };
             unless ($opdone{$opdata->id}) {
                 push @bucket, $v;
                 next;
@@ -65,7 +64,7 @@ sub wait {
             $opdata->output({ %{ $opdata->output }, %{ $outputs } });
             $opdata->is_done(1);
 
-            $callback->($opdata);
+            $opdata->do_completion;
         }
         $self->threads(\@bucket);
         last if (@{ $self->threads } == 0);

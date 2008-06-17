@@ -7,6 +7,10 @@ use GraphViz;
 use XML::Simple;
 use File::Basename;
 
+use lib '/gscuser/eclark/lib';
+use Object::Destroyer;
+
+
 use Workflow ();
 
 class Workflow::Model {
@@ -514,6 +518,9 @@ sub _execute {
     );
     $dataset->output_cb($params{output_cb});
 
+    my $data_wrapped = Object::Destroyer->new($data, 'delete');
+    $dataset->parent_data_wrapped($data_wrapped);
+
     my @runq = $self->create_and_runq($dataset);
 
     # set them all running so when others look at whats running (during execute) its correct.
@@ -525,7 +532,7 @@ sub _execute {
         $this_data->execute;
     }
 
-    return $params{operation_data};
+    return $data_wrapped;
 }
 
 sub operation_completed {
@@ -548,8 +555,11 @@ sub operation_completed {
         }        
     } else {
         $dataset->do_completion;
-        $dataset->output_cb->($dataset->parent_data)
+        
+        my $data = $dataset->parent_data_wrapped;
+        $dataset->output_cb($data)
             if (defined $dataset->output_cb);
+
         $dataset->delete;
     }
 
