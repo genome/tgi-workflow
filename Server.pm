@@ -6,7 +6,7 @@ use lib '/gscuser/eclark/poe_install/lib/perl5/site_perl/5.8.7';
 
 use POE qw(Component::Server::TCP Filter::Reference);
 use Sys::Hostname;
-use Workflow;
+use Workflow ();
 
 # glueing lsf stuff right inside for now.
 

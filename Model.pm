@@ -6,9 +6,8 @@ use warnings;
 use GraphViz;
 use XML::Simple;
 use File::Basename;
-use Scalar::Util qw/weaken/;
 
-use Workflow;
+use Workflow ();
 
 class Workflow::Model {
     isa => 'Workflow::Operation',
@@ -581,7 +580,6 @@ sub create_and_runq {
 
     ## return operations that are ready right now
     ## these should be ones that have no inputs
-  print Data::Dumper->new([\@all_data])->Dump;
  
     return $self->runq_from_opdata_list(@all_data);
 }
