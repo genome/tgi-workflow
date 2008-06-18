@@ -1,11 +1,12 @@
-CREATE TABLE IF NOT EXISTS dd_bitmap_index (
+BEGIN TRANSACTION;
+CREATE TABLE dd_bitmap_index (
     data_source varchar NOT NULL,
     owner varchar,
     table_name varchar NOT NULL,
     bitmap_index_name varchar NOT NULL,
     PRIMARY KEY (data_source, owner, table_name, bitmap_index_name)
 );
-CREATE TABLE IF NOT EXISTS dd_fk_constraint (
+CREATE TABLE dd_fk_constraint (
     data_source varchar NOT NULL,
     owner varchar,
     r_owner varchar,
@@ -15,7 +16,7 @@ CREATE TABLE IF NOT EXISTS dd_fk_constraint (
     last_object_revision timestamp NOT NULL,
     PRIMARY KEY(data_source, owner, r_owner, table_name, r_table_name, fk_constraint_name)
 );
-CREATE TABLE IF NOT EXISTS dd_fk_constraint_column (
+CREATE TABLE dd_fk_constraint_column (
     fk_constraint_name varchar NOT NULL,
     data_source varchar NOT NULL,
     owner varchar NOT NULL,
@@ -26,7 +27,7 @@ CREATE TABLE IF NOT EXISTS dd_fk_constraint_column (
 
     PRIMARY KEY(data_source, owner, table_name, fk_constraint_name, column_name)
 );
-CREATE TABLE IF NOT EXISTS dd_pk_constraint_column (
+CREATE TABLE dd_pk_constraint_column (
     data_source varchar NOT NULL,
     owner varchar,
     table_name varchar NOT NULL,
@@ -34,7 +35,9 @@ CREATE TABLE IF NOT EXISTS dd_pk_constraint_column (
     rank integer NOT NULL,
     PRIMARY KEY (data_source,owner,table_name,column_name,rank)
 );
-CREATE TABLE IF NOT EXISTS dd_table (
+INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::InstanceSchema','','OPERATION_SAVED_INSTANCE','operation_instance_id',1);
+INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::InstanceSchema','','MODEL_SAVED_INSTANCE','model_instance_id',1);
+CREATE TABLE dd_table (
      data_source varchar NOT NULL,
      owner varchar,
      table_name varchar NOT NULL,
@@ -45,7 +48,9 @@ CREATE TABLE IF NOT EXISTS dd_table (
      remarks varchar,
      PRIMARY KEY(data_source, owner, table_name)
 );
-CREATE TABLE IF NOT EXISTS dd_table_column (
+INSERT INTO "dd_table" VALUES('Workflow::DataSource::InstanceSchema','','OPERATION_SAVED_INSTANCE','TABLE','entity',NULL,'2008-06-18 15:08:59',NULL);
+INSERT INTO "dd_table" VALUES('Workflow::DataSource::InstanceSchema','','MODEL_SAVED_INSTANCE','TABLE','entity',NULL,'2008-06-18 15:31:47',NULL);
+CREATE TABLE dd_table_column (
     data_source varchar NOT NULL,
     owner varchar,
     table_name varchar NOT NULL,
@@ -57,7 +62,17 @@ CREATE TABLE IF NOT EXISTS dd_table_column (
     remarks varchar,
     PRIMARY KEY(data_source, owner, table_name, column_name)
 );
-CREATE TABLE IF NOT EXISTS dd_unique_constraint_column (
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','OPERATION_SAVED_INSTANCE','IS_RUNNING','INTEGER',NULL,'Y','2008-06-18 15:08:59','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','OPERATION_SAVED_INSTANCE','INPUT','BLOB',NULL,'Y','2008-06-18 15:08:59','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','OPERATION_SAVED_INSTANCE','IS_DONE','INTEGER',NULL,'Y','2008-06-18 15:08:59','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','OPERATION_SAVED_INSTANCE','MODEL_INSTANCE_ID','INTEGER',NULL,'Y','2008-06-18 15:08:59','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','OPERATION_SAVED_INSTANCE','OPERATION','TEXT',NULL,'N','2008-06-18 15:08:59','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','OPERATION_SAVED_INSTANCE','OUTPUT','BLOB',NULL,'Y','2008-06-18 15:08:59','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','OPERATION_SAVED_INSTANCE','OPERATION_INSTANCE_ID','INTEGER',NULL,'N','2008-06-18 15:08:59','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','MODEL_SAVED_INSTANCE','MODEL','TEXT',NULL,'N','2008-06-18 15:31:47','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','MODEL_SAVED_INSTANCE','PARENT_INSTANCE_ID','INTEGER',NULL,'N','2008-06-18 15:31:47','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','MODEL_SAVED_INSTANCE','MODEL_INSTANCE_ID','INTEGER',NULL,'N','2008-06-18 15:31:47','');
+CREATE TABLE dd_unique_constraint_column (
     data_source varchar NOT NULL,
     owner varchar,
     table_name varchar NOT NULL,
@@ -65,3 +80,4 @@ CREATE TABLE IF NOT EXISTS dd_unique_constraint_column (
     column_name varchar NOT NULL,
     PRIMARY KEY (data_source,owner,table_name,constraint_name,column_name)
 );
+COMMIT;

@@ -556,7 +556,7 @@ sub operation_completed {
         $dataset->do_completion;
         
         my $data = $dataset->parent_instance_wrapped;
-        $dataset->output_cb->($data)
+        $dataset->output_cb->($data,$dataset)
             if (defined $dataset->output_cb);
 
         $dataset->delete;

@@ -17,6 +17,10 @@ class Workflow::Operation::Instance {
     ]
 };
 
+sub save_instance {
+    return Workflow::Operation::SavedInstance->create_from_instance(@_);
+}
+
 sub set_input_links {
     my $self = shift;
     

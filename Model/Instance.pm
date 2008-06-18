@@ -15,6 +15,10 @@ class Workflow::Model::Instance {
     ]
 };
 
+sub save_instance {
+    return Workflow::Model::SavedInstance->create_from_instance(@_);
+}
+
 sub incomplete_operation_instances {
     my $self = shift;
     
@@ -43,11 +47,17 @@ sub do_completion {
     my $data = $self->parent_instance;
     $data->output($final_outputs);
     $data->is_done(1);
+}
+
+sub delete {
+    my $self = shift;
     
     my @all_data = $self->operation_instances;
     foreach (@all_data) {
         $_->delete;
     }
+
+    return $self->SUPER::delete;
 }
 
 1;
