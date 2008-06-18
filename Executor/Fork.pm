@@ -26,7 +26,7 @@ sub execute {
     }
 
     my $op = $params{operation};
-    my $opdata = $params{operation_data};
+    my $opdata = $params{operation_instance};
 
     $opdone{$opdata->id} = 0;
     share($opdone{$opdata->id});

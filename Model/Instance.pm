@@ -1,24 +1,24 @@
 
-package Workflow::Operation::DataSet;
+package Workflow::Model::Instance;
 
 use strict;
 use warnings;
 
-class Workflow::Operation::DataSet {
+class Workflow::Model::Instance {
     is_transactional => 0,
     has => [
         workflow_model => { is => 'Workflow::Model', id_by => 'workflow_model_id' },
-        operation_datas => { is => 'Workflow::Operation::Data', is_many => 1 },
-        parent_data => { is => 'Workflow::Operation::Data', id_by => 'parent_data_id' },
-        parent_data_wrapped => { is => 'Object::Destroyer', doc => 'Workflow::Operation::Data objected wrapped by Object::Destroyer' },
+        operation_instances => { is => 'Workflow::Operation::Instance', is_many => 1 },
+        parent_instance => { is => 'Workflow::Operation::Instance', id_by => 'parent_instance_id' },
+        parent_instance_wrapped => { is => 'Object::Destroyer', doc => 'Workflow::Operation::Instance objected wrapped by Object::Destroyer' },
         output_cb => { is => 'CODE' },
     ]
 };
 
-sub incomplete_operation_data {
+sub incomplete_operation_instances {
     my $self = shift;
     
-    my @all_data = $self->operation_datas;
+    my @all_data = $self->operation_instances;
 
     return grep {
         !$_->is_done
@@ -28,9 +28,9 @@ sub incomplete_operation_data {
 sub do_completion {
     my $self = shift;
     
-    my $output_data = Workflow::Operation::Data->get(
+    my $output_data = Workflow::Operation::Instance->get(
         operation => $self->workflow_model->get_output_connector,
-        dataset => $self
+        model_instance => $self
     );
 
     my $final_outputs = $output_data->input;
@@ -40,11 +40,11 @@ sub do_completion {
         }
     }
 
-    my $data = $self->parent_data;
+    my $data = $self->parent_instance;
     $data->output($final_outputs);
     $data->is_done(1);
     
-    my @all_data = $self->operation_datas;
+    my @all_data = $self->operation_instances;
     foreach (@all_data) {
         $_->delete;
     }

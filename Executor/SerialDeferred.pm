@@ -19,7 +19,7 @@ sub execute {
         $self->queue([]);
     }
 
-    push @{ $self->queue }, [ @params{'operation_data','edited_input'} ];
+    push @{ $self->queue }, [ @params{'operation_instance','edited_input'} ];
 
     return;
 }

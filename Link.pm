@@ -68,9 +68,9 @@ sub right_data {
     my $self = shift;
     my $dataset = shift;
 
-    my $right_data = Workflow::Operation::Data->get(
+    my $right_data = Workflow::Operation::Instance->get(
         operation => $self->right_operation,
-        dataset => $dataset
+        model_instance => $dataset
     );
 
     return $right_data;
@@ -80,9 +80,9 @@ sub left_data {
     my $self = shift;
     my $dataset = shift;
 
-    my $left_data = Workflow::Operation::Data->get(
+    my $left_data = Workflow::Operation::Instance->get(
         operation => $self->left_operation,
-        dataset => $dataset
+        model_instance => $dataset
     );
 
     return $left_data;

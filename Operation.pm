@@ -79,7 +79,7 @@ sub execute {
     my %current_inputs = ();
     foreach my $input_name (keys %{ $data->input }) {
         if (UNIVERSAL::isa($data->input->{$input_name},'Workflow::Link')) {
-            $current_inputs{$input_name} = $data->input->{$input_name}->left_value($data->dataset);
+            $current_inputs{$input_name} = $data->input->{$input_name}->left_value($data->model_instance);
         }
     }
 
@@ -90,7 +90,7 @@ sub execute {
     }
     
     $executor->execute(
-        operation_data => $data,
+        operation_instance => $data,
         edited_input => \%current_inputs
     );
     

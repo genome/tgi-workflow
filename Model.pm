@@ -10,7 +10,6 @@ use File::Basename;
 use lib '/gscuser/eclark/lib';
 use Object::Destroyer;
 
-
 use Workflow ();
 
 class Workflow::Model {
@@ -451,7 +450,7 @@ sub execute {
         }
     }
 
-    my $data = Workflow::Operation::Data->create(
+    my $data = Workflow::Operation::Instance->create(
         operation => $self,
         input => $params{input} || {},
         output => {}
@@ -483,7 +482,7 @@ sub execute {
         };
 
         foreach my $value (@par_input) {
-            my $this_data = Workflow::Operation::Data->create(
+            my $this_data = Workflow::Operation::Instance->create(
                 operation => $self,
                 input => { %{ $params{input} || {} }, $parallel_by => $value },
                 output => {}
@@ -493,13 +492,13 @@ sub execute {
             $data_not_finished{$this_data->id} = $this_data;
             
             $self->_execute(
-                operation_data => $this_data,
+                operation_instance => $this_data,
                 output_cb => $callback,
             );
         }
     } else {
         $self->_execute(
-            operation_data => $data,
+            operation_instance => $data,
             output_cb => $params{output_cb}
         );
     }
@@ -511,15 +510,15 @@ sub _execute {
     my $self = shift;
     my %params = (@_);
 
-    my $data = $params{operation_data};
-    my $dataset = Workflow::Operation::DataSet->create(
+    my $data = $params{operation_instance};
+    my $dataset = Workflow::Model::Instance->create(
         workflow_model => $self,
-        parent_data => $data
+        parent_instance => $data
     );
     $dataset->output_cb($params{output_cb});
 
     my $data_wrapped = Object::Destroyer->new($data, 'delete');
-    $dataset->parent_data_wrapped($data_wrapped);
+    $dataset->parent_instance_wrapped($data_wrapped);
 
     my @runq = $self->create_and_runq($dataset);
 
@@ -537,11 +536,11 @@ sub _execute {
 
 sub operation_completed {
     my ($self, $opdata) = (shift,shift);
-    my $dataset = $opdata->dataset;
+    my $dataset = $opdata->model_instance;
 
     $opdata->is_running(0);
 
-    my @incomplete_operations = $dataset->incomplete_operation_data;
+    my @incomplete_operations = $dataset->incomplete_operation_instances;
 
     if (@incomplete_operations) {
         my @runq = $self->get_deps_runq($opdata);
@@ -556,8 +555,8 @@ sub operation_completed {
     } else {
         $dataset->do_completion;
         
-        my $data = $dataset->parent_data_wrapped;
-        $dataset->output_cb($data)
+        my $data = $dataset->parent_instance_wrapped;
+        $dataset->output_cb->($data)
             if (defined $dataset->output_cb);
 
         $dataset->delete;
@@ -568,13 +567,13 @@ sub operation_completed {
 
 sub create_and_runq {
     my ($self, $dataset) = (shift,shift);
-    my $data = $dataset->parent_data;
+    my $data = $dataset->parent_instance;
 
     my @all_data;
     foreach ($self->operations) {
-        my $this_data = Workflow::Operation::Data->create(
+        my $this_data = Workflow::Operation::Instance->create(
             operation => $_,
-            dataset => $dataset,
+            model_instance => $dataset,
             is_done => 0
         );
         $this_data->input({});
@@ -591,24 +590,24 @@ sub create_and_runq {
     ## return operations that are ready right now
     ## these should be ones that have no inputs
  
-    return $self->runq_from_opdata_list(@all_data);
+    return $self->runq_from_operation_instance_list(@all_data);
 }
 
 sub get_deps_runq {
     my ($self, $opdata) = @_;
 
     my %uniq_deps = map {
-        my ($this_data) = Workflow::Operation::Data->get(
+        my ($this_data) = Workflow::Operation::Instance->get(
             operation => $_,
-            dataset => $opdata->dataset
+            model_instance => $opdata->model_instance
         );
         $_->name => $this_data
     } $opdata->operation->dependent_operations;
 
-    return $self->runq_from_opdata_list(values %uniq_deps);
+    return $self->runq_from_operation_instance_list(values %uniq_deps);
 }
 
-sub runq_from_opdata_list {
+sub runq_from_operation_instance_list {
     my $self = shift;
 
     my @runq = sort {

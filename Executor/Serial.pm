@@ -12,7 +12,7 @@ sub execute {
     my $self = shift;
     my %params = @_;
 
-    my $opdata = $params{operation_data};
+    my $opdata = $params{operation_instance};
 
 #    $self->status_message('exec/' . $opdata->dataset->id . '/' . $op->name);
     my $outputs = $opdata->operation->operation_type->execute(%{ $opdata->input }, %{ $params{edited_input} });

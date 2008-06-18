@@ -19,7 +19,7 @@ sub execute {
     ## delegate back to the server
     
     $self->server->run_operation(
-        $params{operation_data},
+        $params{operation_instance},
         $params{edited_input}
     );
 
