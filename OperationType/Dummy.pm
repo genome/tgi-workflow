@@ -12,7 +12,7 @@ sub execute {
     my $self = shift;
     my %properties = @_;
 
-    1;
+    return {};
 }
 
 1;

@@ -39,8 +39,8 @@ sub do_completion {
 
     my $final_outputs = $output_data->input;
     foreach my $output_name (%$final_outputs) {
-        if (UNIVERSAL::isa($final_outputs->{$output_name},'Workflow::Link')) {
-            $final_outputs->{$output_name} = $final_outputs->{$output_name}->left_value($self);
+        if (UNIVERSAL::isa($final_outputs->{$output_name},'Workflow::Link::Instance')) {
+            $final_outputs->{$output_name} = $final_outputs->{$output_name}->left_value;
         }
     }
 

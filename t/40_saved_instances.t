@@ -51,3 +51,4 @@ $w->wait;
 
 #print Data::Dumper->new([$saved, $normal])->Dump;
 
+ok(UR::Context->commit,'commit');

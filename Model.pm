@@ -16,7 +16,7 @@ class Workflow::Model {
     isa => 'Workflow::Operation',
     is_transactional => 0,
     has => [
-        operations => { is => 'Workflow::Operation', is_many => 1 },
+        operations => { is => 'Workflow::Operation', is_many => 1, reverse_id_by => 'workflow_model' },
         links => { is => 'Workflow::Link', is_many => 1 },
         executor => { is => 'Workflow::Executor', id_by => 'workflow_executor_id' },
         is_valid => { },
@@ -455,6 +455,7 @@ sub execute {
         input => $params{input} || {},
         output => {}
     );
+    $data = Object::Destroyer->new($data, 'delete');
  
     if (my $parallel_by = $self->parallel_by && ref($data->input->{$self->parallel_by}) eq 'ARRAY') {
         my %data_not_finished = ();
@@ -516,9 +517,7 @@ sub _execute {
         parent_instance => $data
     );
     $dataset->output_cb($params{output_cb});
-
-    my $data_wrapped = Object::Destroyer->new($data, 'delete');
-    $dataset->parent_instance_wrapped($data_wrapped);
+    $dataset->parent_instance_wrapped($data);
 
     my @runq = $self->create_and_runq($dataset);
 
@@ -531,7 +530,7 @@ sub _execute {
         $this_data->execute;
     }
 
-    return $data_wrapped;
+    return $data;
 }
 
 sub operation_completed {
@@ -583,8 +582,10 @@ sub create_and_runq {
                 $data->input
             );
         }
-        $this_data->set_input_links;
         push @all_data, $this_data;
+    }
+    foreach (@all_data) {
+        $_->set_input_links;
     }
 
     ## return operations that are ready right now

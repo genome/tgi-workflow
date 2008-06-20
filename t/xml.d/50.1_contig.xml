@@ -53,7 +53,7 @@
     </operationtype>
   </operation>
   <operation name="cat seq feature">
-    <operationtype typeClass="Workflow::OperationType::Dummy">
+    <operationtype typeClass="Workflow::OperationType::Converge">
       <inputproperty>glimmer3 feature</inputproperty>
       <inputproperty>genemark feature</inputproperty>
       <inputproperty>trnascan feature</inputproperty>

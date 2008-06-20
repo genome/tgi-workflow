@@ -7,8 +7,8 @@ use warnings;
 class Workflow::OperationType {
     is_abstract => 1,
     has => [
-        input_properties => { doc => 'list of input properties' },
-        output_properties => { doc => 'list of output properties' },
+        input_properties => { is => 'ARRAY', doc => 'list of input properties' },
+        output_properties => { is => 'ARRAY', doc => 'list of output properties' },
     ]
 };
 

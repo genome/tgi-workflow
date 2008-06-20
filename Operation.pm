@@ -8,7 +8,7 @@ class Workflow::Operation {
     is_transactional => 0,
     has => [
         name => { is => 'Text' },
-        workflow_model => { is => 'Workflow::Model', id_by => 'workflow_model_id' },
+        workflow_model => { is => 'UR::Object', id_by => 'workflow_model_id' },
         operation_type => { is => 'Workflow::OperationType', id_by => 'workflow_operationtype_id' },
     ]
 };
@@ -78,8 +78,8 @@ sub execute {
     ## rewrite inputs
     my %current_inputs = ();
     foreach my $input_name (keys %{ $data->input }) {
-        if (UNIVERSAL::isa($data->input->{$input_name},'Workflow::Link')) {
-            $current_inputs{$input_name} = $data->input->{$input_name}->left_value($data->model_instance);
+        if (UNIVERSAL::isa($data->input->{$input_name},'Workflow::Link::Instance')) {
+            $current_inputs{$input_name} = $data->input->{$input_name}->left_value;
         }
     }
 

@@ -23,17 +23,31 @@ sub save_instance {
 
 sub set_input_links {
     my $self = shift;
-    
+
     my @links = Workflow::Link->get(
         right_operation => $self->operation,
     );
+
+    my %linkage = ();
     
     foreach my $link (@links) {
-        $self->input({
-            %{ $self->input },
-            $link->right_property => $link
-        }); 
+        my ($opi) = $self->model_instance->operation_instances(
+            operation => $link->left_operation
+        );
+        next unless $opi;
+        
+        my $linki = Workflow::Link::Instance->create(
+            operation_instance => $opi,
+            property => $link->left_property
+        );
+        
+        $linkage{ $link->right_property } = $linki;
     }
+    
+    $self->input({
+        %{ $self->input },
+        %linkage
+    }); 
 }
 
 sub is_ready {
@@ -48,8 +62,8 @@ sub is_ready {
     my @unfinished_inputs = ();
     foreach my $input_name (@required_inputs) {
         if (exists $current_inputs{$input_name} && defined $current_inputs{$input_name}) {
-            if (UNIVERSAL::isa($current_inputs{$input_name},'Workflow::Link')) {
-                unless ($current_inputs{$input_name}->left_data($self->model_instance)->is_done && $current_inputs{$input_name}->left_value($self->model_instance)) {
+            if (UNIVERSAL::isa($current_inputs{$input_name},'Workflow::Link::Instance')) {
+                unless ($current_inputs{$input_name}->operation_instance->is_done && defined $current_inputs{$input_name}->left_value) {
                     push @unfinished_inputs, $input_name;
                 }
             }
@@ -67,6 +81,8 @@ sub is_ready {
 
 sub execute {
     my $self = shift;
+
+#warn "exec/" . $self->id . "/" . $self->operation->name . "\n";
 
     $self->operation->Workflow::Operation::execute($self);
 }

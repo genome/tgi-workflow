@@ -33,4 +33,4 @@ ok($normal, 'loaded saved model');
 ok(@opi, 'saved model has operation instances');
 ok($parent, 'saved model has parent');
 
-#print Data::Dumper->new([$saved, $normal, $parent, \@opi])->Dump;
+print Data::Dumper->new([$saved, $normal, $parent, \@opi],['saved','normal','parent','operation_instances'])->Dump;

@@ -12,12 +12,20 @@ sub execute {
     my $self = shift;
     my %properties = @_;
 
+    $DB::single=1;
+
     my $workflow_model = Workflow::Model->get(
         operation_type => $self
     );
 
-    return $workflow_model->execute(%properties);
- 
+    my $instance = $workflow_model->execute(
+        input => \%properties
+    );
+    $workflow_model->wait;
+    
+    my $output = $instance->output;
+    
+    return $output;
 }
 
 1;
