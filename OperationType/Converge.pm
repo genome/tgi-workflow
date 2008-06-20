@@ -16,6 +16,7 @@ sub create {
     my %args = @_;
 
     my $self = $class->SUPER::create(%args);
+
     my $serial_executor = Workflow::Executor::Serial->create;
     $self->executor($serial_executor);
 
@@ -38,7 +39,8 @@ sub execute {
     my ($output_name) = @{ $self->output_properties };
 
     return {
-        $output_name => $output
+        $output_name => $output,
+        result => 1
     };
 }
 

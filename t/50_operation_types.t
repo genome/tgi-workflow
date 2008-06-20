@@ -63,7 +63,7 @@ foreach my $operationtype (@operationtypes) {
             ),'execute ' . $operationtype);
 
             is_deeply($out,{
-                bzz => [qw{a b c d e f 1 2 3 4 5 6 abcdef}]
+                bzz => [qw{a b c d e f 1 2 3 4 5 6 abcdef}], result => 1
             },'check output ' . $operationtype);
         }
         case 'Dummy' {

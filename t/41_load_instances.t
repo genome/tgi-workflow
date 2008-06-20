@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 6;
+use Test::More tests => 9;
 use Devel::Size qw(size total_size);
 use Workflow;
 
@@ -33,4 +33,4 @@ ok($normal, 'loaded saved model');
 ok(@opi, 'saved model has operation instances');
 ok($parent, 'saved model has parent');
 
-print Data::Dumper->new([$saved, $normal, $parent, \@opi],['saved','normal','parent','operation_instances'])->Dump;
+#print Data::Dumper->new([$saved, $normal, $parent, \@opi],['saved','normal','parent','operation_instances'])->Dump;

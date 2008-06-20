@@ -25,7 +25,7 @@ sub create_from_xml_simple_structure {
             $self->input_properties($struct->{inputproperty});
         }
         unless ($self->output_properties) {
-            $self->output_properties($struct->{outputproperty});
+            $self->output_properties([@{$struct->{outputproperty}},'result']);
         }
     } else {
         $self = $my_class->create(
