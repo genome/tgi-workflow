@@ -8,12 +8,12 @@ use Data::Dumper;
 
 my $w = Workflow::Model->create_from_xml($ARGV[0] || 'xml.d/00_basic.xml');
 
-my @foo = qw/a/;
+my @foo = qw/ab cd ef/;
 
 my @pipeline_inputs = map {
     my %hash = (
         'model input string' => $_,
-        'sleep time' => 15,
+        'sleep time' => 1,
     );
     \%hash;
 } @foo;

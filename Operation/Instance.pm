@@ -61,7 +61,10 @@ sub is_ready {
 
     my @unfinished_inputs = ();
     foreach my $input_name (@required_inputs) {
-        if (exists $current_inputs{$input_name} && defined $current_inputs{$input_name}) {
+        if (exists $current_inputs{$input_name} && 
+            defined $current_inputs{$input_name} ||
+            ($self->operation->operation_type->can('default_input') && 
+            exists $self->operation->operation_type->default_input->{$input_name})) {
             if (UNIVERSAL::isa($current_inputs{$input_name},'Workflow::Link::Instance')) {
                 unless ($current_inputs{$input_name}->operation_instance->is_done && defined $current_inputs{$input_name}->left_value) {
                     push @unfinished_inputs, $input_name;

@@ -1,0 +1,9 @@
+[% subject %]
+
+Workflow complete.
+
+fruit: [% fruit %]
+vegetable: [% vegetable %]
+nut: [% nut %]
+
+

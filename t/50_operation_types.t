@@ -3,12 +3,12 @@
 use strict;
 use warnings;
 
-use Test::More tests => 27;
+use Test::More tests => 31;
 use Switch;
 
 my @operationtypes = qw{
     Block Command Converge Dummy
-    Model ModelInput ModelOutput
+    Mail Model ModelInput ModelOutput
 };
 
 require_ok('Workflow');
@@ -77,6 +77,25 @@ foreach my $operationtype (@operationtypes) {
             ok($out = $o->execute(),'execute ' . $operationtype);
             
             is_deeply($out,{},'check output ' . $operationtype);
+        }
+        case 'Mail' {
+            my $dir = -d 't/template.d' ? 't/template.d' : 'template.d';
+            my $o;
+            ok($o = $operationtype_class->create(
+                input_properties => [qw/fruit vegetable nut/],
+            ),'create ' . $operationtype);
+
+            my $out;
+            ok($out = $o->execute(
+                template_file => $dir . '/50_operation_types.txt',
+                email_address => $ENV{USERNAME} . '@genome.wustl.edu',
+                subject => 'workflow unit test',
+                fruit => 'Apple',
+                vegetable => 'Tomato',
+                nut => 'Pecan' 
+            ),'execute ' . $operationtype);
+
+            is_deeply($out,{result => 1},'check output ' . $operationtype);
         }
         case 'Model' {
             my $dir = -d 't/xml.d' ? 't/xml.d' : 'xml.d';

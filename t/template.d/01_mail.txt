@@ -1,0 +1,5 @@
+Test workflow complete.
+
+Echo string: [% echo_string %]
+Today: [% today %]
+
