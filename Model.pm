@@ -457,7 +457,7 @@ sub execute {
     );
     $data = Object::Destroyer->new($data, 'delete');
  
-    if (my $parallel_by = $self->parallel_by && ref($data->input->{$self->parallel_by}) eq 'ARRAY') {
+    if ((my $parallel_by = $self->parallel_by) && ref($data->input->{$self->parallel_by}) eq 'ARRAY') {
         my %data_not_finished = ();
         my @all_data = ();
         my @par_input= @{ $data->input->{$parallel_by} };
