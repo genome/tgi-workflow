@@ -20,7 +20,9 @@ sub create_from_xml_simple_structure {
     my $self;
     my $class = delete $struct->{typeClass};
     if (defined $class && $my_class ne $class && $class->can('create_from_xml_simple_structure')) {
+
         $self = $class->create_from_xml_simple_structure($struct);
+
         unless ($self->input_properties) {
             $self->input_properties($struct->{inputproperty});
         }

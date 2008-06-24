@@ -6,7 +6,7 @@
   <link fromOperation="input connector" fromProperty="fasta file" toOperation="rfamscan" toProperty="fasta_file" />
   <link fromOperation="input connector" fromProperty="glimmer3 model" toOperation="glimmer3" toProperty="model_file" />
   <link fromOperation="input connector" fromProperty="glimmer3 pwm" toOperation="glimmer3" toProperty="pwm_file" />
-  <link fromOperation="input connector" fromProperty="gc content" toOperation="genemark" toProperty="gc_content" />
+  <link fromOperation="input connector" fromProperty="gc content" toOperation="genemark" toProperty="gc_percent" />
   <link fromOperation="glimmer3" fromProperty="bio_seq_feature" toOperation="cat seq feature" toProperty="glimmer3 feature" />
   <link fromOperation="genemark" fromProperty="bio_seq_feature" toOperation="cat seq feature" toProperty="genemark feature" />
   <link fromOperation="trnascan" fromProperty="bio_seq_feature" toOperation="cat seq feature" toProperty="trnascan feature" />
@@ -15,42 +15,19 @@
   <link fromOperation="cat seq feature" fromProperty="all features" toOperation="output connector" toProperty="bio seq features" />
   <link fromOperation="cat seq feature" fromProperty="result" toOperation="output connector" toProperty="result" />
   <operation name="glimmer3">
-    <operationtype typeClass="Workflow::OperationType::Dummy">
-      <inputproperty>fasta_file</inputproperty>
-      <inputproperty>model_file</inputproperty>
-      <inputproperty>pwm_file</inputproperty>
-      <outputproperty>bio_seq_feature</outputproperty>
-      <outputproperty>result</outputproperty>
-    </operationtype>
+    <operationtype commandClass="MGAP::Command::GenePredictor::Glimmer3" typeClass="Workflow::OperationType::Command" />
   </operation>
   <operation name="genemark">
-    <operationtype typeClass="Workflow::OperationType::Dummy">
-      <inputproperty>fasta_file</inputproperty>
-      <inputproperty>gc_content</inputproperty>
-      <outputproperty>bio_seq_feature</outputproperty>
-      <outputproperty>result</outputproperty>
-    </operationtype>
+    <operationtype commandClass="MGAP::Command::GenePredictor::Genemark" typeClass="Workflow::OperationType::Command" />
   </operation>
   <operation name="trnascan">
-    <operationtype typeClass="Workflow::OperationType::Dummy">
-      <inputproperty>fasta_file</inputproperty>
-      <outputproperty>bio_seq_feature</outputproperty>
-      <outputproperty>result</outputproperty>
-    </operationtype>
+    <operationtype commandClass="MGAP::Command::GenePredictor::tRNAscan" typeClass="Workflow::OperationType::Command" />
   </operation>
   <operation name="rnamer">
-    <operationtype typeClass="Workflow::OperationType::Dummy">
-      <inputproperty>fasta_file</inputproperty>
-      <outputproperty>bio_seq_feature</outputproperty>
-      <outputproperty>result</outputproperty>
-    </operationtype>
+    <operationtype commandClass="MGAP::Command::GenePredictor::RNAmmer" typeClass="Workflow::OperationType::Command" />
   </operation>
   <operation name="rfamscan">
-    <operationtype typeClass="Workflow::OperationType::Dummy">
-      <inputproperty>fasta_file</inputproperty>
-      <outputproperty>bio_seq_feature</outputproperty>
-      <outputproperty>result</outputproperty>
-    </operationtype>
+    <operationtype commandClass="MGAP::Command::GenePredictor::RfamScan" typeClass="Workflow::OperationType::Command" />
   </operation>
   <operation name="cat seq feature">
     <operationtype typeClass="Workflow::OperationType::Converge">

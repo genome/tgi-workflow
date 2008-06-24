@@ -478,7 +478,8 @@ sub execute {
                     }
                 }
                 $data->output(\%newoutput);
-                return $params{output_cb}->($data);
+                return $params{output_cb}->($data) if ($params{output_cb});
+                return;
             }
         };
 
@@ -498,9 +499,14 @@ sub execute {
             );
         }
     } else {
+        my %newparam = ();
+        if ($params{output_cb}) {
+            $newparam{output_cb} = $params{output_cb};
+        }
+    
         $self->_execute(
             operation_instance => $data,
-            output_cb => $params{output_cb}
+            %newparam
         );
     }
     

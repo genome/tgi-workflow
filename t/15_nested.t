@@ -22,27 +22,18 @@ ok(do {
 
 $w->parallel_by('model input string');
 
-my $output;
-my $collector = sub {
-    my $data = shift;
-
-    $output=$data->output;
-    # just let it leave scope
-};
-
-$w->execute(
+my $data = $w->execute(
     input => {
         'model input string' => [
             qw/ab cd ef gh jk/
         ],
         'sleep time' => 1
-    },
-    output_cb => $collector
+    }
 );
 
 $w->wait;
 
-
+my $output = $data->output;
 is_deeply(
     $output,
     {

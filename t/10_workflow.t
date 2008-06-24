@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 25;
+use Test::More tests => 28;
 use Workflow;
 
 require_ok('Workflow::Model');
@@ -137,6 +137,27 @@ is_deeply(
     $output,
     {
         'model output string' => 'abracadabra321',
+        'today' => UR::Time->today,
+        'result' => 1
+    },
+    'check output'
+);
+
+my $data2;
+ok($data2 = $w->execute(
+    input => {
+        'model input string' => 'abracadabra5321',
+        'sleep time' => 1
+    }
+),'execute workflow');
+
+ok($w->wait,'wait for completion');
+
+my $output2 = $data2->output;
+is_deeply(
+    $output2,
+    {
+        'model output string' => 'abracadabra5321',
         'today' => UR::Time->today,
         'result' => 1
     },
