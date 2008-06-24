@@ -31,13 +31,16 @@ sub wait {
 
         my ($opdata, $edited_input) = @{ shift @{ $self->queue } };
 
-#        $self->status_message('exec/' . $opdata->dataset->id . '/' . $opdata->operation->name);
+        $self->status_message('exec/' . $opdata->model_instance->id . '/' . $opdata->operation->name);
         my $outputs = $opdata->operation->operation_type->execute(%{ $opdata->input }, %{ $edited_input });
 
         $opdata->output({ %{ $opdata->output }, %{ $outputs } });
         $opdata->is_done(1);
 
         $opdata->do_completion;
+
+        $DB::single=1;
+
     }
     
 }

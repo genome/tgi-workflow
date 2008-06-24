@@ -12,8 +12,6 @@ sub execute {
     my $self = shift;
     my %properties = @_;
 
-    $DB::single=1;
-
     my $workflow_model = Workflow::Model->get(
         operation_type => $self
     );

@@ -85,9 +85,11 @@ sub execute {
 
     my $command_name = $self->command_class_name;
 
-    my $command = $command_name->create(
-        %properties
-    );
+    my $command = $command_name->create();
+
+    while (my ($k,$v) = each(%properties)) {
+        $command->$k($v);
+    }
 
     my $retvalue = $command->execute;
 

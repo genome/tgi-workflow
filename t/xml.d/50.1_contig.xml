@@ -1,5 +1,5 @@
 <?xml version='1.0' standalone='yes'?>
-<workflow name="contig predict genes" parallelBy="fasta file">
+<workflow name="contig predict genes" parallelBy="fasta file" executor="Workflow::Executor::SerialDeferred">
   <link fromOperation="input connector" fromProperty="fasta file" toOperation="glimmer3" toProperty="fasta_file" />
   <link fromOperation="input connector" fromProperty="fasta file" toOperation="genemark" toProperty="fasta_file" />
   <link fromOperation="input connector" fromProperty="fasta file" toOperation="trnascan" toProperty="fasta_file" />

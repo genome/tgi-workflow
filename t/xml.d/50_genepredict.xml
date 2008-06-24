@@ -1,5 +1,5 @@
 <?xml version='1.0' standalone='yes'?>
-<workflow name="gene prediction pipeline" executor="Workflow::Executor::Serial">
+<workflow name="gene prediction pipeline" executor="Workflow::Executor::SerialDeferred">
   <link fromOperation="input connector" fromProperty="seq set id" toOperation="get sequence fasta files" toProperty="seq_set_id" />
   <link fromOperation="input connector" fromProperty="seq set id" toOperation="wait delete" toProperty="seq_set_id" />
   <link fromOperation="input connector" fromProperty="seq set id" toOperation="database upload" toProperty="seq_set_id" />
