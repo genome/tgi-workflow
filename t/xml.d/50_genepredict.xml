@@ -2,6 +2,7 @@
 <workflow name="gene prediction pipeline" executor="Workflow::Executor::Serial">
   <link fromOperation="input connector" fromProperty="seq set id" toOperation="get sequence fasta files" toProperty="seq_set_id" />
   <link fromOperation="input connector" fromProperty="seq set id" toOperation="wait delete" toProperty="seq_set_id" />
+  <link fromOperation="input connector" fromProperty="seq set id" toOperation="database upload" toProperty="seq_set_id" />
   <link fromOperation="input connector" fromProperty="dev flag" toOperation="get sequence fasta files" toProperty="dev" />
   <link fromOperation="input connector" fromProperty="dev flag" toOperation="database upload" toProperty="dev" />
   <link fromOperation="get sequence fasta files" fromProperty="fasta_files" toOperation="build glimmer3 data" toProperty="fasta_files" />
