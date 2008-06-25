@@ -72,8 +72,10 @@ sub execute {
     my $self = shift;
     my %inputs = @_;
 
-    while (my ($k,$v) = each(%{ $self->default_input })) {
-        $inputs{$k} ||= $v;
+    if ($self->default_input) {
+        while (my ($k,$v) = each(%{ $self->default_input })) {
+            $inputs{$k} ||= $v;
+        }
     }
     
     my $template_file = delete $inputs{'template_file'};

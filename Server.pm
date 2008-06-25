@@ -7,15 +7,6 @@ use POE qw(Component::Server::TCP Filter::Reference);
 use Sys::Hostname;
 use Workflow ();
 
-# glueing lsf stuff right inside for now.
-
-my $server_host = hostname;
-my $server_port = 15243;
-
-my $client_start_cmd = 'bsub -q short -N -u "eclark@genome.wustl.edu" ' . 
-    'perl -e \'BEGIN { delete $ENV{PERL_USED_ABOVE}; } use above "Workflow"; use Workflow::Client; Workflow::Client->run_worker("' .
-    $server_host . '",' . $server_port . ')\''; 
-
 our $server_singleton;
 
 sub new {
@@ -38,6 +29,28 @@ sub create {
     my $class = shift;
     my $self = $class->new();
     $server_singleton = $self;
+
+    my %args = @_;
+
+    my $namespace = $args{namespace} || 'Workflow';
+    my @inc;
+    if ($args{inc}) {
+        @inc = @{ $args{inc} };
+    } else {
+        @inc = ();
+    }
+
+    my $server_host = hostname;
+    my $server_port = 15243;
+
+    my $incstr = '';
+    foreach my $inc (@inc) {
+        $incstr .= ' use lib "' . $inc .'";';
+    }
+    my $client_start_cmd = 'bsub -q short -N -u "eclark@genome.wustl.edu" ' . 
+        'perl -e \'BEGIN { delete $ENV{PERL_USED_ABOVE}; }' . $incstr . ' use above "' . $namespace . '"; use Workflow::Client; Workflow::Client->run_worker("' .
+        $server_host . '",' . $server_port . ')\''; 
+
 
     my $session = POE::Component::Server::TCP->new(
         Alias => 'workflow server',
@@ -75,7 +88,12 @@ sub create {
     $self->{pending_ops} = [];
     
     $self->{session} = $session;
-    
+   
+    $self->{namespace} = $namespace;
+    $self->{server_host} = $server_host;
+    $self->{server_port} = $server_port;
+    $self->{client_start_cmd} = $client_start_cmd;
+
     return $self;
 }
 
@@ -100,15 +118,16 @@ sub run_operation {
     
     push @{ $self->{pending_ops} }, [$opdata, $edited_input];
     
-    unless ($opdata->operation->operation_type->can('executor') && defined $opdata->operation->operation_type->executor) {
+#    unless ($opdata->operation->operation_type->can('executor') && defined $opdata->operation->operation_type->executor) {
 
         $opdata->operation->status_message('starting a blade job for: ' . $opdata->operation->name);
         $self->start_new_worker;  ## start a blade job if it doesnt have an exception
-    }     
+#    }     
 }
 
 sub start_new_worker {
-    system($client_start_cmd);
+    my $self = shift;
+    system($self->{client_start_cmd});
 }
 
 ### poe single connection events
@@ -263,11 +282,11 @@ sub execute_workflow {
     
     $workflow->executor($executor);
     
-    my $cb = sub {
-        my ($data) = @_;
-        warn "callback fired.";
-        warn Data::Dumper->new([$data])->Dump;
-    };
+#    my $cb = sub {
+#        my ($data) = @_;
+#        warn "callback fired.";
+#        warn Data::Dumper->new([$data])->Dump;
+#    };
 
     my $cb = $s->postback('finish_workflow',$workflow_id);
 

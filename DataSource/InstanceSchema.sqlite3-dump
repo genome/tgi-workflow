@@ -1,9 +1,4 @@
 BEGIN TRANSACTION;
-DELETE FROM sqlite_sequence;
-INSERT INTO "sqlite_sequence" VALUES('URMETA_OPERATION_SAVED_INSTANCE_operation_instance_id_seq',47);
-INSERT INTO "sqlite_sequence" VALUES('URMETA_MODEL_SAVED_INSTANCE_model_instance_id_seq',8);
-INSERT INTO "sqlite_sequence" VALUES('model_saved_instance',8);
-INSERT INTO "sqlite_sequence" VALUES('operation_saved_instance',47);
 CREATE TABLE operation_saved_instance (
     operation_instance_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     model_instance_id INTEGER,
@@ -27,6 +22,9 @@ INSERT INTO "operation_saved_instance" VALUES(44,8,'input connector','1234
 INSERT INTO "operation_saved_instance" VALUES(45,8,'time','1234','1234',1,0);
 INSERT INTO "operation_saved_instance" VALUES(46,8,'sleep','1234','1234',1,0);
 INSERT INTO "operation_saved_instance" VALUES(47,8,'wait for sleep and echo','1234','1234',1,0);
+DELETE FROM sqlite_sequence;
+INSERT INTO "sqlite_sequence" VALUES('operation_saved_instance',47);
+INSERT INTO "sqlite_sequence" VALUES('model_saved_instance',8);
 CREATE TABLE model_saved_instance (
     model_instance_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     parent_instance_id INTEGER NOT NULL,

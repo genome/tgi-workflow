@@ -27,9 +27,12 @@ ok(do{
 ok(@files,'finding XX_yyyy.xml files');
 
 foreach my $file (sort @files) {
-    ok( do {
-        my $w = Workflow::Model->create_from_xml($dir . '/' . $file);
-        $w->validate;
-        ($file =~ /_invalid/) ? !$w->is_valid : $w->is_valid;
+    ok(do {
+        eval {
+            my $w = Workflow::Model->create_from_xml($dir . '/' . $file);
+            $w->validate;
+            ($file =~ /_invalid/) ? !$w->is_valid : $w->is_valid;
+        };
+        $@ ? 0 : 1;
     },'load and validate ' . $file);
 }
