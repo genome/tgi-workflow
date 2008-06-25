@@ -6,8 +6,6 @@ use warnings;
 use GraphViz;
 use XML::Simple;
 use File::Basename;
-
-use lib '/gscuser/eclark/lib';
 use Object::Destroyer;
 
 use Workflow ();
