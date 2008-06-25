@@ -208,7 +208,7 @@ sub try_to_execute {
         my ($opdata,$edited_input) = @$exec_args;
 
         my $op = $opdata->operation;
-        $op->status_message('exec/' . $opdata->dataset->id . '/' . $op->name);
+        $op->status_message('exec/' . $opdata->model_instance->id . '/' . $op->name);
         $k->yield(
             'send_operation', $op, $opdata, $edited_input, sub { $opdata->do_completion; }
         );
