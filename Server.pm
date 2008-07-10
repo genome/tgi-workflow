@@ -47,10 +47,11 @@ sub create {
     foreach my $inc (@inc) {
         $incstr .= ' use lib "' . $inc .'";';
     }
-    my $client_start_cmd = 'bsub -q short -N -u "eclark@genome.wustl.edu" ' . 
+    my $client_start_cmd = 'bsub -q long -N -u "eclark@genome.wustl.edu" ' . 
         'perl -e \'BEGIN { delete $ENV{PERL_USED_ABOVE}; }' . $incstr . ' use above "' . $namespace . '"; use Workflow::Client; Workflow::Client->run_worker("' .
         $server_host . '",' . $server_port . ')\''; 
 
+    $Storable::forgive_me = 1;
 
     my $session = POE::Component::Server::TCP->new(
         Alias => 'workflow server',

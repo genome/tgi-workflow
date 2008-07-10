@@ -629,8 +629,6 @@ sub runq_from_operation_instance_list {
 sub wait {
     my $self = shift;
     
-    $DB::single=1;
-    
     $self->executor->wait($self);
 }
 

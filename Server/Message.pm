@@ -12,4 +12,17 @@ class Workflow::Server::Message {
     ]
 };
 
+sub create {
+    my $class = shift;
+    my %args = @_;
+    
+    my $self = $class->SUPER::create;
+    
+    while (my ($k,$v) = each(%args)) {
+        $self->$k($v);
+    }
+
+    return $self;
+}
+
 1;

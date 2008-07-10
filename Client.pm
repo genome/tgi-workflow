@@ -7,6 +7,8 @@ use POE qw(Component::Client::TCP Filter::Reference);
 
 sub new {
     my $class = shift;
+
+    $Storable::forgive_me = 1;
     
     return bless({},$class);
 }
