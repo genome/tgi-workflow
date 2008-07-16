@@ -164,8 +164,16 @@ sub test_response {
 }
 
 sub execute {
-    my ($postback, $optype) = @_[ARG0, ARG1];
-    my %inputs = (@_[ARG2..$#_]);
+    my ($postback, $uselist, $optype) = @_[ARG0, ARG1, ARG2];
+    
+    foreach my $use (@$uselist) {
+        eval "use $use;";
+        if ($@) {
+            warn $@;
+        }
+    }
+    
+    my %inputs = (@_[ARG3..$#_]);
 
     my $outputs = $optype->execute(%inputs);
     

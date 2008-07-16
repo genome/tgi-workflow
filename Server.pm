@@ -119,11 +119,11 @@ sub run_operation {
     
     push @{ $self->{pending_ops} }, [$opdata, $edited_input];
     
-#    unless ($opdata->operation->operation_type->can('executor') && defined $opdata->operation->operation_type->executor) {
+    unless ($opdata->operation->operation_type->can('executor') && defined $opdata->operation->operation_type->executor) {
 
         $opdata->operation->status_message('starting a blade job for: ' . $opdata->operation->name);
         $self->start_new_worker;  ## start a blade job if it doesnt have an exception
-#    }     
+    }
 }
 
 sub start_new_worker {
@@ -324,11 +324,23 @@ sub finish_workflow {
 sub send_operation {
     my ($self, $op, $opdata, $edited, $callback, $h, $s) = @_[OBJECT, ARG0, ARG1, ARG2, ARG3, HEAP, SESSION];
 
+#
+#   build a list of modules to use here and send them
+
+    my @list = ();
+    foreach my $op ($op->workflow_model->operations) {
+        if ($op->operation_type->isa('Workflow::OperationType::Command')) {
+            my $command_class = $op->operation_type->command_class_name;
+            
+            push @list, $command_class;
+        }
+    }
+
     my $message = Workflow::Server::Message->create(
         type => 'command',
         heap => {
             command => 'execute',
-            args => [ $op->operation_type, %{ $opdata->input }, %{ $edited } ]
+            args => [ \@list, $op->operation_type, %{ $opdata->input }, %{ $edited } ]
         }
     );
 
