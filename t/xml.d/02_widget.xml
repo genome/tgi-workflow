@@ -1,0 +1,26 @@
+<?xml version='1.0' standalone='yes'?>
+<workflow name="Example Workflow" executor="Workflow::Executor::SerialDeferred">
+  <link fromOperation="input connector" fromProperty="color" toOperation="maker" toProperty="color" />
+  <link fromOperation="input connector" fromProperty="size" toOperation="maker" toProperty="size" />
+  <link fromOperation="input connector" fromProperty="shape" toOperation="maker" toProperty="shape" />
+  <link fromOperation="maker" fromProperty="widget" toOperation="reader" toProperty="widget" />
+  <link fromOperation="reader" fromProperty="color" toOperation="output connector" toProperty="color" />
+  <link fromOperation="reader" fromProperty="size" toOperation="output connector" toProperty="size" />
+  <link fromOperation="reader" fromProperty="shape" toOperation="output connector" toProperty="shape" />
+  <link fromOperation="reader" fromProperty="result" toOperation="output connector" toProperty="result" />
+  <operation name="maker">
+    <operationtype commandClass="Workflow::Test::Command::WidgetMaker" typeClass="Workflow::OperationType::Command" />
+  </operation>
+  <operation name="reader">
+    <operationtype commandClass="Workflow::Test::Command::WidgetReader" typeClass="Workflow::OperationType::Command" />
+  </operation>
+  <operationtype typeClass="Workflow::OperationType::Model">
+    <inputproperty>color</inputproperty>
+    <inputproperty>size</inputproperty>
+    <inputproperty>shape</inputproperty>
+    <outputproperty>color</outputproperty>
+    <outputproperty>size</outputproperty>
+    <outputproperty>shape</outputproperty>
+    <outputproperty>result</outputproperty>
+  </operationtype>
+</workflow>

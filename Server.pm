@@ -85,6 +85,8 @@ sub create {
     $self->{worker_op} = {};
     $self->{workflows} = [];
     $self->{wait_for} = {};
+
+    $self->{executions} = {};
     
     $self->{pending_ops} = [];
     
@@ -128,7 +130,7 @@ sub run_operation {
 
 sub start_new_worker {
     my $self = shift;
-    system($self->{client_start_cmd});
+#    system($self->{client_start_cmd});
 }
 
 ### poe single connection events
@@ -155,6 +157,7 @@ sub client_disconnect {
         ## something disconnected without finishing its stuff?  Just requeue it at the front.
         
         unshift @{ $self->{pending_ops} }, $execargs;
+        $self->start_new_worker;
     }
     
     $k->alarm_remove_all;
@@ -289,12 +292,24 @@ sub execute_workflow {
 #        warn Data::Dumper->new([$data])->Dump;
 #    };
 
-    my $cb = $s->postback('finish_workflow',$workflow_id);
+    my $cb = $s->callback('finish_workflow',$workflow_id);
 
     my $wfdata = $workflow->execute(
         input => $inputs,
         output_cb => $cb
     );
+
+    # track executions
+    
+    my $dataset = Workflow::Model::Instance->get(
+        workflow_model => $workflow,
+        parent_instance => $wfdata
+    );
+    
+    my $savedset = $dataset->save_instance;
+
+    UR::Context->commit;
+    $self->{executions}->{$dataset->id} = $savedset;
 
     $workflow->wait;
     
@@ -305,6 +320,11 @@ sub finish_workflow {
     my ($self, $creation_args, $called_args, $s, $k, $h) = @_[OBJECT, ARG0, ARG1, SESSION, KERNEL, HEAP];
     my $workflow_id = $creation_args->[0];
     my $data = $called_args->[0];
+    my $dataset = $called_args->[1];
+
+    my $savedset = $dataset->save_instance;
+    UR::Context->commit;
+    delete $self->{executions}->{$dataset->id};
  
     if (defined $h->{client}) {
     
@@ -326,6 +346,11 @@ sub send_operation {
 
 #
 #   build a list of modules to use here and send them
+
+    my $dataset = $opdata->model_instance;
+    my $savedset = $dataset->save_instance;
+    UR::Context->commit;
+    $self->{executions}->{$dataset->id} = $savedset;
 
     my @list = ();
     foreach my $op ($op->workflow_model->operations) {
@@ -360,6 +385,11 @@ sub finish_operation {
 
     delete $self->{worker_op}->{$s->ID};
     $k->yield('hangup');
+
+    my $dataset = $opdata->model_instance;
+    my $savedset = $dataset->save_instance;
+    UR::Context->commit;
+    $self->{executions}->{$dataset->id} = $savedset;
     
     $callback->($opdata);
 }
