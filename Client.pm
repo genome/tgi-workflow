@@ -67,6 +67,28 @@ sub execute_workflow {
     POE::Kernel->run() unless (exists $args{no_run});
 }
 
+sub resume_workflow {
+    my $class = shift;
+    my %args = @_;
+    
+    my $self = $class->create(
+        'localhost', 15243,
+        [
+            ['load_workflow', $args{xml_file}],
+            ['resume_workflow', $args{model_saved_instance_id}]
+        ]
+    );
+    
+    if ($args{output_cb}) {
+        $self->{output_cb} = $args{output_cb};
+        $self->{quit_after_workflow_finished} = 1;
+    } else {
+        $self->{quit_after_results} = 1;
+    }
+
+    POE::Kernel->run() unless (exists $args{no_run});
+}
+
 sub create {
     my $class = shift;
     my $host = shift;

@@ -27,7 +27,14 @@ class Workflow::Operation::SavedInstance {
 sub create_from_instance {
     my ($class, $unsaved, $model_saved_instance) = @_;
     
-    my $self = $class->create;
+    my $self = $class->get(
+        operation => $unsaved->operation->name,
+        model_instance_id => $unsaved->model_instance ? $model_saved_instance->id : undef
+    );
+        
+    unless ($self) {
+        $self = $class->create;
+    }
 
     my $newinput = {};
     while (my ($key, $value) = each(%{ $unsaved->input })) {

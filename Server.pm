@@ -68,6 +68,7 @@ sub create {
                 'list_workers',
                 'load_workflow',
                 'execute_workflow',
+                'resume_workflow',
                 'send_operation',
                 'finish_operation',
                 'client_input',
@@ -130,7 +131,7 @@ sub run_operation {
 
 sub start_new_worker {
     my $self = shift;
-#    system($self->{client_start_cmd});
+    system($self->{client_start_cmd});
 }
 
 ### poe single connection events
@@ -277,6 +278,27 @@ sub load_workflow {
     $postback->($workflow->id);
 }
 
+sub resume_workflow {
+    my ($self, $postback, $s, $workflow_id, $saved_id) = @_[OBJECT, ARG0, SESSION, ARG2, ARG1];
+    my $workflow = Workflow::Model->get($workflow_id);
+
+    my $executor = Workflow::Executor::Server->create;
+    $executor->server($self);
+    $workflow->executor($executor);
+
+    my $model_saved_instance = Workflow::Model::SavedInstance->get($saved_id);
+    my $model_instance = $model_saved_instance->load_instance($workflow);
+ 
+    my $cb = $s->callback('finish_workflow',$workflow_id);
+    $model_instance->output_cb($cb);
+
+    my $wfdata = $model_instance->resume_execution;
+
+    $workflow->wait;
+    
+    $postback->($wfdata);
+}
+
 sub execute_workflow {
     my ($self, $postback, $s, $workflow_id, $inputs) = @_[OBJECT, ARG0, SESSION, ARG2, ARG1];
     my $workflow = Workflow::Model->get($workflow_id);
@@ -285,31 +307,15 @@ sub execute_workflow {
     $executor->server($self);
     
     $workflow->executor($executor);
-    
-#    my $cb = sub {
-#        my ($data) = @_;
-#        warn "callback fired.";
-#        warn Data::Dumper->new([$data])->Dump;
-#    };
-
+ 
+    my $store = Workflow::Store::Db->create;
+ 
     my $cb = $s->callback('finish_workflow',$workflow_id);
-
     my $wfdata = $workflow->execute(
         input => $inputs,
-        output_cb => $cb
+        output_cb => $cb,
+        store => $store
     );
-
-    # track executions
-    
-    my $dataset = Workflow::Model::Instance->get(
-        workflow_model => $workflow,
-        parent_instance => $wfdata
-    );
-    
-    my $savedset = $dataset->save_instance;
-
-    UR::Context->commit;
-    $self->{executions}->{$dataset->id} = $savedset;
 
     $workflow->wait;
     
@@ -320,11 +326,6 @@ sub finish_workflow {
     my ($self, $creation_args, $called_args, $s, $k, $h) = @_[OBJECT, ARG0, ARG1, SESSION, KERNEL, HEAP];
     my $workflow_id = $creation_args->[0];
     my $data = $called_args->[0];
-    my $dataset = $called_args->[1];
-
-    my $savedset = $dataset->save_instance;
-    UR::Context->commit;
-    delete $self->{executions}->{$dataset->id};
  
     if (defined $h->{client}) {
     
@@ -346,11 +347,6 @@ sub send_operation {
 
 #
 #   build a list of modules to use here and send them
-
-    my $dataset = $opdata->model_instance;
-    my $savedset = $dataset->save_instance;
-    UR::Context->commit;
-    $self->{executions}->{$dataset->id} = $savedset;
 
     my @list = ();
     foreach my $op ($op->workflow_model->operations) {
@@ -385,11 +381,6 @@ sub finish_operation {
 
     delete $self->{worker_op}->{$s->ID};
     $k->yield('hangup');
-
-    my $dataset = $opdata->model_instance;
-    my $savedset = $dataset->save_instance;
-    UR::Context->commit;
-    $self->{executions}->{$dataset->id} = $savedset;
     
     $callback->($opdata);
 }

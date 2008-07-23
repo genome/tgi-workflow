@@ -1,5 +1,7 @@
 #!/usr/bin/env perl
 
+## this test needs to be completed
+
 use strict;
 use warnings;
 
@@ -23,7 +25,7 @@ ok(do {
 },'validate');
 
 
-my ($saved) = Workflow::Model::SavedInstance->get();
+my $saved = Workflow::Model::SavedInstance->get(16);
 my $normal = $saved->load_instance($w);
 my @opi = $normal->operation_instances;
 my $parent = $normal->parent_instance;
@@ -33,4 +35,17 @@ ok($normal, 'loaded saved model');
 ok(@opi, 'saved model has operation instances');
 ok($parent, 'saved model has parent');
 
+$DB::single=1;
+
+my $cb = sub {
+    my ($opi,$mi) = @_;
+    print Data::Dumper->new([$opi->output])->Dump . "\n";
+};
+
+$normal->output_cb($cb);
+$normal->resume_execution;
+
+$w->wait;
+
 #print Data::Dumper->new([$saved, $normal, $parent, \@opi],['saved','normal','parent','operation_instances'])->Dump;
+

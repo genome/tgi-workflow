@@ -73,6 +73,8 @@ sub as_xml_simple_structure {
 sub execute {
     my ($self, $data) = (shift,shift);
 
+    $data->model_instance->sync;
+
     my $operation_type = $self->operation_type;
 
     ## rewrite inputs

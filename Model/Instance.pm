@@ -12,6 +12,7 @@ class Workflow::Model::Instance {
         parent_instance => { is => 'Workflow::Operation::Instance', id_by => 'parent_instance_id' },
         parent_instance_wrapped => { is => 'Object::Destroyer', doc => 'Workflow::Operation::Instance objected wrapped by Object::Destroyer' },
         output_cb => { is => 'CODE' },
+        store => { is => 'Workflow::Store' },
     ]
 };
 
@@ -27,6 +28,26 @@ sub incomplete_operation_instances {
     return grep {
         !$_->is_done
     } @all_data;
+}
+
+sub resume_execution {
+    my $self = shift;
+    
+    foreach my $this ($self->operation_instances) {
+        $this->is_running(0) if ($this->is_running);
+    }
+    
+    my @runq = $self->workflow_model->runq_from_operation_instance_list($self->operation_instances);
+
+    foreach my $this_data (@runq) {
+        $this_data->is_running(1);
+    }
+
+    foreach my $this_data (@runq) {
+        $this_data->execute;
+    }
+    
+    return $self->parent_instance;
 }
 
 sub do_completion {
@@ -47,6 +68,14 @@ sub do_completion {
     my $data = $self->parent_instance;
     $data->output($final_outputs);
     $data->is_done(1);
+    
+    $self->sync;
+}
+
+sub sync {
+    my ($self) = @_;
+    
+    return $self->store->sync($self);
 }
 
 sub delete {

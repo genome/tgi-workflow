@@ -72,6 +72,7 @@ INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','
 INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','MODEL_SAVED_INSTANCE','MODEL','TEXT',NULL,'N','2008-06-18 15:31:47','');
 INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','MODEL_SAVED_INSTANCE','PARENT_INSTANCE_ID','INTEGER',NULL,'N','2008-06-18 15:31:47','');
 INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','MODEL_SAVED_INSTANCE','MODEL_INSTANCE_ID','INTEGER',NULL,'N','2008-06-18 15:31:47','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','MODEL_SAVED_INSTANCE','REAL_MODEL_INSTANCE_ID','TEXT',NULL,'N','2008-07-17 16:50:24','');
 CREATE TABLE dd_unique_constraint_column (
     data_source varchar NOT NULL,
     owner varchar,

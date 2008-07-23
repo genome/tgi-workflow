@@ -85,7 +85,7 @@ sub is_ready {
 sub execute {
     my $self = shift;
 
-$self->status_message("opie/" . $self->id . "/" . $self->operation->name);
+    $self->status_message("opie/" . $self->id . "/" . $self->operation->name);
 
     $self->operation->Workflow::Operation::execute($self);
 }

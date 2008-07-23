@@ -19,7 +19,7 @@ class Workflow::Model {
         executor => { is => 'Workflow::Executor', id_by => 'workflow_executor_id' },
         is_valid => { },
         parallel_by => { },
-        filename => { },
+        filename => { }
     ]
 };
 
@@ -447,6 +447,10 @@ sub execute {
             die 'cannot execute invalid workflow';
         }
     }
+    
+    unless (exists $params{store} && $params{store} && $params{store}->can('sync')) {
+        $params{store} = Workflow::Store::None->create();
+    }
 
     my $data = Workflow::Operation::Instance->create(
         operation => $self,
@@ -494,6 +498,7 @@ sub execute {
             $self->_execute(
                 operation_instance => $this_data,
                 output_cb => $callback,
+                store => $params{store}
             );
         }
     } else {
@@ -504,6 +509,7 @@ sub execute {
     
         $self->_execute(
             operation_instance => $data,
+            store => $params{store},
             %newparam
         );
     }
@@ -518,7 +524,8 @@ sub _execute {
     my $data = $params{operation_instance};
     my $dataset = Workflow::Model::Instance->create(
         workflow_model => $self,
-        parent_instance => $data
+        parent_instance => $data,
+        store => $params{store}
     );
     $dataset->output_cb($params{output_cb});
     $dataset->parent_instance_wrapped($data);
@@ -542,6 +549,8 @@ sub operation_completed {
     my $dataset = $opdata->model_instance;
 
     $opdata->is_running(0);
+
+    $dataset->sync;
 
     my @incomplete_operations = $dataset->incomplete_operation_instances;
 
