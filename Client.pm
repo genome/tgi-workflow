@@ -2,6 +2,7 @@
 package Workflow::Client;
 
 use strict;
+use Workflow;
 
 use POE qw(Component::Client::TCP Filter::Reference);
 
@@ -48,9 +49,12 @@ sub run_commands {
 sub execute_workflow {
     my $class = shift;
     my %args = @_;
+
+    my $server_host = delete $args{server_host} || 'localhost';
+    my $server_port = delete $args{server_port} || 15243;
     
     my $self = $class->create(
-        'localhost', 15243,
+        $server_host, $server_port,
         [
             ['load_workflow', $args{xml_file}],
             ['execute_workflow', $args{input}]

@@ -43,6 +43,10 @@ sub create {
     my $server_host = hostname;
     my $server_port = 15243;
 
+    if ($args{server_port}) {
+        $server_port = delete $args{server_port};
+    }
+
     my $incstr = '';
     foreach my $inc (@inc) {
         $incstr .= ' use lib "' . $inc .'";';

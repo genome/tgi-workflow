@@ -1,9 +1,9 @@
 BEGIN TRANSACTION;
 DELETE FROM sqlite_sequence;
-INSERT INTO "sqlite_sequence" VALUES('URMETA_MODEL_SAVED_INSTANCE_model_instance_id_seq',20);
-INSERT INTO "sqlite_sequence" VALUES('URMETA_OPERATION_SAVED_INSTANCE_operation_instance_id_seq',97);
-INSERT INTO "sqlite_sequence" VALUES('model_saved_instance',20);
-INSERT INTO "sqlite_sequence" VALUES('operation_saved_instance',97);
+INSERT INTO "sqlite_sequence" VALUES('URMETA_MODEL_SAVED_INSTANCE_model_instance_id_seq',22);
+INSERT INTO "sqlite_sequence" VALUES('URMETA_OPERATION_SAVED_INSTANCE_operation_instance_id_seq',104);
+INSERT INTO "sqlite_sequence" VALUES('model_saved_instance',22);
+INSERT INTO "sqlite_sequence" VALUES('operation_saved_instance',104);
 CREATE TABLE operation_saved_instance (
     operation_instance_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     model_instance_id INTEGER,
@@ -26,6 +26,13 @@ INSERT INTO "operation_saved_instance" VALUES(94,20,'input connector','1234
 INSERT INTO "operation_saved_instance" VALUES(95,20,'reader','1234','1234',1,0);
 INSERT INTO "operation_saved_instance" VALUES(96,20,'maker','1234','1234',1,0);
 INSERT INTO "operation_saved_instance" VALUES(97,20,'output connector','1234','1234',1,0);
+INSERT INTO "operation_saved_instance" VALUES(98,NULL,'Sample Perl Workflow','1234','1234',1,NULL);
+INSERT INTO "operation_saved_instance" VALUES(99,21,'time','1234','1234',1,0);
+INSERT INTO "operation_saved_instance" VALUES(100,21,'output connector','1234','1234',1,0);
+INSERT INTO "operation_saved_instance" VALUES(101,21,'input connector','1234','1234',1,0);
+INSERT INTO "operation_saved_instance" VALUES(102,22,'time','1234','1234',1,0);
+INSERT INTO "operation_saved_instance" VALUES(103,22,'input connector','1234','1234',1,0);
+INSERT INTO "operation_saved_instance" VALUES(104,22,'output connector','1234','1234',1,0);
 CREATE TABLE model_saved_instance (
     model_instance_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     real_model_instance_id TEXT NOT NULL,
@@ -35,6 +42,8 @@ CREATE TABLE model_saved_instance (
 INSERT INTO "model_saved_instance" VALUES(18,'linus42 6669 1216844634 10025',85,'Example Workflow');
 INSERT INTO "model_saved_instance" VALUES(19,'linus42 6723 1216844931 10025',85,'Example Workflow');
 INSERT INTO "model_saved_instance" VALUES(20,'linus42 6850 1216845971 10025',85,'Example Workflow');
+INSERT INTO "model_saved_instance" VALUES(21,'linus42 10318 1216930491 10015',98,'Sample Perl Workflow');
+INSERT INTO "model_saved_instance" VALUES(22,'linus42 10318 1216930491 10038',98,'Sample Perl Workflow');
 CREATE TABLE URMETA_MODEL_SAVED_INSTANCE_model_instance_id_seq (next_value integer PRIMARY KEY AUTOINCREMENT);
 CREATE TABLE URMETA_OPERATION_SAVED_INSTANCE_operation_instance_id_seq (next_value integer PRIMARY KEY AUTOINCREMENT);
 COMMIT;
