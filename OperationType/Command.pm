@@ -21,7 +21,7 @@ sub create_from_xml_simple_structure {
         die $@;
     }
 
-    my $self = $command->operation;
+    my $self = $command->operation_type;
  
     return $self;
 }

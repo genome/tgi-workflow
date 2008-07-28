@@ -20,7 +20,7 @@ class Workflow::Test::Command::Echo {
     ],
 };
 
-operation Workflow::Test::Command::Echo {
+operation_io Workflow::Test::Command::Echo {
     input  => [ 'input' ],
     output => [ 'output' ],
 };

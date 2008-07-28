@@ -13,7 +13,7 @@ class Workflow::Test::Command::Sleep {
     ],
 };
 
-operation Workflow::Test::Command::Sleep {
+operation_io Workflow::Test::Command::Sleep {
     input  => [ 'seconds' ],
     output => [],
 };

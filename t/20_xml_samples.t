@@ -31,7 +31,11 @@ foreach my $file (sort @files) {
         eval {
             my $w = Workflow::Model->create_from_xml($dir . '/' . $file);
             $w->validate;
-            ($file =~ /_invalid/) ? !$w->is_valid : $w->is_valid;
+            if ($file =~ /_invalid/) {
+                die if $w->is_valid;
+            } else {
+                die unless $w->is_valid;
+            }
         };
         $@ ? 0 : 1;
     },'load and validate ' . $file);

@@ -22,7 +22,7 @@ class Workflow::Test::Command::Time {
     ],
 };
 
-operation Workflow::Test::Command::Time {
+operation_io Workflow::Test::Command::Time {
     input  => [ ],
     output => [ 'today', 'now' ],
 };

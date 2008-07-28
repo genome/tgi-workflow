@@ -18,7 +18,7 @@ class Workflow::Test::Command::WidgetMaker {
     ],
 };
 
-operation Workflow::Test::Command::WidgetMaker {
+operation_io Workflow::Test::Command::WidgetMaker {
     input  => [ 'size', 'color', 'shape' ],
     output => [ 'widget' ],
 };

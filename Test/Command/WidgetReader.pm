@@ -17,7 +17,7 @@ class Workflow::Test::Command::WidgetReader {
     ],
 };
 
-operation Workflow::Test::Command::WidgetReader {
+operation_io Workflow::Test::Command::WidgetReader {
     input  => [ 'widget' ],
     output => [ 'size', 'color', 'shape' ],
 };
