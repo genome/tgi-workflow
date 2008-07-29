@@ -70,10 +70,10 @@ sub as_xml_simple_structure {
 
 #
 # This delegates to the executor after fixing up some inputs
+
+## refactor this into Workflow::Operation::Instance::execute
 sub execute {
     my ($self, $data) = (shift,shift);
-
-    $data->model_instance->sync;
 
     my $operation_type = $self->operation_type;
 

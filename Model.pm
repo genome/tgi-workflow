@@ -452,162 +452,22 @@ sub execute {
         $params{store} = Workflow::Store::None->create();
     }
 
-    my $data = Workflow::Operation::Instance->create(
+    my $operation_instance = Workflow::Operation::Instance->create(
         operation => $self,
         input => $params{input} || {},
-        output => {}
+        output => {},
+        store => $params{store},
+        output_cb => $params{output_cb}
     );
-    $data = Object::Destroyer->new($data, 'delete');
- 
-    if ((my $parallel_by = $self->parallel_by) && ref($data->input->{$self->parallel_by}) eq 'ARRAY') {
-        my %data_not_finished = ();
-        my @all_data = ();
-        my @par_input= @{ $data->input->{$parallel_by} };
-        my $output = {};
 
-        my $callback = sub {
-            my ($opdata) = @_;
+    $operation_instance->execute;
 
-            delete $data_not_finished{$opdata->id};
-            if (scalar keys %data_not_finished == 0) {
-                ## doing this in a "last man out shuts the lights off" method
-                #  preserves the original input order
-                my %newoutput = ();
-                foreach my $this_data (@all_data) {
-                    foreach my $k (keys %{ $this_data->output }) {
-                        $newoutput{$k} ||= [];
-                        push @{ $newoutput{$k} }, $this_data->output->{$k};
-                    }
-                }
-                $data->output(\%newoutput);
-                return $params{output_cb}->($data) if ($params{output_cb});
-                return;
-            }
-        };
 
-        foreach my $value (@par_input) {
-            my $this_data = Workflow::Operation::Instance->create(
-                operation => $self,
-                input => { %{ $params{input} || {} }, $parallel_by => $value },
-                output => {}
-            );
-            
-            push @all_data, $this_data;
-            $data_not_finished{$this_data->id} = $this_data;
-            
-            $self->_execute(
-                operation_instance => $this_data,
-                output_cb => $callback,
-                store => $params{store}
-            );
-        }
-    } else {
-        my %newparam = ();
-        if ($params{output_cb}) {
-            $newparam{output_cb} = $params{output_cb};
-        }
-    
-        $self->_execute(
-            operation_instance => $data,
-            store => $params{store},
-            %newparam
-        );
-    }
-    
-    return $data;
-}
-
-sub _execute {
-    my $self = shift;
-    my %params = (@_);
-
-    my $data = $params{operation_instance};
-    my $dataset = Workflow::Model::Instance->create(
-        workflow_model => $self,
-        parent_instance => $data,
-        store => $params{store}
-    );
-    $dataset->output_cb($params{output_cb});
-    $dataset->parent_instance_wrapped($data);
-
-    my @runq = $self->create_and_runq($dataset);
-
-    # set them all running so when others look at whats running (during execute) its correct.
-    foreach my $this_data (@runq) {
-        $this_data->is_running(1);
-    }
-
-    foreach my $this_data (@runq) {
-        $this_data->execute;
-    }
-
-    return $data;
-}
-
-sub operation_completed {
-    my ($self, $opdata) = (shift,shift);
-    my $dataset = $opdata->model_instance;
-
-    $opdata->is_running(0);
-
-    $dataset->sync;
-
-    my @incomplete_operations = $dataset->incomplete_operation_instances;
-
-    if (@incomplete_operations) {
-        my @runq = $self->get_deps_runq($opdata);
-
-        foreach my $this_data (@runq) {
-            $this_data->is_running(1);
-        }
-
-        foreach my $this_data (@runq) {
-            $this_data->execute;
-        }        
-    } else {
-        $dataset->do_completion;
-        
-        my $data = $dataset->parent_instance_wrapped;
-        $dataset->output_cb->($data,$dataset)
-            if (defined $dataset->output_cb);
-
-        $dataset->delete;
-    }
-
-    return;
-}
-
-sub create_and_runq {
-    my ($self, $dataset) = (shift,shift);
-    my $data = $dataset->parent_instance;
-
-    my @all_data;
-    foreach ($self->operations) {
-        my $this_data = Workflow::Operation::Instance->create(
-            operation => $_,
-            model_instance => $dataset,
-            is_done => 0
-        );
-        $this_data->input({});
-        $this_data->output({});
-        if ($_ == $self->get_input_connector) {
-            $this_data->output(
-                $data->input
-            );
-        }
-        push @all_data, $this_data;
-    }
-    foreach (@all_data) {
-        $_->set_input_links;
-    }
-
-    ## return operations that are ready right now
-    ## these should be ones that have no inputs
- 
-    return $self->runq_from_operation_instance_list(@all_data);
+    return $operation_instance;
 }
 
 sub get_deps_runq {
+    Carp::carp("runq_from_operation_instance_list deprecated");
     my ($self, $opdata) = @_;
 
     my %uniq_deps = map {
@@ -622,6 +482,8 @@ sub get_deps_runq {
 }
 
 sub runq_from_operation_instance_list {
+    Carp::carp("runq_from_operation_instance_list deprecated");
+
     my $self = shift;
 
     my @runq = sort {

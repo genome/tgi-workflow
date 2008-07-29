@@ -12,13 +12,44 @@ class Workflow::Operation::Instance {
         model_instance => { is => 'Workflow::Model::Instance', id_by => 'workflow_model_instance_id' },
         output => { is => 'HASH' },
         input => { is => 'HASH' },
+        store => { is => 'Workflow::Store' },
+        output_cb => { is => 'CODE' },
         is_done => { },
         is_running => { },
+        is_parallel => { 
+            calculate => q|
+                $DB::single=1;
+                if ($self->operation->can('parallel_by') && 
+                    $self->operation->parallel_by && 
+                    ref($self->input_value($self->operation->parallel_by)) eq 'ARRAY') {
+                    
+                    return 1;
+                }
+                return 0;
+            |,
+        }
     ]
 };
 
+sub create {
+    my $class = shift;
+    my $self = $class->SUPER::create(@_);
+    
+
+    
+    return $self;
+}
+
 sub save_instance {
     return Workflow::Operation::SavedInstance->create_from_instance(@_);
+}
+
+sub sync {
+    my ($self) = @_;
+    
+    my $store = $self->store ? $self->store : $self->model_instance->parent_instance->store;
+    
+    return $store->sync;
 }
 
 sub set_input_links {
@@ -82,18 +113,135 @@ sub is_ready {
     }
 }
 
+sub child_model_instances {
+    my ($self) = @_;
+    
+    return unless ($self->operation->operation_type->isa('Workflow::OperationType::Model'));
+    
+    my @model_instances = Workflow::Model::Instance->get(
+        workflow_model => $self->operation,
+        parent_instance => $self
+    );
+
+    return @model_instances;
+}
+
+sub input_value {
+    my ($self, $input_name) = @_;
+    
+    return undef unless $self->input->{$input_name};
+    
+    if (UNIVERSAL::isa($self->input->{$input_name},'Workflow::Link::Instance')) {
+        return $self->input->{$input_name}->left_value;
+    } else {
+        return $self->input->{$input_name};
+    }
+}
+
 sub execute {
     my $self = shift;
 
-#    $self->status_message("opie/" . $self->id . "/" . $self->operation->name);
+#    $self->status_message("exec/" . $self->id . "/" . $self->operation->name);
 
-    $self->operation->Workflow::Operation::execute($self);
+    if ($self->operation->operation_type->isa('Workflow::OperationType::Model')) {
+
+        if ($self->is_parallel) {
+            for (my $i = 0; $i < scalar @{ $self->input_value($self->operation->parallel_by) }; $i++) {
+                Workflow::Model::Instance->create(
+                    workflow_model => $self->operation,
+                    parent_instance => $self,
+                    parallel_index => $i
+                );
+            }
+        } else {
+            Workflow::Model::Instance->create(
+                workflow_model => $self->operation,
+                parent_instance => $self
+            );
+        }
+        my @child_mi = $self->child_model_instances;
+        foreach my $child_mi (@child_mi) {
+            my @runq = $child_mi->runq;
+            foreach my $this_data (@runq) {
+                $this_data->is_running(1);
+            }
+
+            foreach my $this_data (@runq) {
+                $this_data->execute;
+            }
+        }
+        
+    } else {
+        $self->sync;
+        $self->operation->Workflow::Operation::execute($self);
+        
+    }
 }
 
 sub do_completion {
+    Carp::carp("do_completion deprecated\n");
+    completion(@_);
+}
+
+sub incomplete_child_model_instances {
     my $self = shift;
     
-    $self->model_instance->workflow_model->operation_completed($self);
+    return grep {
+        my $outconn_i = Workflow::Operation::Instance->get(
+            model_instance => $_,
+            operation => $_->workflow_model->get_output_connector
+        );
+        !$outconn_i->is_done;
+    } $self->child_model_instances;
+}
+
+sub completion {
+    my $self = shift;
+    my $model_instance = shift;
+
+    $self->sync;
+    
+    if ($model_instance) {
+        # a specific child has completed
+        my @incomplete_children = $self->incomplete_child_model_instances;
+        
+        unless (@incomplete_children) {
+            $self->is_done(1);
+            $self->output_cb->($self,$model_instance)
+                if (defined $self->output_cb);
+            $self->sync;
+            $model_instance->delete;
+            
+            # let fall through to operation completion code below
+        } else {
+            return;
+        }
+    }    
+    
+    if ($model_instance = $self->model_instance) {
+        $self->is_running(0);
+
+        my $model = $self->model_instance->workflow_model;
+
+        my @incomplete_operations = $model_instance->incomplete_operation_instances;
+
+        if (@incomplete_operations) {
+            my @runq = $model->get_deps_runq($self);
+
+            foreach my $this_data (@runq) {
+                $this_data->is_running(1);
+            }
+
+            foreach my $this_data (@runq) {
+                $this_data->execute;
+            }        
+        } else {
+            $model_instance->completion;
+        }
+        
+    }
+
+    return;
 }
 
 1;
