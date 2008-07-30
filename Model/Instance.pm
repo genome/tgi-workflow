@@ -85,11 +85,6 @@ sub resume {
     return $self->parent_instance;
 }
 
-sub do_completion {
-    Carp::carp("do_completion deprecated\n");
-    completion(@_);
-}
-
 sub completion {
     my $self = shift;
         
@@ -121,13 +116,19 @@ sub completion {
 sub runq {
     my $self = shift;
 
+    return $self->runq_filter($self->operation_instances);
+}
+
+sub runq_filter {
+    my $self = shift;
+    
     my @runq = sort {
         $a->operation->name cmp $b->operation->name
     } grep {
         $_->is_ready &&
         !$_->is_done &&
         !$_->is_running
-    } $self->operation_instances;
+    } @_;
     
     return @runq;
 }

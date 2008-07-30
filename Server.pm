@@ -237,7 +237,7 @@ sub try_to_execute {
         my $op = $opdata->operation;
         $op->status_message('exec/' . $opdata->model_instance->id . '/' . $op->name);
         $k->yield(
-            'send_operation', $op, $opdata, $edited_input, sub { $opdata->do_completion; }
+            'send_operation', $op, $opdata, $edited_input, sub { $opdata->completion; }
         );
 
         $h->{try_count} = 0;

@@ -126,6 +126,18 @@ sub child_model_instances {
     return @model_instances;
 }
 
+sub incomplete_child_model_instances {
+    my $self = shift;
+    
+    return grep {
+        my $outconn_i = Workflow::Operation::Instance->get(
+            model_instance => $_,
+            operation => $_->workflow_model->get_output_connector
+        );
+        !$outconn_i->is_done;
+    } $self->child_model_instances;
+}
+
 sub input_value {
     my ($self, $input_name) = @_;
     
@@ -178,21 +190,18 @@ sub execute {
     }
 }
 
-sub do_completion {
-    Carp::carp("do_completion deprecated\n");
-    completion(@_);
-}
+sub dependent_operations {
+    my ($self) = @_;
 
-sub incomplete_child_model_instances {
-    my $self = shift;
-    
-    return grep {
-        my $outconn_i = Workflow::Operation::Instance->get(
-            model_instance => $_,
-            operation => $_->workflow_model->get_output_connector
+    my %uniq_deps = map {
+        my ($this_data) = Workflow::Operation::Instance->get(
+            operation => $_,
+            model_instance => $self->model_instance
         );
-        !$outconn_i->is_done;
-    } $self->child_model_instances;
+        $_->name => $this_data
+    } $self->operation->dependent_operations;
+
+    return values %uniq_deps;
 }
 
 sub completion {
@@ -226,7 +235,7 @@ sub completion {
         my @incomplete_operations = $model_instance->incomplete_operation_instances;
 
         if (@incomplete_operations) {
-            my @runq = $model->get_deps_runq($self);
+            my @runq = $model_instance->runq_filter($self->dependent_operations);
 
             foreach my $this_data (@runq) {
                 $this_data->is_running(1);

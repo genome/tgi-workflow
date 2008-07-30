@@ -462,39 +462,7 @@ sub execute {
 
     $operation_instance->execute;
 
-
     return $operation_instance;
-}
-
-sub get_deps_runq {
-    Carp::carp("runq_from_operation_instance_list deprecated");
-    my ($self, $opdata) = @_;
-
-    my %uniq_deps = map {
-        my ($this_data) = Workflow::Operation::Instance->get(
-            operation => $_,
-            model_instance => $opdata->model_instance
-        );
-        $_->name => $this_data
-    } $opdata->operation->dependent_operations;
-
-    return $self->runq_from_operation_instance_list(values %uniq_deps);
-}
-
-sub runq_from_operation_instance_list {
-    Carp::carp("runq_from_operation_instance_list deprecated");
-
-    my $self = shift;
-
-    my @runq = sort {
-        $a->operation->name cmp $b->operation->name
-    } grep {
-        $_->is_ready &&
-        !$_->is_done &&
-        !$_->is_running
-    } @_;
-    
-    return @runq;
 }
 
 sub wait {

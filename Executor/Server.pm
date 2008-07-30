@@ -29,7 +29,7 @@ sub execute {
             
             $opi->output({ %{ $opi->output }, %{ $data->output } });
             $opi->is_done(1);
-            $opi->do_completion;
+            $opi->completion;
         };
         
         my $newinstance = $submodel->execute(

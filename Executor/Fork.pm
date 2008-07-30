@@ -64,7 +64,7 @@ sub wait {
             $opdata->output({ %{ $opdata->output }, %{ $outputs } });
             $opdata->is_done(1);
 
-            $opdata->do_completion;
+            $opdata->completion;
         }
         $self->threads(\@bucket);
         last if (@{ $self->threads } == 0);
