@@ -109,6 +109,9 @@ sub create_from_xml_simple_structure {
 
         foreach my $op_struct (@$operations) {
             my $op = Workflow::Operation->create_from_xml_simple_structure($op_struct,workflow_model=>$self);
+            if ($op->operation_type->isa('Workflow::OperationType::Model')) {
+                $op->executor($params{executor}) if ($params{executor});
+            }
         }
 
         foreach my $link_struct (@$links) {
