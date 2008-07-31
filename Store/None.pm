@@ -9,7 +9,7 @@ class Workflow::Store::None {
 };
 
 sub sync {
-    my ($self, $model_instance) = @_;
+    my ($self, $operation_instance) = @_;
     
     return 1;
 }

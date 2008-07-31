@@ -9,7 +9,7 @@ class Workflow::Store::Db {
 };
 
 sub sync {
-    my ($self, $operation_instance) = @_;
+    my ($self, $operation_instance) = (@_);
 
     my $saved_instance = $operation_instance->save_instance;
     UR::Context->commit;

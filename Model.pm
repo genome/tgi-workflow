@@ -463,6 +463,7 @@ sub execute {
         output_cb => $params{output_cb}
     );
 
+    $operation_instance->sync;
     $operation_instance->execute;
 
     return $operation_instance;

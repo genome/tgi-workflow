@@ -22,11 +22,11 @@ class Workflow::Model::SavedInstance {
 };
 
 sub create_from_instance {
-    my ($class, $unsaved) = @_;
+    my ($class, $unsaved, $parent_saved) = @_;
     
     my $self = $class->get_or_create(
         model => $unsaved->workflow_model->name,
-        parent_instance => $unsaved->parent_instance->save_instance,
+        parent_instance => $parent_saved,
         real_model_instance_id => $unsaved->id
     );
 
@@ -34,6 +34,7 @@ sub create_from_instance {
         $opi->save_instance($self);
     }
     
+    Carp::carp('Model');
     return $self;
 }
 

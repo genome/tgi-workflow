@@ -1,9 +1,9 @@
 BEGIN TRANSACTION;
 DELETE FROM sqlite_sequence;
-INSERT INTO "sqlite_sequence" VALUES('URMETA_MODEL_SAVED_INSTANCE_model_instance_id_seq',22);
-INSERT INTO "sqlite_sequence" VALUES('URMETA_OPERATION_SAVED_INSTANCE_operation_instance_id_seq',104);
-INSERT INTO "sqlite_sequence" VALUES('model_saved_instance',22);
-INSERT INTO "sqlite_sequence" VALUES('operation_saved_instance',104);
+INSERT INTO "sqlite_sequence" VALUES('URMETA_MODEL_SAVED_INSTANCE_model_instance_id_seq',33);
+INSERT INTO "sqlite_sequence" VALUES('URMETA_OPERATION_SAVED_INSTANCE_operation_instance_id_seq',148);
+INSERT INTO "sqlite_sequence" VALUES('model_saved_instance',33);
+INSERT INTO "sqlite_sequence" VALUES('operation_saved_instance',148);
 CREATE TABLE operation_saved_instance (
     operation_instance_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     model_instance_id INTEGER,
@@ -13,37 +13,37 @@ CREATE TABLE operation_saved_instance (
     is_done INTEGER,
     is_running INTEGER
 );
-INSERT INTO "operation_saved_instance" VALUES(85,NULL,'Example Workflow','1234','1234',1,NULL);
-INSERT INTO "operation_saved_instance" VALUES(86,18,'input connector','1234','1234',1,0);
-INSERT INTO "operation_saved_instance" VALUES(87,18,'output connector','1234','1234',1,0);
-INSERT INTO "operation_saved_instance" VALUES(88,18,'reader','1234','1234',1,0);
-INSERT INTO "operation_saved_instance" VALUES(89,18,'maker','1234','1234',1,0);
-INSERT INTO "operation_saved_instance" VALUES(90,19,'output connector','1234','1234',1,0);
-INSERT INTO "operation_saved_instance" VALUES(91,19,'input connector','1234','1234',1,0);
-INSERT INTO "operation_saved_instance" VALUES(92,19,'maker','1234','1234',1,0);
-INSERT INTO "operation_saved_instance" VALUES(93,19,'reader','1234','1234',1,0);
-INSERT INTO "operation_saved_instance" VALUES(94,20,'input connector','1234','1234',1,0);
-INSERT INTO "operation_saved_instance" VALUES(95,20,'reader','1234','1234',1,0);
-INSERT INTO "operation_saved_instance" VALUES(96,20,'maker','1234','1234',1,0);
-INSERT INTO "operation_saved_instance" VALUES(97,20,'output connector','1234','1234',1,0);
-INSERT INTO "operation_saved_instance" VALUES(98,NULL,'Sample Perl Workflow','1234','1234',1,NULL);
-INSERT INTO "operation_saved_instance" VALUES(99,21,'time','1234','1234',1,0);
-INSERT INTO "operation_saved_instance" VALUES(100,21,'output connector','1234','1234',1,0);
-INSERT INTO "operation_saved_instance" VALUES(101,21,'input connector','1234','1234',1,0);
-INSERT INTO "operation_saved_instance" VALUES(102,22,'time','1234','1234',1,0);
-INSERT INTO "operation_saved_instance" VALUES(103,22,'input connector','1234','1234',1,0);
-INSERT INTO "operation_saved_instance" VALUES(104,22,'output connector','1234','1234',1,0);
+INSERT INTO "operation_saved_instance" VALUES(130,NULL,'Example Workflow','1234','1234',1,NULL);
+INSERT INTO "operation_saved_instance" VALUES(131,28,'output connector','1234','1234',1,0);
+INSERT INTO "operation_saved_instance" VALUES(132,28,'input connector','1234','1234',1,0);
+INSERT INTO "operation_saved_instance" VALUES(133,28,'Example Inner Workflow','1234','1234',1,0);
+INSERT INTO "operation_saved_instance" VALUES(134,29,'output connector','1234','1234',1,0);
+INSERT INTO "operation_saved_instance" VALUES(135,29,'echo','1234','1234',1,0);
+INSERT INTO "operation_saved_instance" VALUES(136,29,'input connector','1234','1234',1,0);
+INSERT INTO "operation_saved_instance" VALUES(137,30,'output connector','1234','1234',1,0);
+INSERT INTO "operation_saved_instance" VALUES(138,30,'echo','1234','1234',1,0);
+INSERT INTO "operation_saved_instance" VALUES(139,30,'input connector','1234','1234',1,0);
+INSERT INTO "operation_saved_instance" VALUES(140,31,'output connector','1234','1234',1,0);
+INSERT INTO "operation_saved_instance" VALUES(141,31,'Example Inner Workflow','1234','1234',1,0);
+INSERT INTO "operation_saved_instance" VALUES(142,31,'input connector','1234','1234',1,0);
+INSERT INTO "operation_saved_instance" VALUES(143,32,'output connector','1234','1234',1,0);
+INSERT INTO "operation_saved_instance" VALUES(144,32,'echo','1234','1234',1,0);
+INSERT INTO "operation_saved_instance" VALUES(145,32,'input connector','1234','1234',1,0);
+INSERT INTO "operation_saved_instance" VALUES(146,33,'input connector','1234','1234',1,0);
+INSERT INTO "operation_saved_instance" VALUES(147,33,'echo','1234','1234',1,0);
+INSERT INTO "operation_saved_instance" VALUES(148,33,'output connector','1234','1234',1,0);
 CREATE TABLE model_saved_instance (
     model_instance_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     real_model_instance_id TEXT NOT NULL,
     parent_instance_id INTEGER NOT NULL,
     model TEXT NOT NULL
 );
-INSERT INTO "model_saved_instance" VALUES(18,'linus42 6669 1216844634 10025',85,'Example Workflow');
-INSERT INTO "model_saved_instance" VALUES(19,'linus42 6723 1216844931 10025',85,'Example Workflow');
-INSERT INTO "model_saved_instance" VALUES(20,'linus42 6850 1216845971 10025',85,'Example Workflow');
-INSERT INTO "model_saved_instance" VALUES(21,'linus42 10318 1216930491 10015',98,'Sample Perl Workflow');
-INSERT INTO "model_saved_instance" VALUES(22,'linus42 10318 1216930491 10038',98,'Sample Perl Workflow');
+INSERT INTO "model_saved_instance" VALUES(28,'linus42 5370 1217541342 10026',130,'Example Workflow');
+INSERT INTO "model_saved_instance" VALUES(29,'linus42 5370 1217541342 10040',133,'Example Inner Workflow');
+INSERT INTO "model_saved_instance" VALUES(30,'linus42 5370 1217541342 10033',133,'Example Inner Workflow');
+INSERT INTO "model_saved_instance" VALUES(31,'linus42 5449 1217541419 10026',130,'Example Workflow');
+INSERT INTO "model_saved_instance" VALUES(32,'linus42 5449 1217541419 10040',141,'Example Inner Workflow');
+INSERT INTO "model_saved_instance" VALUES(33,'linus42 5449 1217541419 10033',141,'Example Inner Workflow');
 CREATE TABLE URMETA_MODEL_SAVED_INSTANCE_model_instance_id_seq (next_value integer PRIMARY KEY AUTOINCREMENT);
 CREATE TABLE URMETA_OPERATION_SAVED_INSTANCE_operation_instance_id_seq (next_value integer PRIMARY KEY AUTOINCREMENT);
 COMMIT;

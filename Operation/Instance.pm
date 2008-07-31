@@ -47,9 +47,19 @@ sub save_instance {
 sub sync {
     my ($self) = @_;
     
-    my $store = $self->store ? $self->store : $self->model_instance->parent_instance->store;
+    my $store;
+    my $walkon = $self;
+    do {
+        $store = $walkon->store;
+        
+        unless ($store) {
+            $walkon->model_instance->parent_instance;
+        }
+    } while (!$store);
     
-    return $store->sync;
+    $DB::single=1;
+    
+    return $store->sync($self);
 }
 
 sub set_input_links {
@@ -171,6 +181,8 @@ sub execute {
                 parent_instance => $self
             );
         }
+        $self->sync;
+        
         my @child_mi = $self->child_model_instances;
         foreach my $child_mi (@child_mi) {
             my @runq = $child_mi->runq;

@@ -27,6 +27,14 @@ class Workflow::Operation::SavedInstance {
 sub create_from_instance {
     my ($class, $unsaved, $model_saved_instance) = @_;
     
+    if ($unsaved->model_instance && !defined $model_saved_instance) {
+        # find it
+        
+        $model_saved_instance = Workflow::Model::SavedInstance->get(
+            real_model_instance_id => $unsaved->model_instance->id
+        );
+    }
+    
     my $self = $class->get(
         operation => $unsaved->operation->name,
         model_instance_id => $unsaved->model_instance ? $model_saved_instance->id : undef
@@ -41,7 +49,6 @@ sub create_from_instance {
         my $newvalue = $value;
         if (UNIVERSAL::isa($value,'Workflow::Link::Instance')) {
             $newvalue = Workflow::Link::SavedInstance->create_from_instance($value);
-            
         }
         $newinput->{$key} = $newvalue;
     }
@@ -53,12 +60,17 @@ sub create_from_instance {
     $self->is_running($unsaved->is_running);
 
     if ($unsaved->model_instance) {
-        unless ($model_saved_instance) {
-            die 'model_saved_instance not passed but unsaved has model_instance';
-        }
         $self->model_instance($model_saved_instance);
     }
+
+    # find child models and save them.
     
+    my @child_model_instances = $unsaved->child_model_instances;
+    foreach my $child_mi (@child_model_instances) {
+        $child_mi->save_instance($self);
+    }
+    
+    Carp::carp('Operation');
     return $self;
 }
 

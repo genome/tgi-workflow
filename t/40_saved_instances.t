@@ -26,12 +26,11 @@ ok(do {
 my $collector = sub {
     my ($data, $set) = @_;
 
-    my $s;
-#    my $s = $data->save_instance;
-#    ok($s,'saved operation instance');
+    my $s = $data->save_instance;
+    ok($s,'saved operation instance');
 
-    $s = $set->save_instance;
-    ok($s,'saved model instance');
+#    $s = $data->save_instance;
+#    ok($s,'saved model instance');
 
     # just let it leave scope
 };
