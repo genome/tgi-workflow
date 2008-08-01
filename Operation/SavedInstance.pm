@@ -70,7 +70,6 @@ sub create_from_instance {
         $child_mi->save_instance($self);
     }
     
-    Carp::carp('Operation');
     return $self;
 }
 

@@ -34,7 +34,6 @@ sub create_from_instance {
         $opi->save_instance($self);
     }
     
-    Carp::carp('Model');
     return $self;
 }
 
