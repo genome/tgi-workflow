@@ -16,6 +16,8 @@ class Workflow::Test::Command::Sleep {
 operation_io Workflow::Test::Command::Sleep {
     input  => [ 'seconds' ],
     output => [],
+    lsf_queue => 'short',
+    lsf_resource => 'rusage[mem=4000] span[hosts=1]',
 };
 
 sub sub_command_sort_position { 10 }
@@ -41,8 +43,6 @@ sub execute {
    
     if ($self->seconds) {
         sleep $self->seconds;
-    } else { 
-        sleep 1;
     }
 
     1;

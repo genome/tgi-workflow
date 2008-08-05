@@ -163,7 +163,10 @@ sub input_value {
 sub execute {
     my $self = shift;
 
-#    $self->status_message("exec/" . $self->id . "/" . $self->operation->name);
+    $self->status_message("exec/" . $self->id . "/" . $self->operation->name);
+
+    print ref($self->model_instance->workflow_model->executor) . "\n"
+        if ($self->model_instance);
 
     if ($self->operation->operation_type->isa('Workflow::OperationType::Model')) {
 
@@ -197,7 +200,27 @@ sub execute {
         
     } else {
         $self->sync;
-        $self->operation->Workflow::Operation::execute($self);
+        
+        my %current_inputs = ();
+        foreach my $input_name (keys %{ $self->input }) {
+            if (UNIVERSAL::isa($self->input->{$input_name},'Workflow::Link::Instance')) {
+                $current_inputs{$input_name} = $self->input->{$input_name}->left_value;
+                while (UNIVERSAL::isa($current_inputs{$input_name},'Workflow::Link::Instance')) {
+                    $current_inputs{$input_name} = $current_inputs{$input_name}->left_value;
+                }
+            }
+        }
+
+        my $executor = $self->operation->executor || $self->operation->workflow_model->executor;
+        my $operation_type = $self->operation->operation_type;
+        if ($operation_type->can('executor') && defined $operation_type->executor) {
+            $executor = $operation_type->executor;
+        }
+
+        $executor->execute(
+            operation_instance => $self,
+            edited_input => \%current_inputs
+        );
         
     }
 }
@@ -260,6 +283,13 @@ sub completion {
             $model_instance->completion;
         }
         
+    }
+
+    if (!$model_instance) {
+        $self->is_done(1);
+        $self->output_cb->($self)
+            if (defined $self->output_cb);
+        $self->sync;
     }
 
     return;

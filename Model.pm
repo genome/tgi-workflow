@@ -16,8 +16,6 @@ class Workflow::Model {
     has => [
         operations => { is => 'Workflow::Operation', is_many => 1, reverse_id_by => 'workflow_model' },
         links => { is => 'Workflow::Link', is_many => 1 },
-        executor => { is => 'Workflow::Executor', id_by => 'workflow_executor_id' },
-        is_valid => { },
         parallel_by => { },
         filename => { }
     ]
@@ -440,45 +438,18 @@ sub operations_in_series {
     return @op_order;
 }
 
-sub execute {
-    my $self = shift;
-    my %params = (@_);
-
-    unless ($self->is_valid) {
-        my @errors = $self->validate;
-        unless (@errors == 0) {
-            die 'cannot execute invalid workflow';
+sub set_all_executor {
+    my ($self, $executor) = @_;
+    
+    $self->executor($executor);
+    
+    foreach my $op ($self->operations) {
+        if ($op->isa('Workflow::Model')) {
+            $op->executor($executor);
         }
     }
     
-    unless (exists $params{store} && $params{store} && $params{store}->can('sync')) {
-        $params{store} = Workflow::Store::None->create();
-    }
-
-    my $operation_instance = Workflow::Operation::Instance->create(
-        operation => $self,
-        input => $params{input} || {},
-        output => {},
-        store => $params{store},
-        output_cb => $params{output_cb}
-    );
-
-    $operation_instance->sync;
-    $operation_instance->execute;
-
-    return $operation_instance;
-}
-
-sub wait {
-    my $self = shift;
-    
-    $self->executor->wait($self);
-}
-
-sub detach {
-    my $self = shift;
-    
-    $self->executor->detach($self);
+    return $self->executor;
 }
 
 1;

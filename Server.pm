@@ -51,9 +51,6 @@ sub create {
     foreach my $inc (@inc) {
         $incstr .= ' use lib "' . $inc .'";';
     }
-    my $client_start_cmd = 'bsub -q long -N -u "eclark@genome.wustl.edu" ' . 
-        'perl -e \'BEGIN { delete $ENV{PERL_USED_ABOVE}; }' . $incstr . ' use above "' . $namespace . '"; use Workflow::Client; Workflow::Client->run_worker("' .
-        $server_host . '",' . $server_port . ')\''; 
 
     $Storable::forgive_me = 1;
 
@@ -100,7 +97,7 @@ sub create {
     $self->{namespace} = $namespace;
     $self->{server_host} = $server_host;
     $self->{server_port} = $server_port;
-    $self->{client_start_cmd} = $client_start_cmd;
+    $self->{include_string} = $incstr;
 
     return $self;
 }
@@ -128,28 +125,44 @@ sub run_operation {
     
     unless ($opdata->operation->operation_type->can('executor') && defined $opdata->operation->operation_type->executor) {
 
-        $opdata->operation->status_message('starting a blade job for: ' . $opdata->operation->name);
-        $self->start_new_worker;  ## start a blade job if it doesnt have an exception
+        $opdata->status_message('bsub: ' . $opdata->operation->name);
+        $self->start_new_worker($opdata);  ## start a blade job if it doesnt have an exception
     }
 }
 
 sub start_new_worker {
-    my $self = shift;
-    system($self->{client_start_cmd});
+    my ($self,$operation_instance) = @_;
+    
+    my $rusage = ' ';
+    my $queue = 'short';
+    my $optype = $operation_instance->operation->operation_type;
+    if ($optype->can('lsf_resource') && defined $optype->lsf_resource) {
+        $rusage = ' -R "' . $optype->lsf_resource . '"';
+    }
+    if ($optype->can('lsf_queue') && defined $optype->lsf_queue) {
+        $queue = $optype->lsf_queue;
+    }
+    
+    my $client_start_cmd = 'bsub -q ' . $queue . ' -N -u "eclark@genome.wustl.edu"' . $rusage .
+        'perl -e \'BEGIN { delete $ENV{PERL_USED_ABOVE}; }' . $self->{include_string} . ' use above "' . $self->{namespace} . 
+        '"; use Workflow::Client; Workflow::Client->run_worker("' .
+        $self->{server_host} . '",' . $self->{server_port} . ',"' . $operation_instance->id . '")\'';
+ 
+    system($client_start_cmd);
 }
 
 ### poe single connection events
 
 sub client_connect {
     my ($self, $s) = @_[OBJECT, SESSION];
-    print $s->ID . " connect\n";
+#    print $s->ID . " connect\n";
     
     $self->{wait_for}->{$s->ID} = {};
 }
 
 sub client_disconnect {
     my ($self, $s, $k) = @_[OBJECT, SESSION, KERNEL];
-    print $s->ID . " disconnect\n";
+#    print $s->ID . " disconnect\n";
     
     my @workers = grep { $_ != $s } 
         @{ $self->{workers} };
@@ -162,7 +175,7 @@ sub client_disconnect {
         ## something disconnected without finishing its stuff?  Just requeue it at the front.
         
         unshift @{ $self->{pending_ops} }, $execargs;
-        $self->start_new_worker;
+        $self->start_new_worker($execargs->[0]);
     }
     
     $k->alarm_remove_all;
@@ -211,9 +224,17 @@ sub send_command_result {
 }
 
 sub announce_worker {
-    my ($self, $postback, $s, $k, $h) = @_[OBJECT, ARG0, SESSION, KERNEL, HEAP];
+    my ($self, $postback, $operation_instance_id, $s, $k, $h) = @_[OBJECT, ARG0, ARG1, SESSION, KERNEL, HEAP];
+    
+    unless ($operation_instance_id) {
+        $postback->(0);
+        $k->yield('hangup');
+        
+        return;
+    }
     
     push @{ $self->{workers} }, $s;
+    $self->{worker_op}->{$s->ID} = [Workflow::Operation::Instance->get($operation_instance_id)];
 
     $h->{try_count} = 0;
 
@@ -229,13 +250,14 @@ sub try_to_execute {
 
     $h->{try_count}++;
     
-    if (my $exec_args = shift @{ $self->{pending_ops} }) {
-        $self->{worker_op}->{$s->ID} = $exec_args;
-        
+    if ($self->{pending_ops}->[0]->[0]->id eq $self->{worker_op}->{$s->ID}->[0]->id) {
+        my $exec_args = shift @{ $self->{pending_ops} };
         my ($opdata,$edited_input) = @$exec_args;
 
+        $self->{worker_op}->{$s->ID} = $exec_args;
+
         my $op = $opdata->operation;
-        $op->status_message('exec/' . $opdata->model_instance->id . '/' . $op->name);
+#        $op->status_message('exec/' . $opdata->model_instance->id . '/' . $op->name);
         $k->yield(
             'send_operation', $op, $opdata, $edited_input, sub { $opdata->completion; }
         );
@@ -272,6 +294,13 @@ sub list_workers {
     $postback->(@list);
 }
 
+sub list_instances {
+    my ($self, $postback, $s) = @_[OBJECT, ARG0, SESSION];
+
+    my @list = values %{ $self->{executions} };
+    
+    $postback->(@list);
+}
 
 sub load_workflow {
     my ($self, $postback, $s, $xml_file) = @_[OBJECT, ARG0, SESSION, ARG1];
@@ -288,8 +317,8 @@ sub resume_workflow {
 
     my $executor = Workflow::Executor::Server->create;
     $executor->server($self);
-    $workflow->executor($executor);
-
+    $workflow->set_all_executor($executor);
+    
     my $model_saved_instance = Workflow::Model::SavedInstance->get($saved_id);
     my $model_instance = $model_saved_instance->load_instance($workflow);
  
@@ -322,6 +351,8 @@ sub execute_workflow {
     );
 
     $workflow->wait;
+
+    $self->{executions}->{$wfdata->id} = $wfdata;
     
     $postback->($wfdata);
 }
@@ -344,6 +375,8 @@ sub finish_workflow {
         $self->{wait_for}->{$s->ID}->{$message->id} = 1;
         $h->{client}->put($message);
     }
+    
+    delete $self->{executions}->{$data->id};
 }
 
 sub send_operation {

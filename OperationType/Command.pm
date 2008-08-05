@@ -8,6 +8,8 @@ class Workflow::OperationType::Command {
     isa => 'Workflow::OperationType',
     has => [
         command_class_name => { is => 'String' },
+        lsf_resource => { is => 'String', is_optional=>1 },
+        lsf_queue => { is => 'String', is_optional=>1 },
     ],
 };
 
@@ -62,6 +64,8 @@ sub create_from_command {
         input_properties => \@valid_inputs,
         output_properties => \@valid_outputs,
         command_class_name => $command_class,
+        lsf_resource => $options->{lsf_resource},
+        lsf_queue => $options->{lsf_queue},
     );
 }
 

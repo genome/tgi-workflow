@@ -39,10 +39,9 @@ sub wait {
 
         $opdata->completion;
 
-        $DB::single=1;
-
     }
-    
+
+    1;    
 }
 
 1;

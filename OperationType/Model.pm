@@ -9,6 +9,10 @@ class Workflow::OperationType::Model {
 };
 
 sub execute {
+    Carp::confess("execute should not be called");
+}
+
+sub execute_XXX {
     my $self = shift;
     my %properties = @_;
 

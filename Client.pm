@@ -18,7 +18,7 @@ sub run_worker {
     my ($class, $host, $port) = (shift, shift, shift);
     my $self = $class->create(
         $host, $port,
-        [['announce_worker']]
+        [['announce_worker', @_]]
     );
 
     POE::Kernel->run();

@@ -10,6 +10,8 @@ class Workflow::Operation {
         name => { is => 'Text' },
         workflow_model => { is => 'UR::Object', id_by => 'workflow_model_id' },
         operation_type => { is => 'Workflow::OperationType', id_by => 'workflow_operationtype_id' },
+        is_valid => { is => 'Boolean', doc => 'Flag set when validate has run' },
+        executor => { is => 'Workflow::Executor', id_by => 'workflow_executor_id', is_optional => 1 }
     ]
 };
 
@@ -68,35 +70,58 @@ sub as_xml_simple_structure {
     return $struct;
 }
 
-#
-# This delegates to the executor after fixing up some inputs
+sub validate {
+    my ($self) = @_;
+    
+    $self->is_valid(1);
+    return ();
+}
 
-## refactor this into Workflow::Operation::Instance::execute
+sub operations_in_series {
+    my $self = shift;
+
+    return ($self);
+}
+
 sub execute {
-    my ($self, $data) = (shift,shift);
+    my $self = shift;
+    my %params = (@_);
 
-    my $operation_type = $self->operation_type;
-
-    ## rewrite inputs
-    my %current_inputs = ();
-    foreach my $input_name (keys %{ $data->input }) {
-        if (UNIVERSAL::isa($data->input->{$input_name},'Workflow::Link::Instance')) {
-            $current_inputs{$input_name} = $data->input->{$input_name}->left_value;
+    unless ($self->is_valid) {
+        my @errors = $self->validate;
+        unless (@errors == 0) {
+            die 'cannot execute invalid workflow';
         }
     }
-
-    my $executor = $self->workflow_model->executor;
     
-    if ($operation_type->can('executor') && defined $operation_type->executor) {
-        $executor = $operation_type->executor;
+    unless (exists $params{store} && $params{store} && $params{store}->can('sync')) {
+        $params{store} = Workflow::Store::None->create();
     }
-    
-    $executor->execute(
-        operation_instance => $data,
-        edited_input => \%current_inputs
+
+    my $operation_instance = Workflow::Operation::Instance->create(
+        operation => $self,
+        input => $params{input} || {},
+        output => {},
+        store => $params{store},
+        output_cb => $params{output_cb}
     );
+
+    $operation_instance->sync;
+    $operation_instance->execute;
+
+    return $operation_instance;
+}
+
+sub wait {
+    my $self = shift;
     
-    return $data;
+    $self->executor->wait($self);
+}
+
+sub detach {
+    my $self = shift;
+    
+    $self->executor->detach($self);
 }
 
 1;

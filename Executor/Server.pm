@@ -19,6 +19,7 @@ sub execute {
     ## delegate back to the server
     
     if ($params{operation_instance}->operation->isa('Workflow::Model')) {
+        $self->status_message('MExec ' . $params{operation_instance}->operation->name);
         my $submodel = $params{operation_instance}->operation;
         
         my $opi = $params{operation_instance};
@@ -43,6 +44,7 @@ sub execute {
         $submodel->wait;
         
     } else {
+        $self->status_message('OExec ' . $params{operation_instance}->operation->name);
         $self->server->run_operation(
             $params{operation_instance},
             $params{edited_input}
