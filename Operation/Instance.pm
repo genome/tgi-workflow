@@ -163,10 +163,10 @@ sub input_value {
 sub execute {
     my $self = shift;
 
-    $self->status_message("exec/" . $self->id . "/" . $self->operation->name);
+#    $self->status_message("exec/" . $self->id . "/" . $self->operation->name);
 
-    print ref($self->model_instance->workflow_model->executor) . "\n"
-        if ($self->model_instance);
+#    print ref($self->model_instance->workflow_model->executor) . "\n"
+#        if ($self->model_instance);
 
     if ($self->operation->operation_type->isa('Workflow::OperationType::Model')) {
 
