@@ -338,8 +338,7 @@ sub execute_workflow {
 
     my $executor = Workflow::Executor::Server->create;
     $executor->server($self);
-    
-    $workflow->executor($executor);
+    $workflow->set_all_executor($executor);
  
     my $store = Workflow::Store::Db->create;
  
