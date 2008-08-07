@@ -100,11 +100,11 @@ sub execute {
 
     my $operation_instance = Workflow::Operation::Instance->create(
         operation => $self,
-        input => $params{input} || {},
-        output => {},
         store => $params{store},
         output_cb => $params{output_cb}
     );
+    $operation_instance->input($params{input} || {});
+    $operation_instance->output({});
 
     $operation_instance->sync;
     $operation_instance->execute;
