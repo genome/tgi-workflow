@@ -143,7 +143,7 @@ sub start_new_worker {
         $queue = $optype->lsf_queue;
     }
     
-    my $client_start_cmd = 'bsub -q ' . $queue . ' -N -u "eclark@genome.wustl.edu"' . $rusage .
+    my $client_start_cmd = 'bsub -q ' . $queue . ' -N -u "' . $ENV{USER} . '@genome.wustl.edu"' . $rusage .
         'perl -e \'BEGIN { delete $ENV{PERL_USED_ABOVE}; }' . $self->{include_string} . ' use above "' . $self->{namespace} . 
         '"; use Workflow::Client; Workflow::Client->run_worker("' .
         $self->{server_host} . '",' . $self->{server_port} . ',"' . $operation_instance->id . '")\'';
