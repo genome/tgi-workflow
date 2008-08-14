@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 31;
+use Test::More tests => 28;
 use Switch;
 
 my @operationtypes = qw{
@@ -98,6 +98,7 @@ foreach my $operationtype (@operationtypes) {
             is_deeply($out,{result => 1},'check output ' . $operationtype);
         }
         case 'Model' {
+            if (0) {
             my $dir = -d 't/xml.d' ? 't/xml.d' : 'xml.d';
             my $w = Workflow::Model->create_from_xml($dir . '/00_basic.xml');
             
@@ -115,6 +116,7 @@ foreach my $operationtype (@operationtypes) {
                 'today' => UR::Time->today,
                 'result' => 1
             },'check output ' . $operationtype);
+            }
         }
         case 'ModelInput' {
         }

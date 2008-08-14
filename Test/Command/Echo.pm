@@ -14,7 +14,7 @@ class Workflow::Test::Command::Echo {
             doc => 'output',
             calculate_from => ['input'],
             calculate => q|
-                return $input;
+                return "$input";
             |,
         }, 
     ],

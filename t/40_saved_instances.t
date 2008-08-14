@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 7;
+use Test::More tests => 9;
 use Devel::Size qw(size total_size);
 use Workflow;
 
@@ -22,15 +22,11 @@ ok(do {
     $w->is_valid;
 },'validate');
 
-
 my $collector = sub {
     my ($data, $set) = @_;
 
     my $s = $data->save_instance;
     ok($s,'saved operation instance');
-
-#    $s = $data->save_instance;
-#    ok($s,'saved model instance');
 
     # just let it leave scope
 };
@@ -45,9 +41,23 @@ $w->execute(
 
 $w->wait;
 
-#my ($saved) = Workflow::Operation::SavedInstance->get();
-#my $normal = $saved->load_instance($w);
+$w = Workflow::Model->create_from_xml($dir . '/10_nested.xml');
+ok($w,'create nested workflow');
+isa_ok($w,'Workflow::Model');
 
-#print Data::Dumper->new([$saved, $normal])->Dump;
+ok(do {
+    $w->validate;
+    $w->is_valid;
+},'validate');
 
-ok(UR::Context->commit,'commit');
+my $data = $w->execute(
+    input => {
+        'test input' => [
+            qw/ab cd ef gh jk/
+        ]
+    }
+);
+
+$data->save_instance;
+
+#ok(UR::Context->commit,'commit');

@@ -16,8 +16,7 @@ class Workflow::Model {
     has => [
         operations => { is => 'Workflow::Operation', is_many => 1, reverse_id_by => 'workflow_model' },
         links => { is => 'Workflow::Link', is_many => 1 },
-        parallel_by => { },
-        filename => { }
+        filename => { is => 'String' }
     ]
 };
 

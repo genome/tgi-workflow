@@ -5,60 +5,56 @@ use strict;
 use warnings;
 
 class Workflow::Model::Instance {
+    isa => 'Workflow::Operation::Instance',
     is_transactional => 0,
     has => [
-        workflow_model => { is => 'Workflow::Model', id_by => 'workflow_model_id' },
-        operation_instances => { is => 'Workflow::Operation::Instance', is_many => 1 },
-        parent_instance => { is => 'Workflow::Operation::Instance', id_by => 'parent_instance_id' },
-        parent_instance_wrapped => { is => 'Object::Destroyer', doc => 'Workflow::Operation::Instance objected wrapped by Object::Destroyer' },
-        parallel_index => { }
+        child_instances => { is => 'Workflow::Operation::Instance', is_many => 1, reverse_id_by => 'parent_instance' },
+        input_connector => { is => 'Workflow::Operation::Instance', id_by => 'input_connector_id' },
+        output_connector => { is => 'Workflow::Operation::Instance', id_by => 'output_connector_id' },
     ]
 };
 
 sub create {
     my $class = shift;
-    my $self = $class->SUPER::create(@_);
+    my %args = (@_);
+    my $load = delete $args{load_mode};
+    my $self = $class->SUPER::create(%args);
+
+    return $self if $load;
     
-    my $parent = $self->parent_instance;
-
-    my %input = %{ $parent->input };
-    if (defined $self->parallel_index) {
-        $input{ $parent->operation->parallel_by() } = 
-            $parent->input_value($parent->operation->parallel_by)->[$self->parallel_index];
-    }
-
     my @all_opi;
-    foreach ($self->workflow_model->operations) {
+    foreach ($self->operation->operations) {
         my $this_data = Workflow::Operation::Instance->create(
             operation => $_,
-            model_instance => $self,
+            parent_instance => $self,
             is_done => 0,
-            store => $parent->store
+            store => $self->store
         );
         $this_data->input({});
         $this_data->output({});
-        if ($_ == $self->workflow_model->get_input_connector) {
-            $this_data->output(
-                \%input
-            );
-        }
         push @all_opi, $this_data;
     }
     foreach (@all_opi) {
         $_->set_input_links;
     }
     
+    $self->input_connector(Workflow::Operation::Instance->get(
+        operation => $self->operation->get_input_connector,
+        parent_instance => $self
+    ));
+    
+    $self->output_connector(Workflow::Operation::Instance->get(
+        operation => $self->operation->get_output_connector,
+        parent_instance => $self
+    ));
+    
     return $self;
-}
-
-sub save_instance {
-    return Workflow::Model::SavedInstance->create_from_instance(@_);
 }
 
 sub incomplete_operation_instances {
     my $self = shift;
     
-    my @all_data = $self->operation_instances;
+    my @all_data = $self->child_instances;
 
     return grep {
         !$_->is_done
@@ -67,7 +63,8 @@ sub incomplete_operation_instances {
 
 sub resume {
     my $self = shift;
-    
+
+die 'needs to be fixed';
     foreach my $this ($self->operation_instances) {
         $this->is_running(0) if ($this->is_running);
     }
@@ -85,38 +82,49 @@ sub resume {
     return $self->parent_instance;
 }
 
+sub execute {
+    my $self = shift;
+
+    $self->input_connector->output($self->input);
+    $self->SUPER::execute;
+}
+
+sub execute_single {
+    my $self = shift;
+
+    my @runq = $self->runq;
+    foreach my $this_data (@runq) {
+        $this_data->is_running(1);
+    }
+
+    foreach my $this_data (@runq) {
+        $this_data->execute;
+    }
+}
+
 sub completion {
     my $self = shift;
-        
-    my $output_data = Workflow::Operation::Instance->get(
-        operation => $self->workflow_model->get_output_connector,
-        model_instance => $self
-    );
 
-    my $parent = $self->parent_instance;
-    my $poutputs = $parent->output;
-
-    my $final_outputs = $output_data->input;
-    foreach my $output_name (keys %$final_outputs) {
-        while (UNIVERSAL::isa($final_outputs->{$output_name},'Workflow::Link::Instance')) {
-            $final_outputs->{$output_name} = $final_outputs->{$output_name}->left_value;
-        }
-        
-        if (defined $self->parallel_index) {
-            $poutputs->{$output_name} ||= [];
-            $poutputs->{$output_name}->[ $self->parallel_index ] = $final_outputs->{$output_name};
+    my $oc = $self->output_connector;
+    foreach my $output_name (keys %{ $oc->input }) {
+        if (ref($oc->input->{$output_name}) eq 'ARRAY') {
+            my @new = map {
+                UNIVERSAL::isa($_,'Workflow::Link::Instance') ?
+                    $_->value : $_
+            } @{ $oc->input->{$output_name} };
+            $self->output->{$output_name} = \@new;
         } else {
-            $poutputs->{$output_name} = $final_outputs->{$output_name};
+            $self->output->{$output_name} = $oc->input_value($output_name);
         }
     }
-    $parent->output($poutputs);
-    $parent->completion($self);
+
+    $self->SUPER::completion;
 }
 
 sub runq {
     my $self = shift;
 
-    return $self->runq_filter($self->operation_instances);
+    return $self->runq_filter($self->child_instances);
 }
 
 sub runq_filter {
@@ -131,14 +139,6 @@ sub runq_filter {
     } @_;
     
     return @runq;
-}
-
-sub sync {
-    my ($self) = @_;
-    
-    Carp::carp("sync on this class deprecated");
-    
-    return $self->parent_instance->store->sync($self);
 }
 
 sub delete {

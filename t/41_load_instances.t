@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 9;
+use Test::More tests => 8;
 use Devel::Size qw(size total_size);
 use Workflow;
 
@@ -13,7 +13,7 @@ require_ok('Workflow::Model');
 
 can_ok('Workflow::Model',qw/create validate is_valid execute/);
 
-my $w = Workflow::Model->create_from_xml($dir . '/02_widget.xml');
+my $w = Workflow::Model->create_from_xml($dir . '/10_nested.xml');
 ok($w,'create workflow');
 isa_ok($w,'Workflow::Model');
 
@@ -23,14 +23,14 @@ ok(do {
 },'validate');
 
 
-my ($saved) = Workflow::Model::SavedInstance->get();
+my ($saved) = Workflow::Operation::SavedInstance->get(82);
 my $normal = $saved->load_instance($w);
-my @opi = $normal->operation_instances;
-my $parent = $normal->parent_instance;
+my @opi = $normal->child_instances;
 
 ok($saved, 'got saved model');
 ok($normal, 'loaded saved model');
 ok(@opi, 'saved model has operation instances');
-ok($parent, 'saved model has parent');
 
-#print Data::Dumper->new([$saved, $normal, $parent, \@opi],['saved','normal','parent','operation_instances'])->Dump;
+#print Data::Dumper->new([$saved, $normal,\@opi],['saved','normal','operation_instances'])->Dump;
+
+#$normal->treeview_debug;

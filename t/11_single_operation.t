@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 7;
+use Test::More tests => 11;
 use Workflow;
 
 require_ok('Workflow::Operation');
@@ -44,4 +44,24 @@ is_deeply(
         'result' => 1
     },
     'check output'
+);
+
+ok($w->parallel_by('input'),'set parallel');
+
+ok($w->execute(
+    input => {
+        'input' => ['abcd','efgh','hijk']
+    },
+    output_cb => $collector
+),'execute parallel workflow');
+
+ok($w->wait,'wait for completion');
+
+is_deeply(
+    $output,
+    {
+        'output' => ['abcd','efgh','hijk'],
+        'result' => [1,1,1]
+    },
+    'check parallel output'
 );

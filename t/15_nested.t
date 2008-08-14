@@ -11,7 +11,7 @@ my $dir = -d 't/xml.d' ? 't/xml.d' : 'xml.d';
 require_ok('Workflow::Model');
 can_ok('Workflow::Model',qw/create validate is_valid execute/);
 
-my $w = Workflow::Model->create_from_xml($dir . '/00_basic.xml');
+my $w = Workflow::Model->create_from_xml($dir . '/10_nested.xml');
 ok($w,'create workflow');
 isa_ok($w,'Workflow::Model');
 
@@ -24,10 +24,9 @@ $w->parallel_by('model input string');
 
 my $data = $w->execute(
     input => {
-        'model input string' => [
+        'test input' => [
             qw/ab cd ef gh jk/
-        ],
-        'sleep time' => 1
+        ]
     }
 );
 
@@ -37,8 +36,7 @@ my $output = $data->output;
 is_deeply(
     $output,
     {
-        'model output string' => [qw/ab cd ef gh jk/],
-        'today' => [UR::Time->today,UR::Time->today,UR::Time->today,UR::Time->today,UR::Time->today],
+        'test output' => [qw/ab cd ef gh jk/],
         'result' => [1,1,1,1,1]
     },
     'check output'

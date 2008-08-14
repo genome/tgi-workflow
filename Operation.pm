@@ -11,28 +11,29 @@ class Workflow::Operation {
         workflow_model => { is => 'UR::Object', id_by => 'workflow_model_id' },
         operation_type => { is => 'Workflow::OperationType', id_by => 'workflow_operationtype_id' },
         is_valid => { is => 'Boolean', doc => 'Flag set when validate has run' },
-        executor => { is => 'Workflow::Executor', id_by => 'workflow_executor_id', is_optional => 1 }
+        executor => { is => 'Workflow::Executor', id_by => 'workflow_executor_id', is_optional => 1 },
+        parallel_by => { is => 'String' },
     ]
 };
 
 sub dependent_operations {
     my $self = shift;
     
-    my @operations = map {
-        $_->right_operation
+    my %operations = map {
+        $_->right_operation->id => $_->right_operation
     } Workflow::Link->get(left_operation => $self);
     
-    return @operations;
+    return values %operations;
 }
 
 sub depended_on_by {
     my $self = shift;
     
-    my @operations = map {
-        $_->left_operation
+    my %operations = map {
+        $_->left_operation->id => $_->left_operation
     } Workflow::Link->get(right_operation => $self);
     
-    return @operations;
+    return values %operations;
 }
 
 sub create_from_xml_simple_structure {
