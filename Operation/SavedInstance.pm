@@ -108,6 +108,7 @@ sub load_instance {
     my $self = shift;
     my $operation = shift; ## the real Workflow::Operation, not an instance of execution
     my $parent_instance = shift;
+    my $no_peers = shift;
 
     my $unsaved;
     if ($unsaved = Workflow::Operation::Instance->get($self->orig_instance_id)) {
@@ -133,16 +134,29 @@ sub load_instance {
     $unsaved->input($inputs);    
     $unsaved->output(thaw $self->output);
 
-    if ($self->peer_of_id) {
+    if ($self->peer_of_id && !defined $no_peers) {
         if ($self->peer_of_id == $self->id) {
             $unsaved->peer_of($unsaved);
+            
+            if (!defined $parent_instance) {
+                my @saved_peers = Workflow::Operation::SavedInstance->get(
+                    peer_of_id => $self->id
+                );
+                
+                foreach my $ps (@saved_peers) {
+                    next if ($ps == $self);
+                    
+                    my $n = $ps->load_instance($operation,undef,1);
+                    $n->peer_of($unsaved);
+                }
+            }
         } else {
             my $ps = Workflow::Operation::SavedInstance->get($self->peer_of_id);
             unless ($ps) {
                 Carp::croak('op points to a missing peer');
             }
 
-            if (!defined $parent_instance) {
+            unless (defined $parent_instance) {
                 my $unsaved_peer = $ps->load_instance($operation);
             }
 
