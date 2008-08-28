@@ -99,6 +99,18 @@ sub execute {
         $params{store} = Workflow::Store::None->create();
     }
 
+    {
+        my %ikeys = map { $_ => 1 } keys %{ $params{input} };
+        foreach my $k (@{ $self->operation_type->input_properties }) {
+            delete $ikeys{$k} if exists $ikeys{$k};
+        }
+
+        if (scalar keys %ikeys) {
+            Carp::croak('execute: Extra inputs provided');
+            return;
+        }
+    }
+
     my $operation_instance = Workflow::Operation::Instance->create(
         operation => $self,
         store => $params{store},
