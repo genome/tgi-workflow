@@ -77,17 +77,10 @@ foreach my $o (UR::Object->all_objects_loaded) {
 }
 ok($pass,'cleared workflow objects');
 
-
-foreach my $o (values %$UR::DeletedRef::all_objects_deleted) {
-#    print Data::Dumper->new([$o])->Dump . "\n";
-    if ($o->{original_class} eq 'Workflow::OperationType::Command') {
-        diag('wtf');
-        $o->resurrect;
-    }
-}
-
 my $normal = Workflow::Store::Db::Operation::Instance->get($id);
 
-$DB::single=1;
-$normal->treeview_debug;
+ok($normal,'loaded instance');
+ok(my @array = $normal->child_instances,'has children');
+#$DB::single=1;
+#$normal->treeview_debug;
 
