@@ -6,9 +6,19 @@ use warnings;
 use above 'Workflow';
 use Data::Dumper;
 
+Workflow::Executor::SerialDeferred->add_observer(
+    aspect => 'count',
+    callback => sub {
+        my ($self) = @_;
+        print $self->id . ' ' . $self->count . "\n";
+    }
+);
+
 my $w = Workflow::Model->create_from_xml($ARGV[0] || 'xml.d/00_basic.xml');
 
-my @foo = qw/ab cd ef/;
+$w->executor->limit(1);
+
+my @foo = qw/ab/;
 
 my @pipeline_inputs = map {
     my %hash = (
@@ -21,16 +31,25 @@ my @pipeline_outputs = ();
 
 my $callback = sub {
     my ($data) = (@_);
+    print Data::Dumper->new([$data->current])->Dump;
     push @pipeline_outputs, $data->output;
 };
 
 foreach my $inputs (@pipeline_inputs) {
     my $result = $w->execute(
         input => $inputs,
-        output_cb => $callback    
+        output_cb => $callback,    
+        store => Workflow::Store::Db->create()
     );
 }
 
-$w->wait;
+eval {
 
-print Data::Dumper->new(\@pipeline_outputs)->Dump;
+    $w->wait;
+};
+if ($@) {
+    warn "$@\n";
+}
+UR::Context->commit();
+
+print Data::Dumper->new([$w,\@pipeline_outputs])->Dump;

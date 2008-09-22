@@ -35,7 +35,9 @@ CREATE TABLE dd_pk_constraint_column (
     rank integer NOT NULL,
     PRIMARY KEY (data_source,owner,table_name,column_name,rank)
 );
-INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::InstanceSchema','','SAVED_INSTANCE','instance_id',1);
+INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::InstanceSchema','','INSTANCE','instance_id',1);
+INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::InstanceSchema','','WORKFLOW_CACHE','workflow_id',1);
+INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::InstanceSchema','','INSTANCE_EXECUTION','execution_id',1);
 CREATE TABLE dd_table (
      data_source varchar NOT NULL,
      owner varchar,
@@ -47,7 +49,9 @@ CREATE TABLE dd_table (
      remarks varchar,
      PRIMARY KEY(data_source, owner, table_name)
 );
-INSERT INTO "dd_table" VALUES('Workflow::DataSource::InstanceSchema','','SAVED_INSTANCE','TABLE','entity',NULL,'2008-08-12 17:05:26',NULL);
+INSERT INTO "dd_table" VALUES('Workflow::DataSource::InstanceSchema','','WORKFLOW_CACHE','TABLE','entity',NULL,'2008-09-04 15:11:40',NULL);
+INSERT INTO "dd_table" VALUES('Workflow::DataSource::InstanceSchema','','INSTANCE','TABLE','entity',NULL,'2008-09-04 15:11:39',NULL);
+INSERT INTO "dd_table" VALUES('Workflow::DataSource::InstanceSchema','','INSTANCE_EXECUTION','TABLE','entity',NULL,'2008-09-04 15:11:40',NULL);
 CREATE TABLE dd_table_column (
     data_source varchar NOT NULL,
     owner varchar,
@@ -60,17 +64,27 @@ CREATE TABLE dd_table_column (
     remarks varchar,
     PRIMARY KEY(data_source, owner, table_name, column_name)
 );
-INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','SAVED_INSTANCE','PARALLEL_INDEX','INTEGER',NULL,'Y','2008-08-12 17:05:26','');
-INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','SAVED_INSTANCE','IS_DONE','INTEGER',NULL,'Y','2008-08-12 17:05:26','');
-INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','SAVED_INSTANCE','IS_PARALLEL','INTEGER',NULL,'Y','2008-08-12 17:05:26','');
-INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','SAVED_INSTANCE','NAME','TEXT',NULL,'N','2008-08-12 17:05:26','');
-INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','SAVED_INSTANCE','OUTPUT','BLOB',NULL,'Y','2008-08-12 17:05:26','');
-INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','SAVED_INSTANCE','INPUT','BLOB',NULL,'Y','2008-08-12 17:05:26','');
-INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','SAVED_INSTANCE','ORIG_INSTANCE_ID','TEXT',NULL,'N','2008-08-12 17:05:26','');
-INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','SAVED_INSTANCE','IS_RUNNING','INTEGER',NULL,'Y','2008-08-12 17:05:26','');
-INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','SAVED_INSTANCE','PEER_OF_ID','INTEGER',NULL,'Y','2008-08-12 17:05:26','');
-INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','SAVED_INSTANCE','INSTANCE_ID','INTEGER',NULL,'N','2008-08-12 17:05:26','');
-INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','SAVED_INSTANCE','PARENT_INSTANCE_ID','INTEGER',NULL,'Y','2008-08-12 17:05:26','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','INSTANCE_EXECUTION','EXIT_CODE','INTEGER',NULL,'Y','2008-09-04 15:11:40','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','WORKFLOW_CACHE','XML','BLOB',NULL,'Y','2008-09-04 15:11:40','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','INSTANCE_EXECUTION','INSTANCE_ID','INTEGER',NULL,'N','2008-09-04 15:11:40','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','INSTANCE_EXECUTION','STDOUT','TEXT',NULL,'Y','2008-09-04 15:11:40','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','INSTANCE','INSTANCE_ID','INTEGER',NULL,'N','2008-09-04 15:11:39','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','INSTANCE','PARENT_INSTANCE_ID','INTEGER',NULL,'Y','2008-09-04 15:11:39','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','INSTANCE','NAME','TEXT',NULL,'N','2008-09-04 15:11:39','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','INSTANCE_EXECUTION','START_TIME','TEXT',NULL,'Y','2008-09-04 15:11:40','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','INSTANCE_EXECUTION','IS_RUNNING','INTEGER',NULL,'Y','2008-09-04 15:11:40','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','INSTANCE_EXECUTION','STDERR','TEXT',NULL,'Y','2008-09-05 15:55:19','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','INSTANCE','PARALLEL_INDEX','INTEGER',NULL,'Y','2008-09-04 15:11:39','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','INSTANCE_EXECUTION','END_TIME','TEXT',NULL,'Y','2008-09-04 15:11:40','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','INSTANCE_EXECUTION','STATUS','TEXT',NULL,'N','2008-09-04 15:11:40','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','INSTANCE','PEER_INSTANCE_ID','INTEGER',NULL,'Y','2008-09-04 15:11:39','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','WORKFLOW_CACHE','WORKFLOW_ID','INTEGER',NULL,'N','2008-09-04 15:11:40','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','INSTANCE_EXECUTION','EXECUTION_ID','INTEGER',NULL,'N','2008-09-04 15:11:40','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','INSTANCE','CURRENT_EXECUTION_ID','INTEGER',NULL,'Y','2008-09-04 18:31:44','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','INSTANCE_EXECUTION','IS_DONE','INTEGER',NULL,'Y','2008-09-05 15:55:19','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','INSTANCE','OUTPUT_STORED','BLOB',NULL,'Y','2008-09-05 17:03:16','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','INSTANCE','CACHE_WORKFLOW_ID','INTEGER',NULL,'Y','2008-09-05 17:03:16','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','','INSTANCE','INPUT_STORED','BLOB',NULL,'Y','2008-09-05 17:03:16','');
 CREATE TABLE dd_unique_constraint_column (
     data_source varchar NOT NULL,
     owner varchar,

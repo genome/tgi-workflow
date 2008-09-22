@@ -6,6 +6,7 @@ use warnings;
 
 class Workflow::OperationType::Command {
     isa => 'Workflow::OperationType',
+    is_transactional => 0,
     has => [
         command_class_name => { is => 'String' },
         lsf_resource => { is => 'String', is_optional=>1 },

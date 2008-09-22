@@ -9,7 +9,6 @@ threads->debug(1);
 
 class Workflow::Executor::Fork {
     isa => 'Workflow::Executor',
-    is_transactional => 0,
     has => [
         threads => { }
     ]

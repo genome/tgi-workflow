@@ -5,9 +5,10 @@ use strict;
 
 class Workflow::Executor::SerialDeferred {
     isa => 'Workflow::Executor',
-    is_transactional => 0,
     has => [
-        queue => { is => 'ARRAY' }
+        queue => { is => 'ARRAY' },
+        limit => { is => 'Integer', doc => 'Count of operations to run', is_optional => 1 },
+        count => { is => 'Integer', doc => 'Number run so far', default_value => 0 },
     ]
 };
 
@@ -21,6 +22,8 @@ sub execute {
 
     push @{ $self->queue }, [ @params{'operation_instance','edited_input'} ];
 
+    $params{'operation_instance'}->status('scheduled');
+
     return;
 }
 
@@ -28,17 +31,29 @@ sub wait {
     my $self = shift;
 
     while (scalar @{ $self->queue } > 0) {
-
         my ($opdata, $edited_input) = @{ shift @{ $self->queue } };
 
-#        $self->status_message('exec/' . $opdata->model_instance->id . '/' . $opdata->operation->name);
-        my $outputs = $opdata->operation->operation_type->execute(%{ $opdata->input }, %{ $edited_input });
+        if (!defined $self->limit || $self->count < $self->limit) {
+            $self->count($self->count + 1);
 
-        $opdata->output({ %{ $opdata->output }, %{ $outputs } });
-        $opdata->is_done(1);
+            $opdata->current->status('running');
+            $opdata->current->start_time(UR::Time->now);
+    #        $self->status_message('exec/' . $opdata->model_instance->id . '/' . $opdata->operation->name);
+            my $outputs;
+            eval {
+                $outputs = $opdata->operation->operation_type->execute(%{ $opdata->input }, %{ $edited_input });
+            };
+            if ($@) {
+                warn $@; 
+                $opdata->current->status('crashed');
+            } else {
+                $opdata->output({ %{ $opdata->output }, %{ $outputs } });        
+                $opdata->current->status('done');
+            }
+            $opdata->current->end_time(UR::Time->now);
+        }
 
         $opdata->completion;
-
     }
 
     1;    

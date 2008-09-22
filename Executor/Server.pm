@@ -6,7 +6,6 @@ use POE;
 
 class Workflow::Executor::Server {
     isa => 'Workflow::Executor',
-    is_transactional => 0,
     has => [
         server => { is => 'Workflow::Server' }
     ]

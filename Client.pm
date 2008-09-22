@@ -3,6 +3,13 @@ package Workflow::Client;
 
 use strict;
 use Workflow;
+use Workflow::Operation::InstanceExecution;
+use Workflow::Operation::Instance;
+use Workflow::Model::Instance;
+use Workflow::Store::Db::Operation::InstanceExecution;
+use Workflow::Store::Db::Operation::Instance;
+use Workflow::Store::Db::Model::Instance;
+
 
 use POE qw(Component::Client::TCP Filter::Reference);
 

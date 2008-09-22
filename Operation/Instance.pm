@@ -6,20 +6,39 @@ use warnings;
 use Workflow ();
 
 class Workflow::Operation::Instance {
-    is_transactional => 0,
+    id_by => [
+        instance_id => { }
+    ],
     has => [
-        operation => { is => 'Workflow::Operation', id_by => 'workflow_operation_id' },
-        parent_instance => { is => 'Workflow::Model::Instance', id_by => 'parent_instance_id' },
+        operation => {
+            is => 'Workflow::Operation',
+            id_by => 'workflow_operation_id',
+            is_transient => 1
+        },
+        parent_instance => {
+            is => 'Workflow::Model::Instance',
+            id_by => 'parent_instance_id'
+        },
         output => { is => 'HASH' },
         input => { is => 'HASH' },
-        store => { is => 'Workflow::Store' },
-        output_cb => { is => 'CODE' },
-        is_done => { is => 'Boolean' },
-        is_running => { is => 'Boolean' },
+        store => {
+            is => 'Workflow::Store',
+            id_by => 'workflow_store_id',
+            is_transient => 1
+        },
+        output_cb => {
+            is => 'CODE',
+            is_transient => 1,
+        },
         parallel_index => { is => 'Integer' },
-        peer_of => { is => 'Workflow::Operation::Instance', id_by => 'peer_instance_id' },
-        parallel_by => { is => 'String' },
-        is_parallel => { 
+        peer_of => { 
+            is => 'Workflow::Operation::Instance',
+            id_by => 'peer_instance_id'
+        },
+        parallel_by => {
+            via => 'operation'
+        },
+        is_parallel => {
             is => 'Boolean',
             calculate => q{
                 if (defined $self->parallel_by && 
@@ -28,9 +47,38 @@ class Workflow::Operation::Instance {
                 }
                 return 0;
             },
+        },
+        current => { 
+            is => 'Workflow::Operation::InstanceExecution',
+            id_by => 'current_execution_id', 
+            is_optional => 1
+        },
+        is_done => {
+            via => 'current',
+            is_mutable => 1
+        },
+        is_running => {
+            via => 'current',
+            is_mutable => 1
+        },
+        status => {
+            via => 'current',
+            is_mutable => 1
         }
     ]
 };
+
+sub operation_instance_class_name {
+    'Workflow::Operation::Instance'
+}
+
+sub model_instance_class_name {
+    'Workflow::Model::Instance'
+}
+
+sub instance_execution_class_name {
+    'Workflow::Operation::InstanceExecution'
+}
 
 sub create {
     my $class = shift;
@@ -38,22 +86,38 @@ sub create {
     my $self;
     
     my $load = $args{load_mode};
-    if ($class eq __PACKAGE__ && $args{operation} && $args{operation}->isa('Workflow::Model')) {
-        $self = Workflow::Model::Instance->create(%args);
+    if ($class eq $class->operation_instance_class_name && $args{operation} && $args{operation}->isa('Workflow::Model')) {
+        my $model_instance_class = $class->model_instance_class_name;
+
+        $self = $model_instance_class->create(%args);
         delete $args{load_mode};
     } else {
         delete $args{load_mode};
-        $self = $class->SUPER::create(%args);
+        $self = $class->UR::Object::create(%args);
+
+    
+#    $self->parallel_by($self->operation->parallel_by)
+#        if (!$load && $self->operation->parallel_by);
+
+        my $instance_exec_class = $class->instance_execution_class_name;
+
+        my $ie = $instance_exec_class->create(
+            operation_instance => $self,
+            status => 'new',
+            is_done => 0,
+            is_running => 0
+        );
+
+        $self->current($ie);
+
     }
     
-    $self->parallel_by($self->operation->parallel_by)
-        if (!$load && $self->operation->parallel_by);
-        
     return $self;
 }
 
 sub save_instance {
-    return Workflow::Operation::SavedInstance->create_from_instance(@_);
+    Carp::carp('deprecated');
+#    return Workflow::Operation::SavedInstance->create_from_instance(@_);
 }
 
 sub sync {
@@ -86,9 +150,13 @@ sub set_input_links {
     my %linkage = ();
     
     foreach my $link (@links) {
-        my ($opi) = $self->parent_instance->child_instances(
-            operation => $link->left_operation
-        );
+        my $opi;
+        foreach my $child ($self->parent_instance->child_instances) {
+            if ($child->operation == $link->left_operation) {
+                $opi = $child;
+                last;
+            }
+        }
         next unless $opi;
         
         my $linki = Workflow::Link::Instance->create(
@@ -164,6 +232,7 @@ sub treeview_debug {
     if ($self->is_parallel) {
         print ' -' . $self->parallel_index;
     }
+    print ' ' . $self->current->status;
     print "\n";
 
     while (my ($k,$v) = each(%{ $self->input })) {
@@ -196,6 +265,25 @@ sub treeview_debug {
     }
 }
 
+sub resume {
+    my ($self) = @_;
+    
+    die 'nf';
+    if ($self->status eq 'crashed' or $self->status eq 'running') {
+        my $instance_exec_class = $self->instance_execution_class_name;
+        my $ie = $instance_exec_class->create(
+            operation_instance => $self,
+            status => 'new',
+            is_done => 0,
+            is_running => 0
+        );
+
+        $self->current($ie);    
+    }
+
+    $self->execute;
+}
+
 sub execute {
     my $self = shift;
 
@@ -217,7 +305,7 @@ sub execute_single {
     if ($self->parent_instance && $self == $self->parent_instance->input_connector) {
         $self->output($self->parent_instance->input);
     }
-    
+        
     my %current_inputs = ();
     foreach my $input_name (keys %{ $self->input }) {
         if (UNIVERSAL::isa($self->input->{$input_name},'Workflow::Link::Instance')) {
@@ -250,21 +338,40 @@ sub completion {
     $self->is_running(0);
     $self->sync;
 
-    if ($self->parent_instance) {
+    my $try_again = 0;
+    if ($try_again && $self->current->status eq 'crashed') {
+        die 'incomp';
+        
+        my $new_try = Workflow::Operation::InstanceExecution->create(
+            operation_instance => $self,
+            status => 'new',
+            is_done => 0,
+            is_running => 0
+        );        
+        $self->current($new_try);
+        $self->is_running(1);
+        
+        $self->execute_single();
+    } elsif ($self->parent_instance) {
         my $parent = $self->parent_instance;
-        my @incomplete_operations = $parent->incomplete_operation_instances;
-        if (@incomplete_operations) {
-            my @runq = $parent->runq_filter($self->dependent_operations);
-
-            foreach my $this_data (@runq) {
-                $this_data->is_running(1);
-            }
-
-            foreach my $this_data (@runq) {
-                $this_data->execute;
-            }        
-        } else {
+        if ($self->current->status eq 'crashed') {
+            $parent->current->status('crashed');
             $parent->completion;
+        } else {
+            my @incomplete_operations = $parent->incomplete_operation_instances;
+            if (@incomplete_operations) {
+                my @runq = $parent->runq_filter($self->dependent_operations);
+
+                foreach my $this_data (@runq) {
+                    $this_data->is_running(1);
+                }
+
+                foreach my $this_data (@runq) {
+                    $this_data->execute;
+                }        
+            } else {
+                $parent->completion;
+            }
         }
     } elsif ($self->incomplete_peers == 0) {
         if (defined $self->peer_of && $self->peer_of != $self && defined $self->peer_of->output_cb) {
@@ -294,6 +401,8 @@ sub completion {
             }
 
             $self->peer_of->output_cb->($return);
+        } elsif ($self->current->status eq 'crashed') {
+            die 'current crashed';
         } elsif (defined $self->output_cb) {
             $self->output_cb->($self);
         }
@@ -338,10 +447,11 @@ sub create_peers {
         }
         $dep->input(\%input);
     }
+    my $operation_class_name = $self->operation_instance_class_name;
     
     $self->peer_of($self);
     for (my $i = 1; $i < scalar @{ $self->input_raw_value($self->parallel_by) }; $i++) {
-        my $peer = Workflow::Operation::Instance->create(
+        my $peer = $operation_class_name->create(
             operation => $self->operation,
             parallel_index => $i,
             store => $self->store,
@@ -408,6 +518,14 @@ sub peers {
         operation => $self->operation,
         peer_of => $self->peer_of
     );
+}
+
+sub sorted_peers {
+    my $self = shift;
+    
+    return sort {
+        $a->parallel_index <=> $b->parallel_index
+    } $self->peers;
 }
 
 sub incomplete_peers {

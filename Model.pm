@@ -12,7 +12,6 @@ use Workflow ();
 
 class Workflow::Model {
     isa => 'Workflow::Operation',
-    is_transactional => 0,
     has => [
         operations => { is => 'Workflow::Operation', is_many => 1, reverse_id_by => 'workflow_model' },
         links => { is => 'Workflow::Link', is_many => 1 },

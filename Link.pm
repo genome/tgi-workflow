@@ -7,7 +7,6 @@ use warnings;
 # links attach outputs to inputs
 
 class Workflow::Link {
-    is_transactional => 0,
     has => [
         workflow_model => { is => 'Workflow::Model', id_by => 'workflow_model_id' },
         right_operation => { is => 'Workflow::Operation', id_by => 'right_workflow_operation_id' },

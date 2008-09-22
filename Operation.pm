@@ -3,16 +3,16 @@ package Workflow::Operation;
 
 use strict;
 use warnings;
+use XML::Simple;
 
 class Workflow::Operation {
-    is_transactional => 0,
     has => [
         name => { is => 'Text' },
         workflow_model => { is => 'UR::Object', id_by => 'workflow_model_id' },
         operation_type => { is => 'Workflow::OperationType', id_by => 'workflow_operationtype_id' },
-        is_valid => { is => 'Boolean', doc => 'Flag set when validate has run' },
+        is_valid => { is => 'Boolean', is_optional=>1, doc => 'Flag set when validate has run' },
         executor => { is => 'Workflow::Executor', id_by => 'workflow_executor_id', is_optional => 1 },
-        parallel_by => { is => 'String' },
+        parallel_by => { is => 'String', is_optional=>1 },
     ]
 };
 
@@ -71,6 +71,13 @@ sub as_xml_simple_structure {
     return $struct;
 }
 
+sub save_to_xml {
+    my $self = shift;
+    my %args = @_;
+
+    return XMLout($self->as_xml_simple_structure, RootName=>'operation', XMLDecl=>1, %args);
+}
+
 sub validate {
     my ($self) = @_;
     
@@ -111,7 +118,9 @@ sub execute {
         }
     }
 
-    my $operation_instance = Workflow::Operation::Instance->create(
+    my $class = $params{store}->instance_class_name;
+
+    my $operation_instance = $class->create(
         operation => $self,
         store => $params{store},
         output_cb => $params{output_cb}
@@ -119,8 +128,8 @@ sub execute {
     $operation_instance->input($params{input} || {});
     $operation_instance->output({});
 
-    $operation_instance->sync;
     $operation_instance->execute;
+    $operation_instance->sync;
 
     return $operation_instance;
 }

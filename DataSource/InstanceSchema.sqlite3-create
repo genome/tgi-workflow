@@ -1,0 +1,29 @@
+CREATE TABLE workflow_cache (
+    workflow_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    xml BLOB
+);
+
+CREATE TABLE instance (
+    instance_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    parent_instance_id INTEGER,
+    peer_instance_id INTEGER,
+    current_execution_id INTEGER,
+    cache_workflow_id INTEGER,
+    name TEXT NOT NULL,
+    input_stored BLOB,
+    output_stored BLOB,
+    parallel_index INTEGER
+);
+
+CREATE TABLE instance_execution (
+    execution_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    instance_id INTEGER NOT NULL,
+    status TEXT NOT NULL,
+    start_time TEXT,
+    end_time TEXT,
+    exit_code INTEGER,
+    stdout TEXT,
+    stderr TEXT,
+    is_done INTEGER,
+    is_running INTEGER
+);

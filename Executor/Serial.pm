@@ -5,7 +5,6 @@ use strict;
 
 class Workflow::Executor::Serial {
     isa => 'Workflow::Executor',
-    is_transactional => 0
 };
 
 sub execute {
@@ -14,11 +13,15 @@ sub execute {
 
     my $opdata = $params{operation_instance};
 
+    $opdata->current->status('running');
+    $opdata->current->start_time(UR::Time->now);
+
 #    $self->status_message('exec/' . $opdata->dataset->id . '/' . $op->name);
     my $outputs = $opdata->operation->operation_type->execute(%{ $opdata->input }, %{ $params{edited_input} });
 
     $opdata->output({ %{ $opdata->output }, %{ $outputs } });
-    $opdata->is_done(1);
+    $opdata->current->status('done');
+    $opdata->current->end_time(UR::Time->now);
 
     $opdata->completion;
 

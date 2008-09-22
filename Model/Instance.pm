@@ -6,13 +6,31 @@ use warnings;
 
 class Workflow::Model::Instance {
     isa => 'Workflow::Operation::Instance',
-    is_transactional => 0,
     has => [
         child_instances => { is => 'Workflow::Operation::Instance', is_many => 1, reverse_id_by => 'parent_instance' },
         input_connector => { is => 'Workflow::Operation::Instance', id_by => 'input_connector_id' },
         output_connector => { is => 'Workflow::Operation::Instance', id_by => 'output_connector_id' },
     ]
 };
+
+#map { print "$_\n" } keys %Workflow::Model::Instance::;
+
+sub sorted_child_instances {
+    my $self = shift;
+
+    my $i = 0;
+    my %ops = map { 
+        $_->name() => $i++
+    } $self->operation->operations_in_series();
+            
+    my @child = sort {
+        $ops{ $a->operation->name } <=> $ops{ $b->operation->name } || 
+        $a->operation->name cmp $b->operation->name || 
+        $a->parallel_index <=> $b->parallel_index
+    } $self->child_instances(@_);
+    
+    return @child;
+}
 
 sub create {
     my $class = shift;
@@ -22,12 +40,13 @@ sub create {
 
     return $self if $load;
     
+    my $operation_class_name = $self->operation_instance_class_name;
+    
     my @all_opi;
     foreach ($self->operation->operations) {
-        my $this_data = Workflow::Operation::Instance->create(
+        my $this_data = $operation_class_name->create(
             operation => $_,
             parent_instance => $self,
-            is_done => 0,
             store => $self->store
         );
         $this_data->input({});
@@ -64,7 +83,12 @@ sub incomplete_operation_instances {
 sub resume {
     my $self = shift;
 
-die 'needs to be fixed';
+    die 'tried to resume a finished operation' if ($self->is_done);
+
+        
+    die 'nf';
+return;
+=pod
     foreach my $this ($self->operation_instances) {
         $this->is_running(0) if ($this->is_running);
     }
@@ -80,10 +104,15 @@ die 'needs to be fixed';
     }
     
     return $self->parent_instance;
+=cut
 }
 
 sub execute {
     my $self = shift;
+
+    $self->current->start_time(UR::Time->now);
+    $self->current->status('running');
+    $self->is_running(1);
 
     $self->input_connector->output($self->input);
     $self->SUPER::execute;
@@ -117,6 +146,9 @@ sub completion {
             $self->output->{$output_name} = $oc->input_value($output_name);
         }
     }
+
+    $self->current->end_time(UR::Time->now);
+    $self->current->status('done') if ($self->current->status eq 'running');
 
     $self->SUPER::completion;
 }
