@@ -176,8 +176,25 @@ sub is_ready {
             ($self->operation->operation_type->can('default_input') && 
             exists $self->operation->operation_type->default_input->{$input_name})) {
             if (UNIVERSAL::isa($current_inputs{$input_name},'Workflow::Link::Instance')) {
-                unless ($current_inputs{$input_name}->operation_instance->is_done && defined $self->input_value($input_name)) {
-                    push @unfinished_inputs, $input_name;
+                if ($current_inputs{$input_name}->operation_instance->is_parallel) {
+                    my $main_peer = $current_inputs{$input_name}->operation_instance->peer_of;
+                    if (!defined $main_peer) {
+                        push @unfinished_inputs, $input_name;
+                    } else {
+                        my @all = $main_peer->peers;
+                        unshift @all, $main_peer;
+                        my $sum = 0;
+                        for (@all) { 
+                            $_->is_done ? $sum++ : 0 
+                        }
+                        if ($sum < scalar @all) { 
+                            push @unfinished_inputs, $input_name;
+                        }
+                    }
+                } else {
+                    unless ($current_inputs{$input_name}->operation_instance->is_done && defined $self->input_value($input_name)) {
+                        push @unfinished_inputs, $input_name;
+                    }
                 }
             }
         } else {
@@ -390,11 +407,13 @@ sub completion {
 
             $self->peer_of->output_cb->($return);
         } elsif ($self->current->status eq 'crashed') {
+            $self->sync;
             die 'current crashed';
         } elsif (defined $self->output_cb) {
             $self->output_cb->($self);
         }
     }
+    $self->sync;
 }
 
 sub dependent_operations {

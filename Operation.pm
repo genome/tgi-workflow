@@ -8,9 +8,9 @@ use XML::Simple;
 class Workflow::Operation {
     has => [
         name => { is => 'Text' },
-        workflow_model => { is => 'UR::Object', id_by => 'workflow_model_id' },
+        workflow_model => { is => 'UR::Object', id_by => 'workflow_model_id', is_optional => 1 },
         operation_type => { is => 'Workflow::OperationType', id_by => 'workflow_operationtype_id' },
-        is_valid => { is => 'Boolean', is_optional=>1, doc => 'Flag set when validate has run' },
+        is_valid => { is => 'Boolean', default_value=>0, doc => 'Flag set when validate has run' },
         executor => { is => 'Workflow::Executor', id_by => 'workflow_executor_id', is_optional => 1 },
         parallel_by => { is => 'String', is_optional=>1 },
     ]
