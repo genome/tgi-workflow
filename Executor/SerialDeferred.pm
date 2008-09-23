@@ -6,7 +6,7 @@ use strict;
 class Workflow::Executor::SerialDeferred {
     isa => 'Workflow::Executor',
     has => [
-        queue => { is => 'ARRAY' },
+        queue => { is => 'ARRAY', default_value => [] },
         limit => { is => 'Integer', doc => 'Count of operations to run', is_optional => 1 },
         count => { is => 'Integer', doc => 'Number run so far', default_value => 0 },
     ]
