@@ -33,7 +33,8 @@ class Workflow::Operation::Instance {
         parallel_index => { is => 'Integer' },
         peer_of => { 
             is => 'Workflow::Operation::Instance',
-            id_by => 'peer_instance_id'
+            id_by => 'peer_instance_id',
+            is_optional => 1
         },
         parallel_by => {
             via => 'operation'
@@ -122,22 +123,8 @@ sub save_instance {
 
 sub sync {
     my ($self) = @_;
-    
-    return;
-    
-    my $store;
-    my $walkon = $self;
-    do {
-        $store = $walkon->store;
-        
-        unless ($store) {
-            $walkon = $walkon->parent_instance;
-        }
-    } while (!$store);
-    
-    $DB::single=1;
-    
-    return $store->sync($self);
+
+    return $self->store->sync($self) if $self->store;
 }
 
 sub set_input_links {
@@ -268,7 +255,7 @@ sub treeview_debug {
 sub resume {
     my ($self) = @_;
     
-    die 'nf';
+#    die 'nf';
     if ($self->status eq 'crashed' or $self->status eq 'running') {
         my $instance_exec_class = $self->instance_execution_class_name;
         my $ie = $instance_exec_class->create(
@@ -295,6 +282,7 @@ sub execute {
             $peer->execute_single;
         }
     } else {
+        $self->sync;
         $self->execute_single;
     }
 }
