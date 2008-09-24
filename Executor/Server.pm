@@ -18,6 +18,7 @@ sub execute {
     ## delegate back to the server
     
     if ($params{operation_instance}->operation->isa('Workflow::Model')) {
+        warn 'current incarnation should never reach this code, probably a bug';
         $self->status_message('MExec ' . $params{operation_instance}->operation->name);
         my $submodel = $params{operation_instance}->operation;
         
@@ -28,7 +29,8 @@ sub execute {
             my ($data) = @_;
             
             $opi->output({ %{ $opi->output }, %{ $data->output } });
-            $opi->is_done(1);
+            $opi->current->status('done');
+            $opi->current->end_time(UR::Time->now);
             $opi->completion;
         };
         

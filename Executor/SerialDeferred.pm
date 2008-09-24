@@ -38,7 +38,7 @@ sub wait {
 
             $opdata->current->status('running');
             $opdata->current->start_time(UR::Time->now);
-    #        $self->status_message('exec/' . $opdata->model_instance->id . '/' . $opdata->operation->name);
+#            $self->status_message('exec/' . $opdata->id . '/' . $opdata->operation->name);
             my $outputs;
             eval {
                 $outputs = $opdata->operation->operation_type->execute(%{ $opdata->input }, %{ $edited_input });

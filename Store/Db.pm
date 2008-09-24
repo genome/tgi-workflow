@@ -17,8 +17,6 @@ class Workflow::Store::Db {
 sub sync {
     my ($self, $operation_instance) = (@_);
 
-#    warn "syncing\n";
-
     UR::Context->commit;
     return $operation_instance;
 }

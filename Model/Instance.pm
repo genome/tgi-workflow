@@ -82,29 +82,27 @@ sub incomplete_operation_instances {
 
 sub resume {
     my $self = shift;
-
     die 'tried to resume a finished operation' if ($self->is_done);
 
-        
-    die 'nf';
-return;
-=pod
-    foreach my $this ($self->operation_instances) {
+    $self->current->status('running');
+    $self->is_running(1);
+    $self->input_connector->output($self->input);
+
+    foreach my $this ($self->child_instances) {
         $this->is_running(0) if ($this->is_running);
     }
     
-    my @runq = $self->workflow_model->runq_from_operation_instance_list($self->operation_instances);
+    my @runq = $self->runq();
 
     foreach my $this_data (@runq) {
         $this_data->is_running(1);
     }
 
     foreach my $this_data (@runq) {
-        $this_data->execute;
+        $this_data->resume;
     }
     
-    return $self->parent_instance;
-=cut
+    return $self;
 }
 
 sub execute {

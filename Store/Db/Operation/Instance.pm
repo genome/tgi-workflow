@@ -126,9 +126,32 @@ our @OBSERVERS = (
                     );
                     
                     $i->operation($op);
+                    
+                    if ($i->name eq 'input connector') {
+                        $self->input_connector($i);
+                    }
+                    if ($i->name eq 'output connector') {
+                        $self->output_connector($i);
+                    }
                 }
                 
             }
+        }
+    ),
+    __PACKAGE__->add_observer(
+        aspect => 'input',
+        callback => sub {
+            my ($self) = @_;
+            
+            $self->input_stored(freeze $self->input);
+        }
+    ),    
+    __PACKAGE__->add_observer(
+        aspect => 'output',
+        callback => sub {
+            my ($self) = @_;
+            
+            $self->output_stored(freeze $self->output);
         }
     ),
     __PACKAGE__->add_observer(
@@ -136,8 +159,10 @@ our @OBSERVERS = (
         callback => sub {
             my ($self) = @_;
             
-            $self->input_stored(freeze $self->input);
-            $self->output_stored(freeze $self->output);
+#            $DB::single=1;
+            
+#            $self->input_stored(freeze $self->input);
+#            $self->output_stored(freeze $self->output);
             
             $self->name($self->operation->name);
         }

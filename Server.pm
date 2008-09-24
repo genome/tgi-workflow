@@ -175,7 +175,11 @@ sub client_disconnect {
         ## something disconnected without finishing its stuff?  Just requeue it at the front.
         
         unshift @{ $self->{pending_ops} }, $execargs;
-        $self->start_new_worker($execargs->[0]);
+
+        $execargs->[0]->current->status('crashed');
+        $execargs->[0]->completion;
+
+#        $self->start_new_worker($execargs->[0]);
     }
     
     $k->alarm_remove_all;
@@ -259,7 +263,10 @@ sub try_to_execute {
         my $op = $opdata->operation;
 #        $op->status_message('exec/' . $opdata->model_instance->id . '/' . $op->name);
         $k->yield(
-            'send_operation', $op, $opdata, $edited_input, sub { $opdata->completion; }
+            'send_operation', $op, $opdata, $edited_input, 
+            sub { 
+                $opdata->completion; 
+            }
         );
 
         $h->{try_count} = 0;
@@ -349,6 +356,7 @@ sub execute_workflow {
         store => $store
     );
 
+    $wfdata->sync;
     $workflow->wait;
 
     $self->{executions}->{$wfdata->id} = $wfdata;
@@ -393,6 +401,10 @@ sub send_operation {
         }
     }
 
+    $opdata->current->status('running');
+    $opdata->current->start_time(UR::Time->now);
+    $opdata->sync;
+
     my $message = Workflow::Server::Message->create(
         type => 'command',
         heap => {
@@ -412,8 +424,12 @@ sub finish_operation {
     my $opdata = $creation_args->[1];
     my $message = $called_args->[0];
 
+    print Data::Dumper->new([$message])->Dump;
+
     $opdata->output({ %{ $opdata->output }, @{ $message->heap->{result} } });
-    $opdata->is_done(1);
+    $opdata->current->status('done');
+    $opdata->current->end_time(UR::Time->now);
+    $opdata->sync;
 
     delete $self->{worker_op}->{$s->ID};
     $k->yield('hangup');
