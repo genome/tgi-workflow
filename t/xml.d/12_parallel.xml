@@ -1,0 +1,18 @@
+<?xml version='1.0' standalone='yes'?>
+<workflow name="Example Workflow" executor="Workflow::Executor::SerialDeferred">
+  <link fromOperation="input connector" fromProperty="test input" toOperation="echo alpha" toProperty="input" />
+  <link fromOperation="echo alpha" fromProperty="output" toOperation="echo beta" toProperty="input" />
+  <link fromOperation="echo beta" fromProperty="output" toOperation="output connector" toProperty="test output" />
+  <link fromOperation="echo beta" fromProperty="result" toOperation="output connector" toProperty="result" />
+  <operation name="echo alpha" parallel_by="input">
+    <operationtype commandClass="Workflow::Test::Command::Echo" typeClass="Workflow::OperationType::Command" />
+  </operation>
+  <operation name="echo beta" parallel_by="input">
+    <operationtype commandClass="Workflow::Test::Command::Echo" typeClass="Workflow::OperationType::Command" />
+  </operation>
+  <operationtype typeClass="Workflow::OperationType::Model">
+    <inputproperty>test input</inputproperty>
+    <outputproperty>result</outputproperty>
+    <outputproperty>test output</outputproperty>
+  </operationtype>
+</workflow>

@@ -49,6 +49,8 @@ sub create_from_xml_simple_structure {
 
         $self = Workflow::Model->create_from_xml_simple_structure($struct,%params);
     } else {
+        $params{parallel_by} = $struct->{parallel_by} if $struct->{parallel_by};
+
         my $optype = Workflow::OperationType->create_from_xml_simple_structure($struct->{operationtype});
         $self = $class->create(
             name => $struct->{name},

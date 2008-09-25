@@ -175,9 +175,19 @@ sub is_ready {
             defined $current_inputs{$input_name} ||
             ($self->operation->operation_type->can('default_input') && 
             exists $self->operation->operation_type->default_input->{$input_name})) {
-            if (UNIVERSAL::isa($current_inputs{$input_name},'Workflow::Link::Instance')) {
-                unless ($current_inputs{$input_name}->operation_instance->is_done && defined $self->input_value($input_name)) {
-                    push @unfinished_inputs, $input_name;
+            
+            my $vallist;
+            if ($self->is_parallel && $self->parallel_by eq $input_name && ref($current_inputs{$input_name}) eq 'ARRAY') {
+                $vallist = $current_inputs{$input_name};
+            } else {
+                $vallist = [$current_inputs{$input_name}];
+            }
+            VALCHECK: foreach my $v (@$vallist) {
+                if (UNIVERSAL::isa($v,'Workflow::Link::Instance')) {
+                    unless ($v->operation_instance->is_done && defined $self->input_value($input_name)) {
+                        push @unfinished_inputs, $input_name;
+                        last VALCHECK;
+                    }
                 }
             }
         } else {
@@ -348,6 +358,7 @@ sub completion {
         } else {
             my @incomplete_operations = $parent->incomplete_operation_instances;
             if (@incomplete_operations) {
+                $DB::single = 1;
                 my @runq = $parent->runq_filter($self->dependent_operations);
 
                 foreach my $this_data (@runq) {
