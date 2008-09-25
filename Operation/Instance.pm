@@ -163,6 +163,8 @@ sub set_input_links {
 sub is_ready {
     my $self = shift;
 
+#    $DB::single=1 if $self->operation->name eq 'output connector';
+
     my @required_inputs = @{ $self->operation->operation_type->input_properties };
     my %current_inputs = ();
     if ( defined $self->input ) {
@@ -177,7 +179,7 @@ sub is_ready {
             exists $self->operation->operation_type->default_input->{$input_name})) {
             
             my $vallist;
-            if ($self->is_parallel && $self->parallel_by eq $input_name && ref($current_inputs{$input_name}) eq 'ARRAY') {
+            if (ref($current_inputs{$input_name}) eq 'ARRAY') {
                 $vallist = $current_inputs{$input_name};
             } else {
                 $vallist = [$current_inputs{$input_name}];
@@ -188,6 +190,9 @@ sub is_ready {
                         push @unfinished_inputs, $input_name;
                         last VALCHECK;
                     }
+                } elsif (!defined $v) {
+                    push @unfinished_inputs, $input_name;
+                    last VALCHECK;
                 }
             }
         } else {
@@ -358,7 +363,6 @@ sub completion {
         } else {
             my @incomplete_operations = $parent->incomplete_operation_instances;
             if (@incomplete_operations) {
-                $DB::single = 1;
                 my @runq = $parent->runq_filter($self->dependent_operations);
 
                 foreach my $this_data (@runq) {
@@ -444,7 +448,11 @@ sub create_peers {
     foreach my $dep (@deps) {
         my %input = ();
         while (my ($k,$v) = each(%{ $dep->input })) {
-            $input{$k} = [$v];
+            if (UNIVERSAL::isa($v,'Workflow::Link::Instance') && $v->operation_instance == $self) {
+                $input{$k} = [$v];
+            } else {
+                $input{$k} = $v;
+            }
         }
         $dep->input(\%input);
     }
@@ -465,7 +473,8 @@ sub create_peers {
         
         foreach my $dep (@deps) {
             my @k = grep {
-                if (UNIVERSAL::isa($dep->input->{$_}->[0],'Workflow::Link::Instance') &&
+                if (ref($dep->input->{$_}) eq 'ARRAY' && 
+                    UNIVERSAL::isa($dep->input->{$_}->[0],'Workflow::Link::Instance') &&
                     $dep->input->{$_}->[0]->operation_instance == $self) {
                     1;
                 } else {
@@ -473,9 +482,9 @@ sub create_peers {
                 }
             } keys %{ $dep->input };
 
-            while (my ($k,$v) = each(%{ $dep->input })) {
-                $dep->input->{$k}->[$i] = $dep->input->{$k}->[0];
-            }
+#            while (my ($k,$v) = each(%{ $dep->input })) {
+#                $dep->input->{$k}->[$i] = $dep->input->{$k}->[0];
+#            }
             foreach my $k (@k) {
                 $dep->input->{$k}->[$i] = Workflow::Link::Instance->create(
                     operation_instance => $peer,

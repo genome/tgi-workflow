@@ -36,10 +36,14 @@ sub execute {
         }
     }
 
+    my @output_values = map {
+        UNIVERSAL::isa($_,'Workflow::Link::Instance') ? $_->value : $_
+    } @$output;
+
     my ($output_name) = @{ $self->output_properties };
 
     return {
-        $output_name => $output,
+        $output_name => \@output_values,
         result => 1
     };
 }

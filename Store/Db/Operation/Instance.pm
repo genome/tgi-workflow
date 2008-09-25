@@ -142,7 +142,10 @@ our @OBSERVERS = (
         aspect => 'input',
         callback => sub {
             my ($self) = @_;
-            
+
+#            return $self->input_stored(undef) if !defined $self->input;
+
+            local $Storable::forgive_me = 1;
             $self->input_stored(freeze $self->input);
         }
     ),    
@@ -150,7 +153,10 @@ our @OBSERVERS = (
         aspect => 'output',
         callback => sub {
             my ($self) = @_;
-            
+
+#            return $self->output_stored(undef) if !defined $self->output;
+
+            local $Storable::forgive_me = 1;
             $self->output_stored(freeze $self->output);
         }
     ),
@@ -158,8 +164,6 @@ our @OBSERVERS = (
         aspect => 'presync',
         callback => sub {
             my ($self) = @_;
-            
-#            $DB::single=1;
             
 #            $self->input_stored(freeze $self->input);
 #            $self->output_stored(freeze $self->output);
