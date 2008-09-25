@@ -88,13 +88,11 @@ sub execute {
     my $self = shift;
     my %properties = @_;
 
+    $DB::single=1;
+
     my $command_name = $self->command_class_name;
 
-    my $command = $command_name->create();
-
-    while (my ($k,$v) = each(%properties)) {
-        $command->$k($v);
-    }
+    my $command = $command_name->create(%properties);
 
     my $retvalue = $command->execute;
 
