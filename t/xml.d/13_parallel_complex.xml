@@ -1,0 +1,30 @@
+<?xml version='1.0' standalone='yes'?>
+<workflow name="Example Workflow" executor="Workflow::Executor::SerialDeferred">
+  <link fromOperation="input connector" fromProperty="test input" toOperation="echo alpha"       toProperty="input" />
+  <link fromOperation="echo alpha"      fromProperty="output"     toOperation="cat"              toProperty="alpha" />
+  <link fromOperation="input connector" fromProperty="test input" toOperation="echo beta"        toProperty="input" />
+  <link fromOperation="echo beta"       fromProperty="output"     toOperation="cat"              toProperty="beta" />
+  <link fromOperation="cat"             fromProperty="all"        toOperation="output connector" toProperty="test output" />
+  <link fromOperation="cat"             fromProperty="result"     toOperation="output connector" toProperty="result" />
+  
+  <operation name="echo alpha" parallelBy="input">
+    <operationtype commandClass="Workflow::Test::Command::Echo" typeClass="Workflow::OperationType::Command" />
+  </operation>
+  <operation name="echo beta" parallelBy="input">
+    <operationtype commandClass="Workflow::Test::Command::Echo" typeClass="Workflow::OperationType::Command" />
+  </operation>
+  <operation name="cat">
+   <operationtype typeClass="Workflow::OperationType::Converge">
+    <inputproperty>alpha</inputproperty>
+    <inputproperty>beta</inputproperty>
+    <outputproperty>all</outputproperty>
+    <outputproperty>result</outputproperty>
+   </operationtype>
+  </operation>
+
+  <operationtype typeClass="Workflow::OperationType::Model">
+    <inputproperty>test input</inputproperty>
+    <outputproperty>result</outputproperty>
+    <outputproperty>test output</outputproperty>
+  </operationtype>
+</workflow>
