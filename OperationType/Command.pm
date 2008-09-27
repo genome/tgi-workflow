@@ -94,6 +94,8 @@ sub execute {
     if ($Workflow::DEBUG_GLOBAL) {
         if (UNIVERSAL::can('Devel::ptkdb','brkonsub')) {
             Devel::ptkdb::brkonsub($command_name . '::execute');
+        } elsif (UNIVERSAL::can('DB','cmd_b_sub')) {
+            DB::cmd_b_sub($command_name . '::execute');
         } else {
             $DB::single=2;
         }
