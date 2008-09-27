@@ -82,7 +82,7 @@ sub incomplete_operation_instances {
 
 sub resume {
     my $self = shift;
-    die 'tried to resume a finished operation' if ($self->is_done);
+    die 'tried to resume a finished operation: ' . $self->id if ($self->is_done);
 
     $self->current->status('running');
     $self->is_running(1);

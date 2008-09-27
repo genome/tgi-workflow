@@ -15,7 +15,7 @@ class Workflow::Test::Command::Die {
 
 operation_io Workflow::Test::Command::Die {
     input  => [ 'seconds' ],
-    output => []
+    output => [ 'result' ]
 };
 
 sub sub_command_sort_position { 10 }
@@ -42,8 +42,12 @@ sub execute {
     if ($self->seconds) {
         sleep $self->seconds;
     }
-    
-    die 'death by test case' unless defined $::DONT_DIE;
+   
+    if (defined $::DONT_DIE) {
+        warn "death overridden by global\n"; 
+    } else {
+        die "death by test case";
+    }
 
     1;
 }

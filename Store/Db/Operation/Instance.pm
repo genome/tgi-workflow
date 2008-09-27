@@ -143,7 +143,7 @@ our @OBSERVERS = (
         callback => sub {
             my ($self) = @_;
 
-#            return $self->input_stored(undef) if !defined $self->input;
+            return if !defined $self->input;
 
             local $Storable::forgive_me = 1;
             $self->input_stored(freeze $self->input);
@@ -154,7 +154,7 @@ our @OBSERVERS = (
         callback => sub {
             my ($self) = @_;
 
-#            return $self->output_stored(undef) if !defined $self->output;
+            return if !defined $self->output;
 
             local $Storable::forgive_me = 1;
             $self->output_stored(freeze $self->output);

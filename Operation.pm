@@ -70,6 +70,12 @@ sub as_xml_simple_structure {
         operationtype => $self->operation_type->as_xml_simple_structure
     };
 
+    $struct->{parallelBy} = $self->parallel_by if ($self->parallel_by);
+
+    if (!$self->workflow_model) {
+        $struct->{executor} = $self->executor->class;
+    }
+
     return $struct;
 }
 

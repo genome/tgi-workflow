@@ -65,6 +65,10 @@ class Workflow::Operation::Instance {
         status => {
             via => 'current',
             is_mutable => 1
+        },
+        debug_mode => { 
+            via => 'current',
+            is_mutable => 1
         }
     ]
 };
@@ -234,8 +238,8 @@ sub treeview_debug {
     if ($self->is_parallel) {
         print ' -' . $self->parallel_index;
     }
-    print ' ' . $self->current->status;
     print "\n";
+    print((' ' x $indent) . ' %' . join(' ',$self->status,$self->is_running,$self->is_done) . "\n");
 
     while (my ($k,$v) = each(%{ $self->input })) {
         my $vals = ref($v) eq 'ARRAY' ? $v : [$v];
@@ -281,6 +285,7 @@ sub resume {
         );
 
         $self->current($ie);    
+        $self->debug_mode(1);
     }
 
     $self->execute;
@@ -337,7 +342,7 @@ sub execute_single {
 sub completion {
     my $self = shift;
 
-    $self->is_done(1);
+    $self->is_done(1) unless $self->status eq 'crashed';
     $self->is_running(0);
     $self->sync;
 
@@ -417,25 +422,25 @@ sub completion {
 sub dependent_operations {
     my ($self) = @_;
 
+    my @ops = $self->operation->dependent_operations;
+
     return map {
-        my ($this_data) = Workflow::Operation::Instance->get(
-            operation => $_,
-            parent_instance => $self->parent_instance
-        );
-        $this_data
-    } $self->operation->dependent_operations;
+        $self->parent_instance->child_instances(
+            workflow_operation_id => $_->id
+        )
+    } @ops;
 }
 
 sub depended_on_by {
     my ($self) = @_;
     
+    my @ops = $self->operation->depended_on_by;
+    
     return map {
-        my ($this_data) = Workflow::Operation::Instance->get(
-            operation => $_,
-            parent_instance => $self->parent_instance
-        );
-        $this_data
-    } $self->operation->depended_on_by;
+        $self->parent_instance->child_instances(
+            workflow_operation_id => $_->id
+        )
+    } @ops;
 }
 
 sub create_peers {

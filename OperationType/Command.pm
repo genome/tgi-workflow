@@ -89,9 +89,16 @@ sub execute {
     my %properties = @_;
 
     my $command_name = $self->command_class_name;
-
     my $command = $command_name->create(%properties);
 
+    if ($Workflow::DEBUG_GLOBAL) {
+        if (UNIVERSAL::can('Devel::ptkdb','brkonsub')) {
+            Devel::ptkdb::brkonsub($command_name . '::execute');
+        } else {
+            $DB::single=2;
+        }
+    }
+    
     my $retvalue = $command->execute;
 
     my %outputs = ();

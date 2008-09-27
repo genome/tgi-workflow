@@ -41,6 +41,7 @@ sub wait {
 #            $self->status_message('exec/' . $opdata->id . '/' . $opdata->operation->name);
             my $outputs;
             eval {
+                local $Workflow::DEBUG_GLOBAL=1 if $opdata->debug_mode;
                 $outputs = $opdata->operation->operation_type->execute(%{ $opdata->input }, %{ $edited_input });
             };
             if ($@) {
