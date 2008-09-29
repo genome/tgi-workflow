@@ -80,17 +80,40 @@ sub incomplete_operation_instances {
     } @all_data;
 }
 
+sub reset_current {
+    my $self = shift;
+    
+    if ($self->status eq 'crashed' or $self->status eq 'running') {
+        my $instance_exec_class = $self->instance_execution_class_name;
+        my $ie = $instance_exec_class->create(
+            operation_instance => $self,
+            status => 'new',
+            is_done => 0,
+            is_running => 0
+        );
+
+        $self->current($ie);    
+        $self->debug_mode(1);
+        
+        foreach my $child ($self->child_instances) {
+            $child->reset_current;
+        }
+    }
+}
+
 sub resume {
     my $self = shift;
     die 'tried to resume a finished operation: ' . $self->id if ($self->is_done);
 
-    $self->current->status('running');
-    $self->is_running(1);
     $self->input_connector->output($self->input);
-
     foreach my $this ($self->child_instances) {
         $this->is_running(0) if ($this->is_running);
     }
+
+    $self->reset_current;
+    
+    $self->current->status('running');
+    $self->is_running(1);        
     
     my @runq = $self->runq();
 

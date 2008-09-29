@@ -55,6 +55,10 @@ sub completion {
     goto &Workflow::Model::Instance::completion;
 }
 
+sub reset_current {
+    goto &Workflow::Model::Instance::reset_current;
+}
+
 sub runq {
     goto &Workflow::Model::Instance::runq;
 }

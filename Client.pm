@@ -85,8 +85,7 @@ sub resume_workflow {
     my $self = $class->create(
         'localhost', 15243,
         [
-            ['load_workflow', $args{xml_file}],
-            ['resume_workflow', $args{model_saved_instance_id}]
+            ['resume_workflow', $args{instance_id}]
         ]
     );
     

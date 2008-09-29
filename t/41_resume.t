@@ -20,41 +20,31 @@ require_ok('Workflow::Model');
 can_ok('Workflow::Model',qw/create validate is_valid execute/);
 
 {
-    my $w = Workflow::Model->create_from_xml($dir . '/00_basic.xml');
+    my $w = Workflow::Model->create_from_xml($dir . '/03_die.xml');
     ok($w,'create workflow');
+#    ok($w->executor->limit(2),'limit executor to 2');
 
     ok(do {
         $w->validate;
         $w->is_valid;
     },'validate');
 
-    my $collector = sub {
-        my ($data) = @_;
-
-        diag(ref($data) . ' ' . $data->id);
-
-        $id = $data->id;
-
-        # just let it leave scope
-    };
-
-    ok($w->execute(
+    my $opi;
+    ok($opi = $w->execute(
         input => {
             'model input string' => 'abracadabra321',
             'sleep time' => 1
         },
-        store => Workflow::Store::Db->create(),
-        output_cb => $collector
+        store => Workflow::Store::Db->create()
     ),'execute');
+    $id = $opi->id;
 
-    ok($w->wait,'wait');
+    eval { ok($w->wait,'wait'); };
 
     ok(UR::Context->commit,'commit');
     
     $w->delete;
 }
-
-$DB::single=1;
 
 foreach my $ds (UR::DataSource->all_objects_loaded) {
     $ds->_set_all_objects_saved_committed;
@@ -81,8 +71,14 @@ ok($pass,'cleared workflow objects');
 
 my $normal = Workflow::Store::Db::Operation::Instance->get($id);
 
-ok($normal,'loaded instance');
-ok(my @array = $normal->child_instances,'has children');
-#$DB::single=1;
-#$normal->treeview_debug;
+$normal->treeview_debug;
 
+$normal->output_cb(sub {
+    print "done\n";
+});
+
+$::DONT_DIE=1;
+$normal->resume();
+$normal->operation->wait;
+
+$normal->treeview_debug;

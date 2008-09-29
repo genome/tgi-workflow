@@ -133,7 +133,7 @@ sub run_operation {
 sub start_new_worker {
     my ($self,$operation_instance) = @_;
     
-    my $rusage = ' ';
+    my $rusage = '';
     my $queue = 'short';
     my $optype = $operation_instance->operation->operation_type;
     if ($optype->can('lsf_resource') && defined $optype->lsf_resource) {
@@ -144,9 +144,11 @@ sub start_new_worker {
     }
     
     my $client_start_cmd = 'bsub -q ' . $queue . ' -N -u "' . $ENV{USER} . '@genome.wustl.edu"' . $rusage .
-        'perl -e \'BEGIN { delete $ENV{PERL_USED_ABOVE}; }' . $self->{include_string} . ' use above "' . $self->{namespace} . 
+        ' perl -e \'BEGIN { delete $ENV{PERL_USED_ABOVE}; }' . $self->{include_string} . ' use above "' . $self->{namespace} . 
         '"; use Workflow::Client; Workflow::Client->run_worker("' .
         $self->{server_host} . '",' . $self->{server_port} . ',"' . $operation_instance->id . '")\'';
+
+print $client_start_cmd . "\n";
  
     system($client_start_cmd);
 }
@@ -319,22 +321,24 @@ sub load_workflow {
 }
 
 sub resume_workflow {
-    my ($self, $postback, $s, $workflow_id, $saved_id) = @_[OBJECT, ARG0, SESSION, ARG2, ARG1];
-    my $workflow = Workflow::Model->get($workflow_id);
+    my ($self, $postback, $s, $saved_id) = @_[OBJECT, ARG0, SESSION, ARG1];
+#    my $workflow = Workflow::Model->get($workflow_id);
 
     my $executor = Workflow::Executor::Server->create;
     $executor->server($self);
-    $workflow->set_all_executor($executor);
     
-    my $model_saved_instance = Workflow::Model::SavedInstance->get($saved_id);
-    my $model_instance = $model_saved_instance->load_instance($workflow);
- 
-    my $cb = $s->callback('finish_workflow',$workflow_id);
-    $model_instance->output_cb($cb);
+    my $instance = Workflow::Store::Db::Operation::Instance->get($saved_id);
+    print "Resuming: " . $instance->id . "\n";
 
-    my $wfdata = $model_instance->resume_execution;
+    $instance->operation->set_all_executor($executor);
 
-    $workflow->wait;
+    my $cb = $s->callback('finish_workflow',$instance->operation->id);
+    $instance->output_cb($cb);
+
+$DB::single=1;
+    my $wfdata = $instance->resume();
+
+    $instance->operation->wait;
     
     $postback->($wfdata);
 }
@@ -355,6 +359,7 @@ sub execute_workflow {
         output_cb => $cb,
         store => $store
     );
+    print "Starting: " . $wfdata->id . "\n";
 
     $wfdata->sync;
     $workflow->wait;
@@ -424,7 +429,7 @@ sub finish_operation {
     my $opdata = $creation_args->[1];
     my $message = $called_args->[0];
 
-    print Data::Dumper->new([$message])->Dump;
+#    print Data::Dumper->new([$message])->Dump;
 
     $opdata->output({ %{ $opdata->output }, @{ $message->heap->{result} } });
     $opdata->current->status('done');

@@ -169,6 +169,8 @@ sub is_ready {
 
 #    $DB::single=1 if $self->operation->name eq 'output connector';
 
+    return 0 if ($self->status eq 'crashed');
+
     my @required_inputs = @{ $self->operation->operation_type->input_properties };
     my %current_inputs = ();
     if ( defined $self->input ) {
@@ -271,10 +273,9 @@ sub treeview_debug {
     }
 }
 
-sub resume {
+sub reset_current {
     my ($self) = @_;
     
-#    die 'nf';
     if ($self->status eq 'crashed' or $self->status eq 'running') {
         my $instance_exec_class = $self->instance_execution_class_name;
         my $ie = $instance_exec_class->create(
@@ -287,6 +288,13 @@ sub resume {
         $self->current($ie);    
         $self->debug_mode(1);
     }
+}
+
+sub resume {
+    my ($self) = @_;
+    
+#    die 'nf';
+    $self->reset_current;
 
     $self->execute;
 }
@@ -327,16 +335,24 @@ sub execute_single {
         }
     }
 
+    my $executor = $self->executor;
+
+    $executor->execute(
+        operation_instance => $self,
+        edited_input => \%current_inputs
+    );
+}
+
+sub executor {
+    my $self = shift;
+    
     my $executor = $self->operation->executor || $self->operation->workflow_model->executor;
     my $operation_type = $self->operation->operation_type;
     if ($operation_type->can('executor') && defined $operation_type->executor) {
         $executor = $operation_type->executor;
     }
 
-    $executor->execute(
-        operation_instance => $self,
-        edited_input => \%current_inputs
-    );
+    return $executor;
 }
 
 sub completion {
@@ -411,7 +427,7 @@ sub completion {
             $self->peer_of->output_cb->($return);
         } elsif ($self->current->status eq 'crashed') {
             $self->sync;
-            die 'current crashed';
+            $self->executor->exception($self,'operation died in eval block');
         } elsif (defined $self->output_cb) {
             $self->output_cb->($self);
         }
