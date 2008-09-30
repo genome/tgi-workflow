@@ -7,7 +7,7 @@ use POE;
 class Workflow::Executor::Server {
     isa => 'Workflow::Executor',
     has => [
-        server => { is => 'Workflow::Server' }
+        server => { is => 'Workflow::Server', is_optional => 1 }
     ]
 };
 
@@ -16,7 +16,7 @@ sub execute {
     my %params = @_;
 
 #    $self->status_message('OExec ' . $params{operation_instance}->operation->name);
-    $self->server->run_operation(
+    $Workflow::Server::server_singleton->run_operation(
         $params{operation_instance},
         $params{edited_input}
     );

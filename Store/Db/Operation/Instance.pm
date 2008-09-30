@@ -114,6 +114,11 @@ our @OBSERVERS = (
                 print "not yet\n" unless $op;
             }
             
+            if (!$self->parent_instance) {
+                my $store = Workflow::Store::Db->create;
+                $self->store($store);
+            }
+            
             $self->input(thaw $self->input_stored);
             $self->output(thaw $self->output_stored);
             
@@ -121,6 +126,7 @@ our @OBSERVERS = (
             
             if ($self->can('child_instances') && $self->operation) {
                 foreach my $i ($self->child_instances) {
+                    $i->store($self->store);
                     my ($op) = $self->operation->operations(
                         name => $i->name
                     );

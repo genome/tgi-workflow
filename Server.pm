@@ -176,7 +176,9 @@ sub client_disconnect {
     if (my $execargs = delete $self->{worker_op}->{$s->ID}) {
         ## something disconnected without finishing its stuff?  Just requeue it at the front.
         
-        unshift @{ $self->{pending_ops} }, $execargs;
+#        unshift @{ $self->{pending_ops} }, $execargs;
+
+        print "worker disconnected prematurely\n";
 
         $execargs->[0]->current->status('crashed');
         $execargs->[0]->completion;

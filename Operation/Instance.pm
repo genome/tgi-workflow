@@ -355,6 +355,8 @@ sub executor {
     return $executor;
 }
 
+our %retry_count = ();
+
 sub completion {
     my $self = shift;
 
@@ -379,8 +381,16 @@ sub completion {
     } elsif ($self->parent_instance) {
         my $parent = $self->parent_instance;
         if ($self->current->status eq 'crashed') {
-            $parent->current->status('crashed');
-            $parent->completion;
+        
+            $retry_count{$self->id} ||= 0;
+            
+            if (!$self->can('child_instances') && $retry_count{$self->id} < 2) {
+                $retry_count{$self->id}++;
+                $self->resume;
+            } else {
+                $parent->current->status('crashed');
+                $parent->completion;
+            }
         } else {
             my @incomplete_operations = $parent->incomplete_operation_instances;
             if (@incomplete_operations) {
