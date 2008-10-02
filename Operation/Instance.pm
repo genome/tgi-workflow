@@ -262,7 +262,7 @@ sub treeview_debug {
             if (UNIVERSAL::isa($v,'Workflow::Link::Instance')) {
                 $v = $v->operation_instance->id . '->' . $v->property . (defined $v->index() ? ':' . $v->index() : '');
             }    
-            print ((' ' x $indent) . ' +' . $k . '=' . $v . "\n");
+            print ((' ' x $indent) . ' +' . $k . '=' . (defined $v ? $v : '(undef)') . "\n");
         }
     }
     while (my ($k,$v) = each(%{ $self->output })) {
@@ -271,7 +271,7 @@ sub treeview_debug {
             if (UNIVERSAL::isa($v,'Workflow::Link::Instance')) {
                 $v = $v->operation_instance->id . '->' . $v->property . (defined $v->index() ? ':' . $v->index() : '');
             }    
-            print ((' ' x $indent) . ' -' . $k . '=' . $v . "\n");
+            print ((' ' x $indent) . ' -' . $k . '=' . (defined $v ? $v : '(undef)') . "\n");
         }
     }
 
@@ -413,6 +413,8 @@ sub completion {
             if (@incomplete_operations) {
                 my @runq = $parent->runq_filter($self->dependent_operations);
 
+		$DB::single=1 if (scalar @runq);
+
                 foreach my $this_data (@runq) {
                     $this_data->is_running(1);
                 }
@@ -450,6 +452,8 @@ sub completion {
                     $return->output->{$k}->[$i] = $v;
                 }
             }
+
+            ### need some way to make sure the signal fires when input and output get changed here
 
             $self->peer_of->output_cb->($return);
         } elsif ($self->current->status eq 'crashed') {

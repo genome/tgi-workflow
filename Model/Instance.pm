@@ -156,17 +156,19 @@ sub completion {
     my $self = shift;
 
     my $oc = $self->output_connector;
+    my %newoutputs = ();
     foreach my $output_name (keys %{ $oc->input }) {
         if (ref($oc->input->{$output_name}) eq 'ARRAY') {
             my @new = map {
                 UNIVERSAL::isa($_,'Workflow::Link::Instance') ?
                     $_->value : $_
             } @{ $oc->input->{$output_name} };
-            $self->output->{$output_name} = \@new;
+            $newoutputs{$output_name} = \@new;
         } else {
-            $self->output->{$output_name} = $oc->input_value($output_name);
+            $newoutputs{$output_name} = $oc->input_value($output_name);
         }
     }
+    $self->output(\%newoutputs);
 
     $self->current->end_time(UR::Time->now);
     $self->current->status('done') if ($self->current->status eq 'running');
