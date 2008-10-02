@@ -6,20 +6,9 @@ use strict;
 use POE qw(Component::Server::TCP Filter::HTTPD);
 use Workflow ();
 
-our $singleton;
+sub start {
 
-sub new {
-    my $class = shift;
-    
-    return $singleton || bless({},$class);
-}
-
-sub create {
-    my $class = shift;
-    my $self = $class->new();
-    $singleton = $self;
-
-    $self->{session} = POE::Component::Server::TCP->new(
+    our $httpd = POE::Component::Server::TCP->new(
         Alias => "web_server",
         Port         => 8088,
         ClientFilter => 'POE::Filter::HTTPD',
@@ -49,7 +38,7 @@ sub _client_input {
     $response->push_header( 'Content-type', 'text/html' );
     $response->content(
         "<html><head><title>Server status summary</title></head>" .
-        "<body><table><tr><th>Type</th><th>Status</th><th>Count</th></tr>"
+        "<body><table><tr><th>Type</th><th>New</th><th>Scheduled</th><th>Running</th><th>Done</th><th>Crashed</th></tr>"
     );
     
     # Multilevel hash of counts. Format is $counts{Type}{Status} = Number
@@ -68,11 +57,14 @@ sub _client_input {
     }
     
     while (my ($type,$h) = each(%counts)) {
-        while (my ($status, $count) = each( %$h )) {
+        $response->add_content("<tr><td>$type</td>");
+
+        for my $n (qw/new scheduled running done crashed/) {
             $response->add_content(
-                "<tr><td>$type</td><td>$status</td><td>$count</td></tr>"
+                "<td>" . (defined $h->{$n} ? $h->{$n} : '') . '</td>'
             );
         }
+        $response->add_content("</tr>");
     }
     
     $response->add_content(

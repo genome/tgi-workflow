@@ -131,7 +131,8 @@ sub execute {
     my $operation_instance = $class->create(
         operation => $self,
         store => $params{store},
-        output_cb => $params{output_cb}
+        output_cb => $params{output_cb},
+        error_cb => $params{error_cb}
     );
     $operation_instance->input($params{input} || {});
     $operation_instance->output({});

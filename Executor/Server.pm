@@ -15,8 +15,7 @@ sub execute {
     my $self = shift;
     my %params = @_;
 
-#    $self->status_message('OExec ' . $params{operation_instance}->operation->name);
-    $Workflow::Server::server_singleton->run_operation(
+    Workflow::Server::UR->dispatch(
         $params{operation_instance},
         $params{edited_input}
     );

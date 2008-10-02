@@ -30,6 +30,10 @@ class Workflow::Operation::Instance {
             is => 'CODE',
             is_transient => 1,
         },
+        error_cb => {
+            is => 'CODE',
+            is_transient => 1,
+        },
         parallel_index => { is => 'Integer' },
         peer_of => { 
             is => 'Workflow::Operation::Instance',
@@ -91,6 +95,10 @@ sub create {
     my $self;
     
     my $load = $args{load_mode};
+
+    if ($class->can('name') && $args{operation}) {
+        $args{name} = $args{operation}->name;
+    }
     if ($class eq $class->operation_instance_class_name && $args{operation} && $args{operation}->isa('Workflow::Model')) {
         my $model_instance_class = $class->model_instance_class_name;
 
@@ -337,6 +345,8 @@ sub execute_single {
 
     my $executor = $self->executor;
 
+    print "s: " . $self->id . ' ' . $self->name . "\n";
+
     $executor->execute(
         operation_instance => $self,
         edited_input => \%current_inputs
@@ -359,6 +369,8 @@ our %retry_count = ();
 
 sub completion {
     my $self = shift;
+
+    print "e: " . $self->id . ' ' . $self->name . "\n";
 
     $self->is_done(1) unless $self->status eq 'crashed';
     $self->is_running(0);
@@ -436,8 +448,12 @@ sub completion {
 
             $self->peer_of->output_cb->($return);
         } elsif ($self->current->status eq 'crashed') {
-            $self->sync;
-            $self->executor->exception($self,'operation died in eval block');
+            ## crashed with no parent
+            if (defined $self->error_cb) {
+                $self->error_cb->($self);
+            } else {
+                $self->executor->exception($self,'operation died in eval block');
+            }
         } elsif (defined $self->output_cb) {
             $self->output_cb->($self);
         }
