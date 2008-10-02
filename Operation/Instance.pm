@@ -175,7 +175,7 @@ sub set_input_links {
 sub is_ready {
     my $self = shift;
 
-#    $DB::single=1 if $self->operation->name eq 'output connector';
+#    $DB::single=1 if $self->name eq 'outer cat seq feature';
 
     return 0 if ($self->status eq 'crashed');
 
@@ -200,9 +200,14 @@ sub is_ready {
             }
             VALCHECK: foreach my $v (@$vallist) {
                 if (UNIVERSAL::isa($v,'Workflow::Link::Instance')) {
-                    unless ($v->operation_instance->is_done && defined $self->input_value($input_name)) {
+                    if ($v->operation_instance->incomplete_peers) {
                         push @unfinished_inputs, $input_name;
                         last VALCHECK;
+                    } else {
+                        unless ($v->operation_instance->is_done && defined $self->input_value($input_name)) {
+                            push @unfinished_inputs, $input_name;
+                            last VALCHECK;
+                        }
                     }
                 } elsif (!defined $v) {
                     push @unfinished_inputs, $input_name;

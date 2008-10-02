@@ -41,6 +41,7 @@ sub start {
                 $kernel->call('IKC','publish','dispatch',[qw(add_work get_work end_work)]);
 
                 $heap->{queue} = POE::Queue::Array->new();
+                $heap->{claimed} = {};
 
                 $kernel->post('IKC','monitor','*'=>{register=>'conn',unregister=>'disc'});
             },
@@ -49,8 +50,20 @@ sub start {
                 print " Remote ", ($real ? '' : 'alias '), "$name connected\n";
             },
             disc => sub {
-                my ($name,$real) = @_[ARG1,ARG2];
+                my ($kernel,$session,$heap,$name,$real) = @_[KERNEL,SESSION,HEAP,ARG1,ARG2];
                 print " Remote ", ($real ? '' : 'alias '), "$name disconnected\n";
+                
+                if (exists $heap->{claimed}->{$name}) {
+                    my $payload = $heap->{claimed}->{$name};
+                    delete $heap->{claimed}->{$name};
+                    
+                    print 'Blade failed: ' . $payload->[0]->id . ' ' . $payload->[0]->name . "\n";
+
+                    $heap->{queue}->enqueue(200,$payload);
+
+                    my $cmd = $kernel->call($session,'lsf_cmd');
+                    $kernel->post($session,'system_cmd', $cmd);
+                }
             },
             add_work => sub {
                 my ($kernel, $heap, $arg) = @_[KERNEL, HEAP, ARG0];
@@ -65,12 +78,14 @@ sub start {
             },
             get_work => sub {
                 my ($kernel, $heap, $arg) = @_[KERNEL, HEAP, ARG0];
-                my ($where) = @$arg;
+                my ($where, $remote_name) = @$arg;
 
                 my ($priority, $queue_id, $payload) = $heap->{queue}->dequeue_next();
                 if (defined $priority) {
                     my ($instance, $type, $input) = @$payload;
                     print 'Exec Work: ' . $instance->id . ' ' . $instance->name . "\n";
+
+                    $heap->{claimed}->{$remote_name} = $payload;
 
                     $kernel->post('IKC','post','poe://UR/workflow/begin_instance',[ $instance->id ]);
                     $kernel->post('IKC','post',$where, [$instance, $type, $input]);
@@ -78,7 +93,9 @@ sub start {
             },
             end_work => sub {
                 my ($kernel, $heap, $arg) = @_[KERNEL, HEAP, ARG0];
-                my ($id, $status, $output) = @$arg;
+                my ($remote_name, $id, $status, $output) = @$arg;
+
+                delete $heap->{claimed}->{$remote_name};
 
                 $kernel->post('IKC','post','poe://UR/workflow/end_instance',[ $id, $status, $output ]);
             },

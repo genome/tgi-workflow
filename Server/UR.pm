@@ -107,8 +107,29 @@ sub __build {
                 return $instance->id;
             },
             resume => sub {
-                my ($kernel, $heap, $arg) = @_[KERNEL,HEAP,ARG0];
-                my ($id) = @$arg;
+                my ($kernel, $heap, $session, $arg) = @_[KERNEL,HEAP,SESSION,ARG0];
+                my ($id, $output_dest, $error_dest) = @$arg;
+                
+                my $instance = Workflow::Store::Db::Operation::Instance->get($id);
+
+                my $executor = Workflow::Executor::Server->create;
+                $instance->operation->set_all_executor($executor);                
+
+                if ($output_dest) {
+                    my $cb = $session->postback('output_relay',$output_dest);
+                    $instance->output_cb($cb);
+                }
+                if ($error_dest) {
+                    my $cb = $session->postback('error_relay',$error_dest);
+                    $instance->error_cb($cb);
+                }
+                
+                $instance->resume();
+                $instance->operation->wait();
+                
+                $heap->{workflow_executions}->{$instance->id} = $instance;
+                
+                return $instance->id;
             },
             output_relay => sub {
                 my ($kernel, $heap, $xarg, $yarg) = @_[KERNEL,HEAP,ARG0,ARG1];

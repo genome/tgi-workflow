@@ -15,7 +15,7 @@ class Workflow::Model {
     has => [
         operations => { is => 'Workflow::Operation', is_many => 1, reverse_id_by => 'workflow_model' },
         links => { is => 'Workflow::Link', is_many => 1 },
-        filename => { is => 'String' }
+        filename => { is => 'String', is_optional => 1 }
     ]
 };
 
@@ -443,7 +443,7 @@ sub set_all_executor {
     
     foreach my $op ($self->operations) {
         if ($op->isa('Workflow::Model')) {
-            $op->executor($executor);
+            $op->set_all_executor($executor);
         }
     }
     

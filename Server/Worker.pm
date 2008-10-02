@@ -7,21 +7,16 @@ use POE;
 use POE::Component::IKC::Client;
 use Workflow ();
 
-
-our $kernel_name;
-
 sub start {
     my ($class, $host, $port) = @_;
 
     $host ||= 'localhost';
     $port ||= 13424;
 
-    $kernel_name = 'Worker' . $$;
-
     our $client = POE::Component::IKC::Client->spawn( 
         ip=>$host, 
         port=>$port,
-        name=>$kernel_name,
+        name=>'Worker',
         on_connect=>\&__build
     );
 
@@ -55,7 +50,9 @@ sub __build {
                     $status = 'crashed';
                 }
 
-                $kernel->post('IKC','post','poe://Hub/dispatch/end_work',[ $instance->id, $status, $output ]);
+                my $kernel_name = $kernel->ID;
+
+                $kernel->post('IKC','post','poe://Hub/dispatch/end_work',[ $kernel_name, $instance->id, $status, $output ]);
                 $kernel->yield('disconnect');
             },
             disconnect => sub {
@@ -64,8 +61,10 @@ sub __build {
             get_work => sub {
                 my ($kernel) = @_[KERNEL];
 
+                my $kernel_name = $kernel->ID;
+
                 $kernel->post(
-                    'IKC','post','poe://Hub/dispatch/get_work',["poe://$kernel_name/worker/execute"]
+                    'IKC','post','poe://Hub/dispatch/get_work',["poe://$kernel_name/worker/execute", $kernel_name]
                 );
             }
         }

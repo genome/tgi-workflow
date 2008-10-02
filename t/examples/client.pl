@@ -42,7 +42,7 @@ sub __build {
                         $id,
                         {
                             'model input string' => 'baz',
-                            'sleep time' => 1
+                            'sleep time' => 30 
                         },
                         'poe://Controller/controller/complete',
                         'poe://Controller/controller/error'
