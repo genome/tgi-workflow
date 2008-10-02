@@ -350,7 +350,7 @@ sub execute_single {
 
     my $executor = $self->executor;
 
-    print "s: " . $self->id . ' ' . $self->name . "\n";
+#    print "s: " . $self->id . ' ' . $self->operation->name . "\n";
 
     $executor->execute(
         operation_instance => $self,
@@ -375,7 +375,7 @@ our %retry_count = ();
 sub completion {
     my $self = shift;
 
-    print "e: " . $self->id . ' ' . $self->name . "\n";
+#    print "e: " . $self->id . ' ' . $self->operation->name . "\n";
 
     $self->is_done(1) unless $self->status eq 'crashed';
     $self->is_running(0);
