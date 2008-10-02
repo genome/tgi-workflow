@@ -165,17 +165,6 @@ our @OBSERVERS = (
             local $Storable::forgive_me = 1;
             $self->output_stored(freeze $self->output);
         }
-    ),
-    __PACKAGE__->add_observer(
-        aspect => 'presync',
-        callback => sub {
-            my ($self) = @_;
-            
-#            $self->input_stored(freeze $self->input);
-#            $self->output_stored(freeze $self->output);
-            
-            $self->name($self->operation->name);
-        }
     )
 );
 
