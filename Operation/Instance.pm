@@ -139,6 +139,14 @@ sub sync {
     return $self->store->sync($self) if $self->store;
 }
 
+sub serialize_input {
+    1;
+}
+
+sub serialize_output {
+    1;
+}
+
 sub set_input_links {
     my $self = shift;
 
@@ -258,20 +266,22 @@ sub treeview_debug {
 
     while (my ($k,$v) = each(%{ $self->input })) {
         my $vals = ref($v) eq 'ARRAY' ? $v : [$v];
-        foreach $v (@$vals) {        
-            if (UNIVERSAL::isa($v,'Workflow::Link::Instance')) {
-                $v = $v->operation_instance->id . '->' . $v->property . (defined $v->index() ? ':' . $v->index() : '');
+        foreach my $dv (@$vals) {
+            my $vc = $dv;
+            if (UNIVERSAL::isa($dv,'Workflow::Link::Instance')) {
+                $vc = $dv->operation_instance->id . '->' . $dv->property . (defined $dv->index() ? ':' . $dv->index() : '');
             }    
-            print ((' ' x $indent) . ' +' . $k . '=' . (defined $v ? $v : '(undef)') . "\n");
+            print ((' ' x $indent) . ' +' . $k . '=' . (defined $vc ? $vc : '(undef)') . "\n");
         }
     }
     while (my ($k,$v) = each(%{ $self->output })) {
         my $vals = ref($v) eq 'ARRAY' ? $v : [$v];
-        foreach $v (@$vals) {        
-            if (UNIVERSAL::isa($v,'Workflow::Link::Instance')) {
-                $v = $v->operation_instance->id . '->' . $v->property . (defined $v->index() ? ':' . $v->index() : '');
+        foreach my $dv (@$vals) {
+            my $vc = $dv;
+            if (UNIVERSAL::isa($dv,'Workflow::Link::Instance')) {
+                $vc = $dv->operation_instance->id . '->' . $dv->property . (defined $dv->index() ? ':' . $dv->index() : '');
             }    
-            print ((' ' x $indent) . ' -' . $k . '=' . (defined $v ? $v : '(undef)') . "\n");
+            print ((' ' x $indent) . ' -' . $k . '=' . (defined $vc ? $vc : '(undef)') . "\n");
         }
     }
 
@@ -413,8 +423,6 @@ sub completion {
             if (@incomplete_operations) {
                 my @runq = $parent->runq_filter($self->dependent_operations);
 
-		$DB::single=1 if (scalar @runq);
-
                 foreach my $this_data (@runq) {
                     $this_data->is_running(1);
                 }
@@ -513,8 +521,7 @@ sub create_peers {
         $dep->input(\%input);
     }
     my $operation_class_name = $self->operation_instance_class_name;
-    
-    $self->peer_of($self);
+
     for (my $i = 1; $i < scalar @{ $self->input_raw_value($self->parallel_by) }; $i++) {
         my $peer = $operation_class_name->create(
             operation => $self->operation,
@@ -551,9 +558,12 @@ sub create_peers {
         
         push @peers, $peer;
     }
+    $self->peer_of($self);
     $self->fix_parallel_input_links;
 
-
+    foreach my $dep (@deps) {
+        $dep->serialize_input;
+    }
 }
 
 sub fix_parallel_input_links {
@@ -600,6 +610,19 @@ sub incomplete_peers {
     return grep {
         !$_->is_done
     } $self->peers;
+}
+
+# advanced magic
+sub get_by_path {
+    my ($self, $path) = @_;
+    my @tokens = split(/\//,$path);
+
+}
+
+sub _get_for_path_token {
+    my ($self, $token) = @_;
+
+
 }
 
 1;

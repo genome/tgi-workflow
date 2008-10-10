@@ -91,6 +91,24 @@ sub create {
     return $self;
 }
 
+sub serialize_input {
+    my ($self) = @_;
+
+    return if !defined $self->input;
+
+    local $Storable::forgive_me = 1;
+    $self->input_stored(freeze $self->input);
+}
+
+sub serialize_output {
+    my ($self) = @_;
+
+    return if !defined $self->output;
+
+    local $Storable::forgive_me = 1;
+    $self->output_stored(freeze $self->output);
+}
+
 our @OBSERVERS = (
     __PACKAGE__->add_observer(
         aspect => 'load',
@@ -146,25 +164,11 @@ our @OBSERVERS = (
     ),
     __PACKAGE__->add_observer(
         aspect => 'input',
-        callback => sub {
-            my ($self) = @_;
-
-            return if !defined $self->input;
-
-            local $Storable::forgive_me = 1;
-            $self->input_stored(freeze $self->input);
-        }
+        callback => \&serialize_input
     ),    
     __PACKAGE__->add_observer(
         aspect => 'output',
-        callback => sub {
-            my ($self) = @_;
-
-            return if !defined $self->output;
-
-            local $Storable::forgive_me = 1;
-            $self->output_stored(freeze $self->output);
-        }
+        callback => \&serialize_output
     )
 );
 
