@@ -615,14 +615,42 @@ sub incomplete_peers {
 # advanced magic
 sub get_by_path {
     my ($self, $path) = @_;
-    my @tokens = split(/\//,$path);
 
+    my @tokens = split(/\//,$path);
+    my $first = shift @tokens;
+    my $rest = join('/',@tokens);
+    
+    my @all_instances = ();
+    
+    my @converted = $self->_convert_token($first);
+    my @instances;
+    if (ref($self)) {
+        @instances = $self->child_instances(@converted);
+    } else {
+        @instances = $self->get(@converted);
+    }
+
+    if ($rest ne '') {
+        foreach my $instance (@instances) {
+            push @all_instances, $instance->get_by_path($rest);
+        }
+    } else {
+        push @all_instances, @instances;
+    }
+    
+    return @all_instances;
 }
 
-sub _get_for_path_token {
+sub _convert_token {
     my ($self, $token) = @_;
-
-
+    
+    if ($token =~ /^\*/) {
+        my $name = substr($token,1);
+        
+        return (name => $name);
+    } else {
+        return $token;
+    }
 }
 
 1;
