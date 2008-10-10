@@ -8,7 +8,7 @@ use strict;
 use warnings;
 
 use UR;
-use Test::More tests => 10;
+use Test::More tests => 9;
 use Devel::Size qw(size total_size);
 use Workflow;
 
@@ -78,7 +78,7 @@ $normal->output_cb(sub {
 });
 
 $::DONT_DIE=1;
-$normal->resume();
-$normal->operation->wait;
+ok($normal->resume(),'resume');
+ok($normal->operation->wait,'wait on resumed');
 
 $normal->treeview_debug;

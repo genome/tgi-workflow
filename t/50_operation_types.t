@@ -88,7 +88,7 @@ foreach my $operationtype (@operationtypes) {
             my $out;
             ok($out = $o->execute(
                 template_file => $dir . '/50_operation_types.txt',
-                email_address => $ENV{USERNAME} . '@genome.wustl.edu',
+                email_address => 'eclark@genome.wustl.edu',
                 subject => 'workflow unit test',
                 fruit => 'Apple',
                 vegetable => 'Tomato',
