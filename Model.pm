@@ -6,7 +6,6 @@ use warnings;
 use GraphViz;
 use XML::Simple;
 use File::Basename;
-use Object::Destroyer;
 
 use Workflow ();
 
