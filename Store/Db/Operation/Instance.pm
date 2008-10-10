@@ -62,11 +62,17 @@ sub _resolve_subclass_name {
     my ($class, $self) = @_;
 
     if (ref($self) && UNIVERSAL::isa($self,'Workflow::Operation::Instance')) {
-        my @children = Workflow::Store::Db::Operation::Instance->get(
-            parent_instance_id => $self->id
-        );
 
-        if (@children > 0) {
+        my $dbh = $self->operation_instance_class_name->get_data_source->get_default_handle;
+        
+        my ($child_count) = @{ $dbh->selectrow_arrayref(
+            'SELECT count(instance_id) 
+               FROM instance 
+              WHERE parent_instance_id = ?', {}, 
+            $self->id
+        ) };
+
+        if ($child_count > 0) {
             return 'Workflow::Store::Db::Model::Instance';
         }
     }
@@ -114,20 +120,18 @@ our @OBSERVERS = (
         aspect => 'load',
         callback => sub {
             my ($self) = @_;
-            
-#            print "loading " . $self->name . " " . $self->id . "\n";
-            
+                        
             if ($self->cache_workflow) {
                 my $op = Workflow::Model->create_from_xml($self->cache_workflow->xml);
 
                 $self->operation($op);
-            } elsif ($self->parent_instance) {
-                my $parent = $self->parent_instance;
+            } elsif (my $parent = $self->parent_instance) {
                 
                 my ($op) = $parent->operation->operations(
                     name => $self->name
                 );
                 
+                $self->store($parent->store);
                 $self->operation($op) if $op;
                 print "not yet\n" unless $op;
             }
@@ -140,23 +144,11 @@ our @OBSERVERS = (
             $self->input(thaw $self->input_stored);
             $self->output(thaw $self->output_stored);
             
-            # find any child instances and set their op
-            
             if ($self->can('child_instances') && $self->operation) {
-                foreach my $i ($self->child_instances) {
-                    $i->store($self->store);
-                    my ($op) = $self->operation->operations(
-                        name => $i->name
-                    );
-                    
-                    $i->operation($op);
-                    
-                    if ($i->name eq 'input connector') {
-                        $self->input_connector($i);
-                    }
-                    if ($i->name eq 'output connector') {
-                        $self->output_connector($i);
-                    }
+                foreach my $i ($self->child_instances(name => ['input connector','output connector'])) {
+                    my $name = $i->name;
+                    $name =~ s/ /_/g;
+                    $self->$name($i);
                 }
                 
             }
