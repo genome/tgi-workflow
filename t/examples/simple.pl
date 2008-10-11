@@ -6,7 +6,7 @@ use above 'Workflow';
 
 use Workflow::Simple;
 
-my $output = run_workflow(
+my $output = run_workflow_lsf(
     \*DATA,
     'model input string' => 'foo bar baz',
     'sleep time' => 2

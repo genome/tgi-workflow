@@ -43,8 +43,6 @@ sub run_workflow_lsf {
     my $xml = shift;
     my %inputs = @_;
 
-    die 'run_workflow_lsf is incomplete';
-
     my $done_instance;
     my $error;
 
@@ -109,6 +107,12 @@ sub run_workflow_lsf {
                     print "Complete: $id\n";
                     $kernel->post('IKC','post','poe://UR/workflow/quit');
                     $kernel->alias_remove('controller');
+                    $kernel->delay('debug_break',15);
+                },
+                debug_break => sub {
+                    $DB::single=1;
+
+                    print "debug\n";
                 },
                 error => sub {
                     my ($kernel, $arg) = @_[KERNEL, ARG0];

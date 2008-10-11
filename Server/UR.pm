@@ -2,18 +2,20 @@
 package Workflow::Server::UR;
 
 use strict;
-use lib '/gscuser/eclark/lib';
-use POE;
-use POE::Component::IKC::Client;
-use POE::Component::IKC::Server;
+use base 'Workflow::Server';
+use POE qw(Component::IKC::Server Component::IKC::Client);
+
 use Workflow ();
 
-sub start {
+sub setup {
+    my $class = shift;
+    my @connect_code = @_;
+
     our $session = POE::Component::IKC::Client->spawn( 
         ip=>'localhost', 
         port=>13424,
         name=>'UR',
-        on_connect=>\&__build
+        on_connect=> sub { __build(\@connect_code,\@_) } 
     );
     
     our $srv_session = POE::Component::IKC::Server->spawn(
@@ -21,18 +23,20 @@ sub start {
     );
 
     $Storable::forgive_me = 1;
-
-    POE::Kernel->run();
 }
 
 sub __build {
+    my $codebits = shift;
+    my $args = shift;
+
     our $workflow = POE::Session->create(
         inline_states => {
             _start => sub {
                 my ($kernel, $heap) = @_[KERNEL, HEAP];
+
                 $kernel->alias_set("workflow");
                 $kernel->post('IKC','publish','workflow',
-                    [qw(load execute resume begin_instance end_instance)]
+                    [qw(load execute resume begin_instance end_instance quit eval)]
                 );
                 
                 $heap->{workflow_plans} = {};
@@ -41,6 +45,22 @@ sub __build {
                 $kernel->post('IKC','monitor','*'=>{register=>'conn',unregister=>'disc'});
 
                 $kernel->delay('commit',120);
+print "start workflow " . $_[SESSION]->ID . "\n";
+            },
+            _stop => sub {
+                print "workflow stopped\n";
+            },
+            quit => sub {
+                my ($kernel,$session) = @_[KERNEL,SESSION];
+
+                $kernel->post('IKC','post','poe://Hub/dispatch/quit');
+                $kernel->post('IKC','shutdown');
+
+                UR::Context->commit();
+                $kernel->alarm_remove_all;
+                $kernel->alias_remove('workflow');
+                $kernel->refcount_decrement($session);
+                print "!!!!quitting workflow\n";
             },
             commit => sub {
                 my ($kernel) = @_[KERNEL];
@@ -164,8 +184,32 @@ sub __build {
 
                 $instance->completion;
             },
+            eval => sub {  ## this is somewhat dangerous to let people do
+                my ($kernel, $heap, $arg) = @_[KERNEL,HEAP,ARG0];
+                my ($string,$array_context) = @$arg;
+                
+                if ($array_context) {
+                    my @result = eval($string);
+                    if ($@) {
+                        return [0,$@];
+                    } else {
+                        return [1,\@result];
+                    }
+                } else {
+                    my $result = eval($string);
+                    if ($@) {
+                        return [0,$@];
+                    } else {
+                        return [1,$result];
+                    }
+                }
+            }
         }
     );
+
+    foreach my $code (@$codebits) {
+        $code->();
+    }
 }
 
 sub dispatch {

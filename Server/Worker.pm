@@ -2,7 +2,6 @@
 package Workflow::Server::Worker;
 
 use strict;
-use lib '/gscuser/eclark/lib';
 use POE;
 use POE::Component::IKC::Client;
 use Workflow ();

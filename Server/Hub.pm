@@ -2,13 +2,16 @@
 package Workflow::Server::Hub;
 
 use strict;
-use lib '/gscuser/eclark/lib';
-use POE;
-use POE::Component::IKC::Server;
+use base 'Workflow::Server';
+use POE qw(Component::IKC::Server);
+
 use Workflow ();
 use Sys::Hostname;
 
-sub start {
+sub setup {
+    my $class = shift;
+    my %args = @_;
+    
     our $server = POE::Component::IKC::Server->spawn(
         port => 13424, name => 'Hub'
     );
@@ -38,12 +41,18 @@ sub start {
             _start => sub { 
                 my ($kernel, $heap) = @_[KERNEL, HEAP];
                 $kernel->alias_set("dispatch");
-                $kernel->call('IKC','publish','dispatch',[qw(add_work get_work end_work)]);
+                $kernel->call('IKC','publish','dispatch',[qw(add_work get_work end_work quit)]);
 
                 $heap->{queue} = POE::Queue::Array->new();
                 $heap->{claimed} = {};
+                $heap->{failed} = {};
 
                 $kernel->post('IKC','monitor','*'=>{register=>'conn',unregister=>'disc'});
+            },
+            quit => sub {
+                my ($kernel) = @_[KERNEL];
+
+                $kernel->post('IKC','shutdown');
             },
             conn => sub {
                 my ($name,$real) = @_[ARG1,ARG2];
@@ -59,10 +68,16 @@ sub start {
                     
                     print 'Blade failed: ' . $payload->[0]->id . ' ' . $payload->[0]->name . "\n";
 
-                    $heap->{queue}->enqueue(200,$payload);
+                    $heap->{failed}->{$payload->[0]->id}++;
 
-                    my $cmd = $kernel->call($session,'lsf_cmd');
-                    $kernel->post($session,'system_cmd', $cmd);
+                    if ($heap->{failed}->{$payload->[0]->id} <= 5) {
+                        $heap->{queue}->enqueue(200,$payload);
+
+                        my $cmd = $kernel->call($session,'lsf_cmd');
+                        $kernel->post($session,'system_cmd', $cmd);
+                    } else {
+                        $kernel->post($session,'end_work',[$name,$payload->[0]->id,'crashed',{}]);
+                    }
                 }
             },
             add_work => sub {
@@ -71,6 +86,7 @@ sub start {
 
                 print "Add  Work: " . $instance->id . " " . $instance->name . "\n";
 
+                $heap->{failed}->{$instance->id} = 0;
                 $heap->{queue}->enqueue(100,[$instance,$type,$input]);
 
                 my $cmd = $kernel->call($_[SESSION],'lsf_cmd');
@@ -96,6 +112,7 @@ sub start {
                 my ($remote_name, $id, $status, $output) = @$arg;
 
                 delete $heap->{claimed}->{$remote_name};
+                delete $heap->{failed}->{$id};
 
                 $kernel->post('IKC','post','poe://UR/workflow/end_instance',[ $id, $status, $output ]);
             },
@@ -125,8 +142,6 @@ sub start {
     );
 
     $Storable::forgive_me=1;
-
-    POE::Kernel->run();
 }
 
 1;

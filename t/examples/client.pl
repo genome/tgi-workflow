@@ -1,7 +1,6 @@
 #!/gsc/bin/perl
 
 use strict;
-use lib '/gscuser/eclark/lib';
 use POE;
 use POE::Component::IKC::Client;
 
@@ -34,7 +33,7 @@ sub __build {
             got_plan_id => sub {
                 my ($kernel, $id) = @_[KERNEL, ARG0];
                 print "Plan: $id\n";
-
+exit;
                 $_[KERNEL]->post(
                     'IKC','call',
                     'poe://UR/workflow/execute',
