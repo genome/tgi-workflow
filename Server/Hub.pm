@@ -56,17 +56,17 @@ sub setup {
             },
             conn => sub {
                 my ($name,$real) = @_[ARG1,ARG2];
-                print " Remote ", ($real ? '' : 'alias '), "$name connected\n";
+#                print " Remote ", ($real ? '' : 'alias '), "$name connected\n";
             },
             disc => sub {
                 my ($kernel,$session,$heap,$name,$real) = @_[KERNEL,SESSION,HEAP,ARG1,ARG2];
-                print " Remote ", ($real ? '' : 'alias '), "$name disconnected\n";
+#                print " Remote ", ($real ? '' : 'alias '), "$name disconnected\n";
                 
                 if (exists $heap->{claimed}->{$name}) {
                     my $payload = $heap->{claimed}->{$name};
                     delete $heap->{claimed}->{$name};
                     
-                    print 'Blade failed: ' . $payload->[0]->id . ' ' . $payload->[0]->name . "\n";
+#                    print 'Blade failed: ' . $payload->[0]->id . ' ' . $payload->[0]->name . "\n";
 
                     $heap->{failed}->{$payload->[0]->id}++;
 
@@ -84,7 +84,7 @@ sub setup {
                 my ($kernel, $heap, $arg) = @_[KERNEL, HEAP, ARG0];
                 my ($instance, $type, $input) = @$arg;
 
-                print "Add  Work: " . $instance->id . " " . $instance->name . "\n";
+#                print "Add  Work: " . $instance->id . " " . $instance->name . "\n";
 
                 $heap->{failed}->{$instance->id} = 0;
                 $heap->{queue}->enqueue(100,[$instance,$type,$input]);
@@ -99,7 +99,7 @@ sub setup {
                 my ($priority, $queue_id, $payload) = $heap->{queue}->dequeue_next();
                 if (defined $priority) {
                     my ($instance, $type, $input) = @$payload;
-                    print 'Exec Work: ' . $instance->id . ' ' . $instance->name . "\n";
+#                    print 'Exec Work: ' . $instance->id . ' ' . $instance->name . "\n";
 
                     $heap->{claimed}->{$remote_name} = $payload;
 
@@ -125,7 +125,7 @@ sub setup {
                 my $hostname = hostname;
                 my $port = 13424;
 
-                my $namespace = 'PAP';
+                my $namespace = 'Genome';
 
                 my $cmd = 'bsub -q ' . $queue . ' -N -u "' . $ENV{USER} . '@genome.wustl.edu" -m blades' . $rusage .
                     ' perl -e \'BEGIN { delete $ENV{PERL_USED_ABOVE}; } use above "' . $namespace . 

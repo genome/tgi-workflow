@@ -46,9 +46,9 @@ sub run_workflow_lsf {
     my $done_instance;
     my $error;
 
-#    POE::Kernel->stop();
-#    my $pid = fork;
-#    if ($pid) {
+    POE::Kernel->stop();
+    my $pid = fork;
+    if ($pid) {
         ## parent process
 
         my $after_connect = sub {
@@ -62,11 +62,9 @@ sub run_workflow_lsf {
                         [qw(got_plan_id got_instance_id complete error)]
                     );
 
-                    $kernel->delay('startup',5);
-                    print "start controller " . $session->ID . "\n";
+                    $kernel->delay('startup',0);
                 },
                 _stop => sub {
-                    print "stopped controller\n";
                 },
                 startup => sub {
                     my ($kernel) = @_[KERNEL];
@@ -78,7 +76,7 @@ sub run_workflow_lsf {
                 },
                 got_plan_id => sub {
                     my ($kernel, $id) = @_[KERNEL,ARG0];
-                    print "Plan: $id\n";
+#                    print "Plan: $id\n";
                     
                     my $kernel_name = $kernel->ID;
 
@@ -96,7 +94,7 @@ sub run_workflow_lsf {
                 },
                 got_instance_id => sub {
                     my ($kernel, $id) = @_[KERNEL, ARG0];
-                    print "Instance: $id\n";
+#                    print "Instance: $id\n";
                 },
                 complete => sub {
                     my ($kernel, $arg) = @_[KERNEL, ARG0];
@@ -104,15 +102,9 @@ sub run_workflow_lsf {
 
                     $done_instance = $instance;
 
-                    print "Complete: $id\n";
+#                    print "Complete: $id\n";
                     $kernel->post('IKC','post','poe://UR/workflow/quit');
                     $kernel->alias_remove('controller');
-                    $kernel->delay('debug_break',15);
-                },
-                debug_break => sub {
-                    $DB::single=1;
-
-                    print "debug\n";
                 },
                 error => sub {
                     my ($kernel, $arg) = @_[KERNEL, ARG0];
@@ -128,17 +120,15 @@ sub run_workflow_lsf {
         );
         };
 
+        sleep 5;  ## temporary fix until i can think of how to detect if server is ready
         Workflow::Server::UR->start($after_connect);
-
-print "kstop\n";
-#    } elsif (defined $pid) {
+    } elsif (defined $pid) {
         ## child process
-
-#        Workflow::Server::Hub->start;
-#        exit;
-#    } else {
-#        die "couldnt fork";
-#    }
+        Workflow::Server::Hub->start;
+        exit;
+    } else {
+        die "couldnt fork";
+    }
 
     if (defined $error) {
         die 'workflow crashed during execution';

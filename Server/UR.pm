@@ -9,7 +9,20 @@ use Workflow ();
 
 sub setup {
     my $class = shift;
+
+    $class->setup_client(@_);
+    
+    our $srv_session = POE::Component::IKC::Server->spawn(
+        port => 13425, name => 'UR'
+    );
+
+}
+
+sub setup_client {
+    my $class = shift;
     my @connect_code = @_;
+
+    $Storable::forgive_me = 1;
 
     our $session = POE::Component::IKC::Client->spawn( 
         ip=>'localhost', 
@@ -17,12 +30,6 @@ sub setup {
         name=>'UR',
         on_connect=> sub { __build(\@connect_code,\@_) } 
     );
-    
-    our $srv_session = POE::Component::IKC::Server->spawn(
-        port => 13425, name => 'UR'
-    );
-
-    $Storable::forgive_me = 1;
 }
 
 sub __build {
@@ -45,38 +52,39 @@ sub __build {
                 $kernel->post('IKC','monitor','*'=>{register=>'conn',unregister=>'disc'});
 
                 $kernel->delay('commit',120);
-print "start workflow " . $_[SESSION]->ID . "\n";
+#print "start workflow " . $_[SESSION]->ID . "\n";
             },
             _stop => sub {
-                print "workflow stopped\n";
+#                print "workflow stopped\n";
             },
             quit => sub {
                 my ($kernel,$session) = @_[KERNEL,SESSION];
 
-                $kernel->post('IKC','post','poe://Hub/dispatch/quit');
-                $kernel->post('IKC','shutdown');
+                $kernel->call('IKC','post','poe://Hub/dispatch/quit');
+                $kernel->call('IKC','shutdown');
 
                 UR::Context->commit();
                 $kernel->alarm_remove_all;
                 $kernel->alias_remove('workflow');
                 $kernel->refcount_decrement($session);
-                print "!!!!quitting workflow\n";
+                
+                $kernel->_data_ses_stop($session);
             },
             commit => sub {
                 my ($kernel) = @_[KERNEL];
 
-                print "Commit\n";
+#                print "Commit\n";
                 UR::Context->commit();
 
                 $kernel->delay('commit', 120);
             },
             conn => sub {
                 my ($name,$real) = @_[ARG1,ARG2];
-                print " Remote ", ($real ? '' : 'alias '), "$name connected\n";
+#                print " Remote ", ($real ? '' : 'alias '), "$name connected\n";
             },
             disc => sub {
                 my ($kernel,$name,$real) = @_[KERNEL,ARG1,ARG2];
-                print " Remote ", ($real ? '' : 'alias '), "$name disconnected\n";
+#                print " Remote ", ($real ? '' : 'alias '), "$name disconnected\n";
 
                 if ($name eq 'Hub') {
                     $kernel->post('IKC','shutdown');
@@ -117,7 +125,7 @@ print "start workflow " . $_[SESSION]->ID . "\n";
                 }
 
                 my $instance = $workflow->execute(%opts);
-                print "Starting: " . $instance->id . "\n";
+#                print "Starting: " . $instance->id . "\n";
         
                 $instance->sync;
             
@@ -159,8 +167,11 @@ print "start workflow " . $_[SESSION]->ID . "\n";
                 $kernel->post('IKC','post',$output_dest,[$instance->id,$instance,$instance->current]); 
             },
             error_relay => sub {
-                print "should relay error\n";
+                my ($kernel, $heap, $xarg, $yarg) = @_[KERNEL,HEAP,ARG0,ARG1];
+                my ($error_dest) = @$xarg;
+                my ($instance) = @$yarg;
 
+                $kernel->post('IKC','post',$error_dest,[$instance->id,$instance,$instance->current]); 
             },
             begin_instance => sub {
                 my ($kernel, $heap, $arg) = @_[KERNEL,HEAP,ARG0];
