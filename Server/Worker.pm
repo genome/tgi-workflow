@@ -47,6 +47,8 @@ sub __build {
                     $output = $type->execute(%{ $instance->input }, %$input);
                 };
                 if ($@) {
+                    print STDERR "Command module died.\n";
+                    print STDERR $@;
                     $error_string = $@;
                     $status = 'crashed';
                 }
