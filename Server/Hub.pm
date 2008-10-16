@@ -128,8 +128,7 @@ sub setup {
                 my $namespace = 'Genome';
 
                 my $cmd = 'bsub -q ' . $queue . ' -N -u "' . $ENV{USER} . '@genome.wustl.edu" -m blades' . $rusage .
-                    ' perl -e \'BEGIN { delete $ENV{PERL_USED_ABOVE}; } use above "' . $namespace . 
-                    '"; use Workflow::Server::Worker; Workflow::Server::Worker->start("' . $hostname . '",' . $port . ')\'';
+                    ' perl -e \'use above; use ' . $namespace . '; use Workflow::Server::Worker; Workflow::Server::Worker->start("' . $hostname . '",' . $port . ')\'';
 
                 return $cmd;
             },
