@@ -109,12 +109,12 @@ sub setup {
             },
             end_work => sub {
                 my ($kernel, $heap, $arg) = @_[KERNEL, HEAP, ARG0];
-                my ($remote_name, $id, $status, $output) = @$arg;
+                my ($remote_name, $id, $status, $output, $error_string) = @$arg;
 
                 delete $heap->{claimed}->{$remote_name};
                 delete $heap->{failed}->{$id};
 
-                $kernel->post('IKC','post','poe://UR/workflow/end_instance',[ $id, $status, $output ]);
+                $kernel->post('IKC','post','poe://UR/workflow/end_instance',[ $id, $status, $output, $error_string ]);
             },
             lsf_cmd => sub {
                 my ($kernel, $queue, $rusage) = @_[KERNEL, ARG0, ARG1];

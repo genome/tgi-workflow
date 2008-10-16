@@ -42,16 +42,18 @@ sub __build {
 
                 my $status = 'done';
                 my $output;
+                my $error_string;
                 eval {
                     $output = $type->execute(%{ $instance->input }, %$input);
                 };
                 if ($@) {
+                    $error_string = $@;
                     $status = 'crashed';
                 }
 
                 my $kernel_name = $kernel->ID;
 
-                $kernel->post('IKC','post','poe://Hub/dispatch/end_work',[ $kernel_name, $instance->id, $status, $output ]);
+                $kernel->post('IKC','post','poe://Hub/dispatch/end_work',[ $kernel_name, $instance->id, $status, $output, $error_string ]);
                 $kernel->yield('disconnect');
             },
             disconnect => sub {

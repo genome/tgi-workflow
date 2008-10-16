@@ -7,7 +7,7 @@ use above 'Workflow';
 use Data::Dumper;
 use PAP;
 
-my $i = Workflow::Store::Db::Operation::Instance->get(88);
+my $i = Workflow::Store::Db::Operation::Instance->get(5639);
 
 $i->treeview_debug;
 

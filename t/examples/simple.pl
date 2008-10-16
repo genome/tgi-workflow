@@ -7,13 +7,12 @@ use above 'Workflow';
 use Workflow::Simple;
 
 my $output = run_workflow_lsf(
-    \*DATA,
+    '../xml.d/03_die.xml', #\*DATA,
     'model input string' => 'foo bar baz',
     'sleep time' => 2
 );
 
-
-print Data::Dumper->new([$output])->Dump;
+print Data::Dumper->new([$output,\@Workflow::Simple::ERROR])->Dump;
 
 __DATA__
 <?xml version='1.0' standalone='yes'?>

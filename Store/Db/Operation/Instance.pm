@@ -63,6 +63,7 @@ sub _resolve_subclass_name {
 
     if (ref($self) && UNIVERSAL::isa($self,'Workflow::Operation::Instance')) {
 
+=pod
         my $dbh = $self->operation_instance_class_name->get_data_source->get_default_handle;
         
         my ($child_count) = @{ $dbh->selectrow_arrayref(
@@ -73,6 +74,12 @@ sub _resolve_subclass_name {
         ) };
 
         if ($child_count > 0) {
+            return 'Workflow::Store::Db::Model::Instance';
+        }
+=cut
+
+        my @children = Workflow::Store::Db::Operation::Instance->get(parent_instance_id => $self->id);
+        if (scalar @children > 0) {
             return 'Workflow::Store::Db::Model::Instance';
         }
     }

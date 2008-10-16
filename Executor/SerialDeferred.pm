@@ -45,8 +45,13 @@ sub wait {
                 $outputs = $opdata->operation->operation_type->execute(%{ $opdata->input }, %{ $edited_input });
             };
             if ($@) {
-                warn $@; 
+#                warn $@; 
                 $opdata->current->status('crashed');
+                
+                Workflow::Operation::InstanceExecution::Error->create(
+                    execution => $opdata->current,
+                    error => $@
+                );
             } else {
                 $opdata->output({ %{ $opdata->output }, %{ $outputs } });        
                 $opdata->current->status('done');

@@ -89,6 +89,79 @@ sub instance_execution_class_name {
     'Workflow::Operation::InstanceExecution'
 }
 
+our @observers = (
+    Workflow::Operation::InstanceExecution->add_observer(
+        aspect => 'status',
+        callback => sub {
+            my ($self,$property,$old,$new) = @_;
+
+            if ($old eq 'done' && $new ne $old) {
+                $self->operation_instance->_undo_done_instance($old,$new);
+            }
+        }
+    )
+);
+
+sub _undo_done_instance {
+    my ($self, $old, $new) = @_;
+    # This is fired by the above observer when status goes from 'done' 
+    # to anything.  It's expected that the property has already been 
+    # set, this is not meant to do it itself.
+    
+    $self->is_done(0);
+    if ($self->can('input_connector')) {
+        # Going from done to new on a model means we have to restart
+        # all our children, because some prior operation wants to rerun
+        # and could change our input.
+        
+        # The other case where this changes would be 'done' to 'crashed'
+        # In the case of a model that means partially complete.  In this
+        # scenario we don't want to touch anything because someone has
+        # already done that for us.
+        
+        # I guess its possible for client code to directly change a model
+        # from new to crashed, maybe we should rerun the output connector
+        # in that case?
+        
+        if ($new eq 'new') {
+            my $instance = $self->input_connector;
+            # Changing the status of our input connector will fire this
+            # method again, causing it to find all dependencies inside
+            # and flag them to run again.
+
+            $instance->status('new') 
+                if ($instance->status eq 'done');
+        }
+    }
+    
+    foreach my $instance ($self->dependent_operations) {
+        # If one of my siblings crashed, it would rerun anyway but
+        # when its a model it wouldn't restart completely.  We have
+        # to explicitly set it to done here, so it fires back into
+        # this method when the state flips from done to new.
+
+        $instance->status('done')
+            if $instance->status('crashed');
+
+        # Flag everything that depends on me to rerun.  These
+        # are siblings in the current model.  It will fire this
+        # method again and continue to check deps down the tree.
+        
+        $instance->status('new') 
+            if ($instance->status eq 'done');
+    }
+    
+    if ($self->operation->name eq 'output connector' && $self->parent_instance->status eq 'done') {    
+        # Being an output connector with my parent's status as done
+        # I have to set my parent to crashed.  If this were a full clean
+        # restart of my parent, it would have already been set to new
+        # by one of the above calls, or the client code.
+    
+        $self->parent_instance->status('crashed');
+    }
+
+}
+
 sub create {
     my $class = shift;
     my %args = (@_);
@@ -316,9 +389,7 @@ sub reset_current {
 sub resume {
     my ($self) = @_;
     
-#    die 'nf';
     $self->reset_current;
-
     $self->execute;
 }
 

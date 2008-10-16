@@ -6,15 +6,20 @@ our @ISA = qw(Exporter);
 our @EXPORT = qw/run_workflow run_workflow_lsf/;
 our @EXPORT_OK = qw//;
 
-use Workflow ();
+our @ERROR = ();
 
+use Workflow ();
 use POE;
+
 
 sub run_workflow {
     my $xml = shift;
     my %inputs = @_;
 
+    @ERROR = ();
+
     my $instance;
+    my $error;
 
     my $w = Workflow::Model->create_from_xml($xml);
     $w->execute(
@@ -23,11 +28,16 @@ sub run_workflow {
             $instance = shift;
         },
         error_cb => sub {
-            die 'workflow crashed during execution';
+            $error = 1;
         }
     );
  
     $w->wait;
+
+    if (defined $error) {
+        @ERROR = Workflow::Operation::InstanceExecution::Error->is_loaded;    
+        return undef;
+    }
 
     unless ($instance) {
         die 'workflow did not run to completion';
@@ -42,6 +52,8 @@ use Workflow::Server::Hub;
 sub run_workflow_lsf {
     my $xml = shift;
     my %inputs = @_;
+
+    @ERROR = ();
 
     my $done_instance;
     my $error;
@@ -110,11 +122,11 @@ sub run_workflow_lsf {
                     my ($kernel, $arg) = @_[KERNEL, ARG0];
                     my ($id, $instance, $execution) = @$arg;
 
-                    print "Error: $id\n";
-
+#                    print "Error: $id\n";
                     $error = 1;
                     
                     $kernel->post('IKC','post','poe://UR/workflow/quit');
+                    $kernel->alias_remove('controller');
                 }
             }
         );
@@ -131,7 +143,8 @@ sub run_workflow_lsf {
     }
 
     if (defined $error) {
-        die 'workflow crashed during execution';
+        @ERROR = Workflow::Operation::InstanceExecution::Error->is_loaded;
+        return undef;
     }
 
     unless (defined $done_instance) {

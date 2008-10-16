@@ -184,13 +184,18 @@ sub __build {
             },
             end_instance => sub {
                 my ($kernel, $heap, $arg) = @_[KERNEL,HEAP,ARG0];
-                my ($id,$status,$output) = @$arg;
+                my ($id,$status,$output,$error_string) = @$arg;
                 
                 my $instance = Workflow::Store::Db::Operation::Instance->get($id);
                 $instance->status($status);
                 $instance->current->end_time(UR::Time->now);
                 if ($status eq 'done') {
                     $instance->output({ %{ $instance->output }, %$output });
+                } elsif ($status eq 'crashed') {
+                    Workflow::Operation::InstanceExecution::Error->create(
+                        execution => $instance->current,
+                        error => $error_string
+                    );
                 }
 
                 $instance->completion;
