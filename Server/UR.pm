@@ -43,8 +43,7 @@ sub __build {
 
     our $workflow = POE::Session->create(
         heap => {
-            channel => $channel_id,
-            anon_cnt => 0
+            channel => $channel_id
         },
         inline_states => {
             _start => sub {
@@ -85,10 +84,6 @@ evTRACE and print "workflow quit_stage_2\n";
 
                 UR::Context->commit();
                 $kernel->alarm_remove_all;
-                for (1..$heap->{anon_cnt}) {
-                    $kernel->refcount_decrement($session->ID,'anon_event');
-                    $heap->{anon_cnt}--;
-                }
 
                 $kernel->post('IKC','shutdown');
             },
@@ -142,12 +137,10 @@ evTRACE and print "workflow execute\n";
                 if ($output_dest) {
                     my $cb = $session->postback('output_relay',$output_dest);
                     $opts{output_cb} = $cb;
-                    $heap->{anon_cnt}++;
                 }
                 if ($error_dest) {
                     my $cb = $session->postback('error_relay',$error_dest);
                     $opts{error_cb} = $cb;
-                    $heap->{anon_cnt}++;
                 }
 
                 my $instance = $workflow->execute(%opts);
@@ -184,26 +177,32 @@ evTRACE and print "workflow resume\n";
                 return $instance->id;
             },
             output_relay => sub {
-                my ($kernel, $heap, $xarg, $yarg) = @_[KERNEL,HEAP,ARG0,ARG1];
+                my ($kernel, $session, $heap, $xarg, $yarg) = @_[KERNEL,SESSION,HEAP,ARG0,ARG1];
                 my ($output_dest) = @$xarg;
                 my ($instance) = @$yarg;
 evTRACE and print "workflow output_relay\n";
 
                 $instance->output_cb(undef);
                 $instance->error_cb(undef);
+                $kernel->refcount_decrement($session->ID,'anon_event');
+                $kernel->refcount_decrement($session->ID,'anon_event');
 
                 $kernel->post('IKC','post',$output_dest,[$instance->id,$instance,$instance->current]); 
             },
             error_relay => sub {
-                my ($kernel, $heap, $xarg, $yarg) = @_[KERNEL,HEAP,ARG0,ARG1];
+                my ($kernel, $session, $heap, $xarg, $yarg) = @_[KERNEL,SESSION,HEAP,ARG0,ARG1];
                 my ($error_dest) = @$xarg;
                 my ($instance) = @$yarg;
 evTRACE and print "workflow error_relay\n";
 
                 $instance->output_cb(undef);
                 $instance->error_cb(undef);
+                $kernel->refcount_decrement($session->ID,'anon_event');
+                $kernel->refcount_decrement($session->ID,'anon_event');
 
-                $kernel->post('IKC','post',$error_dest,[$instance->id,$instance,$instance->current]); 
+                my @errors = _util_error_walker($instance);
+                
+                $kernel->post('IKC','post',$error_dest,[$instance->id,$instance,$instance->current,\@errors]);
             },
             begin_instance => sub {
                 my ($kernel, $heap, $arg) = @_[KERNEL,HEAP,ARG0];
@@ -269,6 +268,17 @@ sub dispatch {
     $instance->status('scheduled');
     
     POE::Kernel->post('IKC','post','poe://Hub/dispatch/add_work', [ $instance, $instance->operation->operation_type, $input ]);
+}
+
+sub _util_error_walker {
+    my $i = shift;
+    my @errors = ($i->current->errors);
+    if ($i->can('child_instances')) {
+        foreach my $ci ($i->child_instances) {
+            push @errors, _util_error_walker($ci);
+        }
+    }
+    return @errors;
 }
 
 1;

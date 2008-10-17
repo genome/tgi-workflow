@@ -72,6 +72,7 @@ sub run_workflow_lsf {
 
     my $done_instance;
     my $error;
+    my $error_list;
 
     my @hubcmd = ('perl','-e','use above; use Workflow::Server::Hub; Workflow::Server::Hub->start;');
     my @urcmd = ('perl','-e','use lib "/gscuser/eclark/lib"; use above; use Workflow::Server::UR; Workflow::Server::UR->start;');
@@ -154,10 +155,11 @@ evTRACE and print "controller complete $id\n";
                 },
                 error => sub {
                     my ($kernel, $arg) = @_[KERNEL, ARG0];
-                    my ($id, $instance, $execution) = @$arg;
+                    my ($id, $instance, $execution, $errors) = @$arg;
 evTRACE and print "controller error $id\n";
 
                     $error = 1;
+                    $error_list = $errors;
 
                     $kernel->yield('quit');
                 },
@@ -195,14 +197,15 @@ evTRACE and print "controller quit\n";
 
     POE::Kernel->run();
 
-    # Should probably consider this a bug in cpan.  They shouldn't keep this in a global and not reset it on shutdown
+    # Should probably consider this a bug in cpan.  They shouldn't keep 
+    # this in a global and not reset it on shutdown
     $POE::Component::IKC::Responder::ikc = undef;
 
     $u->finish if $start_ur_server && $fork_ur_server;
     $h->finish if $start_hub_server;
 
     if (defined $error) {
-        @ERROR = Workflow::Operation::InstanceExecution::Error->is_loaded;
+        @ERROR = @$error_list;
         return undef;
     }
 

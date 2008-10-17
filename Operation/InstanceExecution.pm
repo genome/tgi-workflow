@@ -15,7 +15,12 @@ class Workflow::Operation::InstanceExecution {
         stderr => { },
         is_done => { is => 'Boolean' },
         is_running => { is => 'Boolean' },
-        debug_mode => { is => 'Boolean', default_value => 0, is_transient => 1 }      
+        debug_mode => { is => 'Boolean', default_value => 0, is_transient => 1 },
+        errors => { 
+            is => 'Workflow::Operation::InstanceExecution::Error', 
+            is_many => 1, 
+            reverse_id_by => 'execution'
+        }
     ]
 };
 
