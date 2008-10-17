@@ -53,9 +53,7 @@ sub __build {
                     $status = 'crashed';
                 }
 
-                my $kernel_name = $kernel->ID;
-
-                $kernel->post('IKC','post','poe://Hub/dispatch/end_work',[ $kernel_name, $instance->id, $status, $output, $error_string ]);
+                $kernel->post('IKC','post','poe://Hub/dispatch/end_work',[$ENV{LSB_JOBID}, $kernel->ID, $instance->id, $status, $output, $error_string]);
                 $kernel->yield('disconnect');
             },
             disconnect => sub {
@@ -67,7 +65,7 @@ sub __build {
                 my $kernel_name = $kernel->ID;
 
                 $kernel->post(
-                    'IKC','post','poe://Hub/dispatch/get_work',["poe://$kernel_name/worker/execute", $kernel_name]
+                    'IKC','post','poe://Hub/dispatch/get_work',[$ENV{LSB_JOBID}, $kernel->ID, "poe://$kernel_name/worker/execute"]
                 );
             }
         }

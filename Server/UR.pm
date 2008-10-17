@@ -206,13 +206,14 @@ evTRACE and print "workflow error_relay\n";
             },
             begin_instance => sub {
                 my ($kernel, $heap, $arg) = @_[KERNEL,HEAP,ARG0];
-                my ($id) = @$arg;
+                my ($id,$dispatch_id) = @$arg;
 evTRACE and print "workflow begin_instance\n";
 
                 my $instance = Workflow::Store::Db::Operation::Instance->get($id);
                 
                 $instance->status('running');
                 $instance->current->start_time(UR::Time->now);
+                $instance->current->dispatch_identifier($dispatch_id);
             },
             end_instance => sub {
                 my ($kernel, $heap, $arg) = @_[KERNEL,HEAP,ARG0];

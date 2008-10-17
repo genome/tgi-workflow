@@ -15,6 +15,7 @@ class Workflow::Operation::InstanceExecution {
         stderr => { },
         is_done => { is => 'Boolean' },
         is_running => { is => 'Boolean' },
+        dispatch_identifier => { is => 'String' },
         debug_mode => { is => 'Boolean', default_value => 0, is_transient => 1 },
         errors => { 
             is => 'Workflow::Operation::InstanceExecution::Error', 

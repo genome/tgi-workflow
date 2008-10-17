@@ -13,7 +13,7 @@ class Workflow::Operation::InstanceExecution::Error {
     ],
     has_optional => [
         # Real properties of this class
-        execution => { 
+        execution => {
             is => 'Workflow::Operation::InstanceExecution',
             id_by => 'execution_id'
         },
@@ -26,13 +26,14 @@ class Workflow::Operation::InstanceExecution::Error {
             is => 'Workflow::Operation::Instance', 
             id_by => 'instance_id' 
         },
+        # Next two properties must be run after copy_on_create's are done
         path_name => {
             is_constant => 1,
             calculate => q{
                 return $self->_build_path_string;
             }
         },
-        name => {   # i want this to be copied after instance_id is set, cant use copy_on_create
+        name => {
             is_constant => 1,
             calculate => q{
                 return $self->operation_instance->operation->name;
@@ -65,6 +66,9 @@ class Workflow::Operation::InstanceExecution::Error {
             copy_on_create => 'execution'
         },
         is_running => {
+            copy_on_create => 'execution'
+        },
+        dispatch_identifier => {
             copy_on_create => 'execution'
         }
     ]

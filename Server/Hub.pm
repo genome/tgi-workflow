@@ -39,123 +39,276 @@ sub setup {
     );
     
     our $dispatch = POE::Session->create(
+        heap => {
+            periodic_check_time => 1800,
+            job_limit           => 500,
+            job_count           => 0,
+            dispatched          => {}, # keyed on lsf job id
+            claimed             => {}, # keyed on remote kernel name
+            failed              => {}, # keyed on instance id
+            cleaning_up         => {}, # keyed on remote kernel name
+            queue               => POE::Queue::Array->new()
+        },
         inline_states => {
             _start => sub { 
                 my ($kernel, $heap) = @_[KERNEL, HEAP];
-evTRACE and print "dispatch _start\n";
+                evTRACE and print "dispatch _start\n";
 
                 $kernel->alias_set("dispatch");
                 $kernel->call('IKC','publish','dispatch',[qw(add_work get_work end_work quit)]);
 
-                $heap->{queue} = POE::Queue::Array->new();
-                $heap->{claimed} = {};
-                $heap->{failed} = {};
-
                 $kernel->post('IKC','monitor','*'=>{register=>'conn',unregister=>'disc'});
+                
+                $kernel->sig('USR1','sig_USR1');
+                $kernel->sig('USR2','sig_USR2');
+                
+#                $kernel->delay('periodic_check', $heap->{periodic_check_time});
+            },
+            sig_USR1 => sub {
+                my ($kernel) = @_[KERNEL];
+                
+                $kernel->yield('check_jobs');
+                $kernel->sig_handled();
+            },
+            sig_USR2 => sub {
+                my ($kernel) = @_[KERNEL];
+                
+                $kernel->yield('start_jobs');
+                $kernel->sig_handled();
             },
             quit => sub {
                 my ($kernel) = @_[KERNEL];
-evTRACE and print "dispatch quit\n";
+                evTRACE and print "dispatch quit\n";
 
                 $kernel->yield('quit_stage_2');
 
-                return 1;
+                return 1; # must return something here so IKC forwards the reply
             },
             quit_stage_2 => sub {
                 my ($kernel) = @_[KERNEL];
-evTRACE and print "dispatch quit_stage_2\n";
+                evTRACE and print "dispatch quit_stage_2\n";
 
+                $kernel->alarm_remove_all;
                 $kernel->post('IKC','shutdown');
             },
             conn => sub {
                 my ($name,$real) = @_[ARG1,ARG2];
-evTRACE and print "dispatch conn ", ($real ? '' : 'alias '), "$name\n";
+                evTRACE and print "dispatch conn ", ($real ? '' : 'alias '), "$name\n";
             },
             disc => sub {
-                my ($kernel,$session,$heap,$name,$real) = @_[KERNEL,SESSION,HEAP,ARG1,ARG2];
-evTRACE and print "dispatch disc ", ($real ? '' : 'alias '), "$name\n";
+                my ($kernel,$session,$heap,$remote_kernel,$real) = @_[KERNEL,SESSION,HEAP,ARG1,ARG2];
+                evTRACE and print "dispatch disc ", ($real ? '' : 'alias '), "$remote_kernel\n";
                 
-                if (exists $heap->{claimed}->{$name}) {
-                    my $payload = $heap->{claimed}->{$name};
-                    delete $heap->{claimed}->{$name};
+                if (delete $heap->{cleaning_up}->{$remote_kernel} || exists $heap->{claimed}->{$remote_kernel}) {
+                    $heap->{job_count}--;
                     
-#                    print 'Blade failed: ' . $payload->[0]->id . ' ' . $payload->[0]->name . "\n";
-
-                    $heap->{failed}->{$payload->[0]->id}++;
-
-                    if ($heap->{failed}->{$payload->[0]->id} <= 5) {
-                        $heap->{queue}->enqueue(200,$payload);
-
-                        my $cmd = $kernel->call($session,'lsf_cmd');
-                        $kernel->post($session,'system_cmd', $cmd);
-                    } else {
-                        $kernel->post($session,'end_work',[$name,$payload->[0]->id,'crashed',{}]);
-                    }
+                    $kernel->delay('start_jobs',0);
                 }
+                
+                if (exists $heap->{claimed}->{$remote_kernel}) {
+                    my $payload = delete $heap->{claimed}->{$remote_kernel};
+                    my ($instance, $type, $input) = @$payload;
+                   
+                    warn 'Blade failed on ' . $instance->id . ' ' . $instance->name . "\n";
+                    $heap->{failed}->{$instance->id}++;
+
+                    if ($heap->{failed}->{$instance->id} <= 5) {
+                        $heap->{queue}->enqueue(200,$payload);
+                    } else {
+                        $kernel->yield('end_work',[-666,$remote_kernel,$instance->id,'crashed',{}]);
+                    }
+                }                
             },
             add_work => sub {
                 my ($kernel, $heap, $arg) = @_[KERNEL, HEAP, ARG0];
                 my ($instance, $type, $input) = @$arg;
-evTRACE and print "dispatch add_work " . $instance->id . "\n";
+                evTRACE and print "dispatch add_work " . $instance->id . "\n";
 
                 $heap->{failed}->{$instance->id} = 0;
                 $heap->{queue}->enqueue(100,[$instance,$type,$input]);
-
-                my $cmd = $kernel->call($_[SESSION],'lsf_cmd');
-                $kernel->post($_[SESSION],'system_cmd', $cmd);
+                
+                $kernel->delay('start_jobs',0);                
             },
             get_work => sub {
                 my ($kernel, $heap, $arg) = @_[KERNEL, HEAP, ARG0];
-                my ($where, $remote_name) = @$arg;
-evTRACE and print "dispatch get_work $remote_name $where\n";
+                my ($dispatch_id, $remote_kernel, $where) = @$arg;
+                evTRACE and print "dispatch get_work $dispatch_id $where\n";
 
-                my ($priority, $queue_id, $payload) = $heap->{queue}->dequeue_next();
-                if (defined $priority) {
+                if ($heap->{dispatched}->{$dispatch_id}) {
+                    my $payload = delete $heap->{dispatched}->{$dispatch_id};
                     my ($instance, $type, $input) = @$payload;
 
-                    $heap->{claimed}->{$remote_name} = $payload;
+                    $heap->{claimed}->{$remote_kernel} = $payload;
 
-                    $kernel->post('IKC','post','poe://UR/workflow/begin_instance',[ $instance->id ]);
-                    $kernel->post('IKC','post',$where, [$instance, $type, $input]);
+                    $kernel->post('IKC','post','poe://UR/workflow/begin_instance',[ $instance->id, $dispatch_id ]);
+                    $kernel->post('IKC','post',$where,[$instance, $type, $input]);
+                } else {
+                    warn "dispatch get_work: unknown id $dispatch_id\n";
                 }
             },
             end_work => sub {
                 my ($kernel, $heap, $arg) = @_[KERNEL, HEAP, ARG0];
-                my ($remote_name, $id, $status, $output, $error_string) = @$arg;
-evTRACE and print "dispatch end_work $remote_name $id\n";
+                my ($dispatch_id, $remote_kernel, $id, $status, $output, $error_string) = @$arg;
+                evTRACE and print "dispatch end_work $dispatch_id $id\n";
 
-                delete $heap->{claimed}->{$remote_name};
                 delete $heap->{failed}->{$id};
+
+                if ($remote_kernel) {
+                    delete $heap->{claimed}->{$remote_kernel};
+                    $heap->{cleaning_up}->{$remote_kernel} = 1;
+                }
 
                 $kernel->post('IKC','post','poe://UR/workflow/end_instance',[ $id, $status, $output, $error_string ]);
             },
-            lsf_cmd => sub {
-                my ($kernel, $queue, $rusage) = @_[KERNEL, ARG0, ARG1];
-evTRACE and print "dispatch lsf_cmd\n";
+            start_jobs => sub {
+                my ($kernel, $heap) = @_[KERNEL, HEAP];
+                evTRACE and print "dispatch start_jobs " . $heap->{job_count} . ' ' . $heap->{job_limit} . "\n";
+                
+                while ($heap->{job_count} < $heap->{job_limit}) {
+                    my ($priority, $queue_id, $payload) = $heap->{queue}->dequeue_next();
+                    if (defined $priority) {
+                        my ($instance, $type, $input) = @$payload;
+                        $heap->{job_count}++;
+                        
+                        my $lsf_job_id = $kernel->call($_[SESSION],'lsf_bsub',undef,undef,$instance->name);
+                        $heap->{dispatched}->{$lsf_job_id} = $payload;
+
+                        evTRACE and print "dispatch start_jobs $lsf_job_id\n";
+                    } else {
+                        last;
+                    }
+                }
+            },
+            lsf_bsub => sub {
+                my ($kernel, $queue, $rusage, $name) = @_[KERNEL, ARG0, ARG1, ARG2];
+                evTRACE and print "dispatch lsf_cmd\n";
 
                 $queue ||= 'long';
-                $rusage ||= ' -R "rusage[tmp=100]"';
+                $rusage ||= 'rusage[tmp=100]';
+                $name ||= 'worker';
 
                 my $hostname = hostname;
                 my $port = 13424;
 
                 my $namespace = 'Genome';
 
-                my $cmd = 'bsub -q ' . $queue . ' -N -u "' . $ENV{USER} . '@genome.wustl.edu" -m blades' . $rusage .
-                    ' perl -e \'use above; use ' . $namespace . '; use Workflow::Server::Worker; Workflow::Server::Worker->start("' . $hostname . '",' . $port . ')\'';
+                my $cmd = 'bsub -q ' . $queue . ' -N -u "' . $ENV{USER} . '@genome.wustl.edu" -m blades -R "' . $rusage .
+                    '" -J "' . $name . '" perl -e \'use above; use ' . $namespace . '; use Workflow::Server::Worker; Workflow::Server::Worker->start("' . $hostname . '",' . $port . ')\'';
 
-                return $cmd;
+                evTRACE and print "dispatch lsf_cmd $cmd\n";
+
+                my $bsub_output = `$cmd`;
+
+                evTRACE and print "dispatch lsf_cmd $bsub_output";
+
+                # Job <8833909> is submitted to queue <long>.
+                $bsub_output =~ /^Job <(\d+)> is submitted to queue <(\w+)>\./;
+                
+                my $lsf_job_id = $1;
+                return $lsf_job_id;
             },
-            system_cmd => sub {
-                my ($cmd) = @_[ARG0];
-evTRACE and print "dispatch system_cmd $cmd\n";
-    
-                system($cmd);
+            periodic_check => sub {
+                my ($kernel, $heap) = @_[KERNEL, HEAP];
+                evTRACE and print "dispatch periodic_check\n";
+                
+                if (scalar keys %{ $heap->{dispatched} } > 0) {
+                    $kernel->yield('check_jobs');
+                }
+                
+                $kernel->delay('periodic_check', $heap->{periodic_check_time});                
+            },
+            check_jobs => sub {
+                my ($kernel, $heap) = @_[KERNEL, HEAP];
+                evTRACE and print "dispatch check_jobs\n";
+                
+                my $number_restarted = 0;
+                foreach my $lsf_job_id (keys %{ $heap->{dispatched} }) {
+                    my $restart = 0;
+                
+                    if (my ($info,$events) = lsf_state($lsf_job_id)) {
+                        $restart = 1 if ($info->{'Status'} eq 'EXIT');
+                        
+                        evTRACE and print "dispatch check_jobs <$lsf_job_id> suspended by user\n" 
+                            if ($info->{'Status'} eq 'PSUSP');
+                    } else {
+                        $restart = 1;
+                    }
+                    
+                    if ($restart) {
+                        my $payload = delete $heap->{dispatched}->{$lsf_job_id};
+                        my ($instance, $type, $input) = @$payload;
+
+                        evTRACE and print 'dispatch check_jobs ' . $instance->id . ' ' . $instance->name . " vanished\n";
+                        $heap->{job_count}--;
+                        $heap->{failed}->{$instance->id}++;
+
+                        if ($heap->{failed}->{$instance->id} <= 5) {
+                            $heap->{queue}->enqueue(150,$payload);
+                            
+                            $number_restarted++;
+                        } else {
+                            $kernel->yield('end_work',[$lsf_job_id,undef,$instance->id,'crashed',{}]);
+                        }
+                    }
+                }
+                
+                $kernel->delay('start_jobs',0) if ($number_restarted > 0);
             }
         }
     );
 
     $Storable::forgive_me=1;
+}
+
+sub lsf_state {
+    my ($lsf_job_id) = @_;
+
+    my $spool = `bjobs -l $lsf_job_id 2>&1`;
+    return if ($spool =~ /Job <$lsf_job_id> is not found/);
+
+    # this regex nukes the indentation and line feed
+    $spool =~ s/\s{22}//gm; 
+
+    my @eventlines = split(/\n/, $spool);
+    shift @eventlines unless ($eventlines[0] =~ m/\S/);  # first line is white space
+    
+    my $jobinfoline = shift @eventlines;
+    # sometimes the prior regex nukes the white space between Key <Value>
+    $jobinfoline =~ s/(?<!\s{1})</ </g;
+
+    my %jobinfo = ();
+    # parse out a line such as
+    # Key <Value>, Key <Value>, Key <Value>
+    while ($jobinfoline =~ /(?:^|(?<=,\s{1}))(.+?)(?:\s+<(.*?)>)?(?=(?:$|;|,))/g) {
+        $jobinfo{$1} = $2;
+    }
+
+    my @events = ();
+    foreach my $el (@eventlines) {
+        $el =~ s/(?<!\s{1})</ </g;
+
+        my $time = substr($el,0,21,'');
+        substr($time,-2,2,'');
+
+        # see if we really got the time string
+        if ($time !~ /\w{3}\s+\w{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}/) {
+            # there's stuff we dont care about at the bottom, just skip it
+            next;
+        }
+
+        my @entry = (
+            $time,
+            {}
+        );
+
+        while ($el =~ /(?:^|(?<=,\s{1}))(.+?)(?:\s+<(.*?)>)?(?=(?:$|;|,))/g) {
+            $entry[1]->{$1} = $2;
+        }
+        push @events, \@entry;
+    }
+
+
+    return (\%jobinfo, \@events);
 }
 
 1;

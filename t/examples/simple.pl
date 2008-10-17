@@ -8,12 +8,12 @@ use Workflow::Simple;
 
 #$Workflow::Simple::start_hub_server = 0;
 #$Workflow::Simple::start_ur_server = 0;
-$Workflow::Simple::fork_ur_server = 0;
+#$Workflow::Simple::fork_ur_server = 0;
 
 my $output = run_workflow_lsf(
-    \*DATA, #'/gscuser/eclark/svn/perl_modules/Workflow/t/xml.d/03_die.xml', #\*DATA,
+    \*DATA, 
     'model input string' => 'foo bar baz',
-    'sleep time' => 2
+    'sleep time' => 1 
 );
 
 print Data::Dumper->new([$output,\@Workflow::Simple::ERROR])->Dump;

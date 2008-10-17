@@ -13,8 +13,6 @@ class Workflow::Model::Instance {
     ]
 };
 
-#map { print "$_\n" } keys %Workflow::Model::Instance::;
-
 sub sorted_child_instances {
     my $self = shift;
 
