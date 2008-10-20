@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 28;
+use Test::More tests => 27;
 use Switch;
 
 my @operationtypes = qw{
@@ -12,7 +12,6 @@ my @operationtypes = qw{
 };
 
 require_ok('Workflow');
-0 && $Workflow::optypes;  ## get rid of warning when its used later
 require_ok('Workflow::OperationType');
 
 foreach my $operationtype (@operationtypes) {
@@ -34,8 +33,9 @@ foreach my $operationtype (@operationtypes) {
             is_deeply($out,$vals,'check output ' . $operationtype);
         }
         case 'Command' {
-            require_ok('Workflow::Test::Command::Echo');
-            my $o = $Workflow::optypes{'Workflow::Test::Command::Echo'};
+            my $o = $operationtype_class->create(
+                command_class_name => 'Workflow::Test::Command::Echo'
+            );
             ok($o,'found ' . $operationtype);
             
             my $out;

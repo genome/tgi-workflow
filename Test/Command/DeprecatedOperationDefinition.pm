@@ -1,4 +1,4 @@
-package Workflow::Test::Command::Time;
+package Workflow::Test::Command::DeprecatedOperationDefinition;
 
 use strict;
 use warnings;
@@ -6,9 +6,9 @@ use warnings;
 use Workflow;
 use Command; 
 
-class Workflow::Test::Command::Time {
+class Workflow::Test::Command::DeprecatedOperationDefinition {
     is => ['Workflow::Test::Command'],
-    has_output => [
+    has => [
         today => { 
             calculate => q|
                 return UR::Time->today;
@@ -20,6 +20,13 @@ class Workflow::Test::Command::Time {
             |,
         },
     ],
+};
+
+operation_io Workflow::Test::Command::DeprecatedOperationDefinition {
+    input  => [ ],
+    output => [ 'today', 'now' ],
+    lsf_resource => 'rusage[tmp=100]',
+    lsf_queue => 'long'
 };
 
 sub sub_command_sort_position { 10 }

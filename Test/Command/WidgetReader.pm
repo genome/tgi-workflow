@@ -9,11 +9,13 @@ use Command;
 
 class Workflow::Test::Command::WidgetReader {
     is => ['Workflow::Test::Command'],
-    has => [
+    has_output => [
         size => { is_optional => 1 },
         color => { is_optional => 1 },
         shape => { is_optional => 1 },
-        widget => { },
+    ],
+    has => [
+        widget => { is_input => 1 },
     ],
 };
 

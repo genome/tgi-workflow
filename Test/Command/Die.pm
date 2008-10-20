@@ -8,14 +8,13 @@ use Command;
 
 class Workflow::Test::Command::Die {
     is => ['Workflow::Test::Command'],
-    has => [
-        seconds => { is => 'Integer', is_optional => 1, doc => 'length in seconds to sleep before dying' },
+    has_input => [
+        seconds => { 
+            is => 'Integer', 
+            is_optional => 1, 
+            doc => 'length in seconds to sleep before dying'
+        }
     ],
-};
-
-operation_io Workflow::Test::Command::Die {
-    input  => [ 'seconds' ],
-    output => [ 'result' ]
 };
 
 sub sub_command_sort_position { 10 }

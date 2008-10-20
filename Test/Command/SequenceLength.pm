@@ -10,14 +10,18 @@ use Workflow;
 class Workflow::Test::Command::SequenceLength {
     is => ['Workflow::Test::Command'],
     has => [
-        fasta_file => { is => 'String', doc => 'fasta file name' },
-        sequence_length => { is => 'Integer', is_optional => 1, doc => 'Sequence Length' }
+        fasta_file => { 
+            is => 'String', 
+            is_input => 1,
+            doc => 'fasta file name' 
+        },
+        sequence_length => { 
+            is => 'Integer', 
+            is_output => 1,
+            is_optional => 1, 
+            doc => 'Sequence Length' 
+        }
     ],
-};
-
-operation_io Workflow::Test::Command::SequenceLength {
-    input  => [ 'fasta_file' ],
-    output => [ 'sequence_length' ],
 };
 
 sub sub_command_sort_position { 10 }

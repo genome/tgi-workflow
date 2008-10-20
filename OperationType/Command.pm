@@ -14,19 +14,67 @@ class Workflow::OperationType::Command {
     ],
 };
 
+sub create {
+    my $class = shift;
+    my $params = $class->preprocess_params(@_);
+    
+    die 'missing command class' unless $params->{command_class_name};
+
+    # try to use it before doing anything else, so deprecated style still works
+    eval "use " . $params->{command_class_name};
+    if ($@) {
+        die $@;
+    }
+    
+    my $self = $class->get(command_class_name => $params->{command_class_name});
+    return $self if $self;
+    
+    $self = $class->SUPER::create(@_);
+    my $command = $self->command_class_name;
+    
+
+    my $class_meta = $command->get_class_object;
+    die 'invalid command class' unless $class_meta;
+
+    my @property_meta = $class_meta->get_all_property_objects();
+
+    foreach my $type (qw/input output/) {
+        my $my_method = $type . '_properties';
+        unless ($self->$my_method) {
+            my @props = map {
+                $_->property_name
+            } grep { 
+                defined $_->{'is_' . $type} && $_->{'is_' . $type}
+            } @property_meta;
+        
+            $self->$my_method(\@props);
+        }
+    }
+
+    my @params = qw/lsf_resource lsf_queue/;
+    foreach my $param_name (@params) {
+        unless ($self->$param_name) {
+            my $prop = $class_meta->get_property_meta_by_name($param_name);
+
+            if ($prop && $prop->{is_param}) {
+                if ($prop->default_value) {
+                    $self->$param_name($prop->default_value);
+                } else {
+                    warn "$command property $param_name should have a default value if it is a parameter.  to be fixed in a future workflow version";
+                }
+            }
+        }
+    }
+    
+    return $self;
+}
+
 sub create_from_xml_simple_structure {
     my ($class, $struct) = @_;
 
     my $command = delete $struct->{commandClass};
 
-    eval "use $command"; 
-    if ($@) {
-        die $@;
-    }
-
-    my $self = $command->operation_type;
- 
-    return $self;
+    return $class->create(command_class_name => $command);
 }
 
 sub as_xml_simple_structure {

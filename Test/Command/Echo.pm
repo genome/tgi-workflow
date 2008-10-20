@@ -9,20 +9,19 @@ use Command;
 class Workflow::Test::Command::Echo {
     is => ['Workflow::Test::Command'],
     has => [
-        input => { doc => 'input' },
+        input => { 
+            doc => 'input',
+            is_input => 1
+        },
         output => { 
             doc => 'output',
             calculate_from => ['input'],
             calculate => q|
                 return "$input";
             |,
+            is_output => 1
         }, 
     ],
-};
-
-operation_io Workflow::Test::Command::Echo {
-    input  => [ 'input' ],
-    output => [ 'output' ],
 };
 
 sub sub_command_sort_position { 10 }

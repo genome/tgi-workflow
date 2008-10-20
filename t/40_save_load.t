@@ -71,7 +71,7 @@ foreach my $o (UR::Object->all_objects_loaded) {
     pop @c if ($c[-1] eq 'UR::Object');
     
     unless (grep(/^UR::/, @c)) {
-        diag(ref($o) . ' ' . $o->id);
+#        diag(ref($o) . ' ' . $o->id);
         unless (ref($o) eq 'Workflow::Store::Db' or ref($o) eq 'Workflow::OperationType::Command') {
             $pass = 0;
         }

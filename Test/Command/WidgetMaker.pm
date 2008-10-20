@@ -10,17 +10,14 @@ use Workflow::Test::Widget;
 
 class Workflow::Test::Command::WidgetMaker {
     is => ['Workflow::Test::Command'],
-    has => [
+    has_input => [
         size => { },
         color => { },
         shape => { },
+    ],
+    has_output => [
         widget => { is_optional => 1 },
     ],
-};
-
-operation_io Workflow::Test::Command::WidgetMaker {
-    input  => [ 'size', 'color', 'shape' ],
-    output => [ 'widget' ],
 };
 
 sub sub_command_sort_position { 10 }

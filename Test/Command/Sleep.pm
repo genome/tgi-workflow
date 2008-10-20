@@ -8,16 +8,21 @@ use Command;
 
 class Workflow::Test::Command::Sleep {
     is => ['Workflow::Test::Command'],
-    has => [
-        seconds => { is => 'Integer', is_optional => 1, doc => 'length in seconds to sleep' },
+    has_input => [
+        seconds => { 
+            is => 'Integer', 
+            is_optional => 1, 
+            doc => 'length in seconds to sleep'
+        },
     ],
-};
-
-operation_io Workflow::Test::Command::Sleep {
-    input  => [ 'seconds' ],
-    output => [],
-    lsf_queue => 'short',
-    lsf_resource => 'rusage[mem=4000] span[hosts=1]',
+    has_param => [
+        lsf_queue => {
+            default_value => 'short',
+        },
+        lsf_resource => {
+            default_value => 'rusage[mem=4000] span[hosts=1]',
+        }
+    ]
 };
 
 sub sub_command_sort_position { 10 }
