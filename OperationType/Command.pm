@@ -7,6 +7,7 @@ use warnings;
 class Workflow::OperationType::Command {
     isa => 'Workflow::OperationType',
     is_transactional => 0,
+    id_by => [ 'command_class_name' ],
     has => [
         command_class_name => { is => 'String' },
         lsf_resource => { is => 'String', is_optional=>1 },
@@ -14,22 +15,30 @@ class Workflow::OperationType::Command {
     ],
 };
 
+sub get {
+    my $class = shift;
+    return $class->SUPER::get( @_ ) || $class->create ( @_ );
+}
+
 sub create {
     my $class = shift;
     my $params = $class->preprocess_params(@_);
     
     die 'missing command class' unless $params->{command_class_name};
 
-    # try to use it before doing anything else, so deprecated style still works
-    eval "use " . $params->{command_class_name};
-    if ($@) {
-        die $@;
+    # Old-style definations call a function after setting up the class
+    {
+        eval "use " . $params->{command_class_name};
+        if ($@) {
+            die $@;
+        }
+
+        # see if it got created
+        my $self = $class->SUPER::get($params->{command_class_name});
+        return $self if $self;
     }
     
-    my $self = $class->get(command_class_name => $params->{command_class_name});
-    return $self if $self;
-    
-    $self = $class->SUPER::create(@_);
+    my $self = $class->SUPER::create(@_);
     my $command = $self->command_class_name;
     
 
@@ -74,7 +83,7 @@ sub create_from_xml_simple_structure {
 
     my $command = delete $struct->{commandClass};
 
-    return $class->create(command_class_name => $command);
+    return $class->get($command);
 }
 
 sub as_xml_simple_structure {
@@ -109,7 +118,7 @@ sub create_from_command {
         $self->_validate_property( $command_class, output => $_ )
     } @{ $options->{output} }, 'result';
 
-    return $self->create(
+    return $self->SUPER::create(
         input_properties => \@valid_inputs,
         output_properties => \@valid_outputs,
         command_class_name => $command_class,

@@ -5,7 +5,7 @@ use warnings;
 
 use Test::More;
 
-my $static_test_count = 16;
+my $static_test_count = 19;
 
 use Workflow;
 my @subcommands = Workflow::Test::Command->sub_command_classes;
@@ -16,12 +16,9 @@ require_ok('Workflow');
 require_ok('Workflow::OperationType::Command');
 
 {
+    my $o1 = Workflow::OperationType::Command->get('Workflow::Test::Command::Sleep');
 
-    my $o1 = Workflow::OperationType::Command->create(
-        command_class_name => 'Workflow::Test::Command::Sleep'
-    );
-
-    ok($o1,'create');
+    ok($o1,'get');
     is($o1->command_class_name,'Workflow::Test::Command::Sleep','command class name');
     
     ok(eq_set($o1->input_properties,['seconds']),'input properties');
@@ -32,16 +29,21 @@ require_ok('Workflow::OperationType::Command');
     my $o2 = Workflow::OperationType::Command->create(
         command_class_name => 'Workflow::Test::Command::Sleep'
     );
-
-    is($o2->id,$o1->id,'multiple create returns same object');    
+    is($o2->id,$o1->id,'create returned same object as get');
+    
+    my $o3 = Workflow::Test::Command::Sleep->operation_type;
+    is($o3->id,$o1->id,'operation_type returns the same as get');
+    
+    my $o4 = Workflow::Test::Command::Sleep->operation_io;
+    is($o4->id,$o3->id,'operation_type and operation_io return the same');
+    
+    my $o5 = Workflow::Test::Command::Sleep->operation;
+    is($o5->id,$o3->id,'operation and operation_io return the same');
 }
 
 { ## test old style operation definition
-    my $o1 = Workflow::OperationType::Command->create(
-        command_class_name => 'Workflow::Test::Command::DeprecatedOperationDefinition'
-    );
-
-    ok($o1,'old format -create');
+    my $o1 = Workflow::Test::Command::DeprecatedOperationDefinition->operation_type;
+    ok($o1,'old format -old style method call');
 
     is($o1->command_class_name,'Workflow::Test::Command::DeprecatedOperationDefinition','old format -command class name');
 
@@ -54,7 +56,7 @@ require_ok('Workflow::OperationType::Command');
         command_class_name => 'Workflow::Test::Command::DeprecatedOperationDefinition'
     );
 
-    is($o2->id,$o1->id,'old format -multiple create return same object');
+    is($o2->id,$o1->id,'old format -old get returns same as new create');
 }
 
 # try to instantiate all our test command modules, just to be sure

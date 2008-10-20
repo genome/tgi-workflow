@@ -31,7 +31,7 @@ can_ok('Workflow::Model',qw/create validate is_valid execute/);
     my $collector = sub {
         my ($data) = @_;
 
-        diag(ref($data) . ' ' . $data->id);
+#        diag(ref($data) . ' ' . $data->id);
 
         $id = $data->id;
 
