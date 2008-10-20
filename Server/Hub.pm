@@ -170,7 +170,7 @@ sub setup {
                         my ($instance, $type, $input) = @$payload;
                         $heap->{job_count}++;
                         
-                        my $lsf_job_id = $kernel->call($_[SESSION],'lsf_bsub',undef,undef,$instance->name);
+                        my $lsf_job_id = $kernel->call($_[SESSION],'lsf_bsub',$type->lsf_queue,$type->lsf_resource,$instance->name);
                         $heap->{dispatched}->{$lsf_job_id} = $payload;
 
                         evTRACE and print "dispatch start_jobs $lsf_job_id\n";

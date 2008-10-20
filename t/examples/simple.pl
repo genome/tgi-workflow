@@ -13,7 +13,7 @@ use Workflow::Simple;
 my $output = run_workflow_lsf(
     \*DATA, 
     'model input string' => 'foo bar baz',
-    'sleep time' => 1 
+    'sleep time' => 30 
 );
 
 print Data::Dumper->new([$output,\@Workflow::Simple::ERROR])->Dump;
