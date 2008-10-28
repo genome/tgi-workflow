@@ -12,16 +12,23 @@ class Workflow::Executor::SerialDeferred {
     ]
 };
 
+sub init {
+    my $self = shift;
+    
+    $self->queue([]);
+    $self->count(0);
+    
+    1;
+}
+
 sub execute {
     my $self = shift;
     my %params = @_;
 
-    unless (defined $self->queue) {
-        $self->queue([]);
-    }
+    my $opdata = $params{operation_instance};
+    $self->debug_message($opdata->id . ' ' . $opdata->operation->name);
 
     push @{ $self->queue }, [ @params{'operation_instance','edited_input'} ];
-
     $params{'operation_instance'}->status('scheduled');
 
     return;

@@ -36,7 +36,8 @@ sub run_workflow {
         },
         error_cb => sub {
             $error = 1;
-        }
+        },
+        store => Workflow::Store::Db->get
     );
  
     $w->wait;

@@ -4,11 +4,10 @@ package Workflow::Store::Db::Operation::Instance;
 use strict;
 use warnings;
 use Storable qw(freeze thaw);
-use Workflow ();
 
 class Workflow::Store::Db::Operation::Instance {
-    is => ['Workflow::Operation::Instance'],
     sub_classification_method_name => '_resolve_subclass_name',
+    is => ['Workflow::Operation::Instance'],
     type_name => 'instance',
     table_name => 'INSTANCE',
     id_by => [
@@ -46,82 +45,6 @@ class Workflow::Store::Db::Operation::Instance {
     data_source => 'Workflow::DataSource::InstanceSchema',
 };
 
-sub operation_instance_class_name {
-    'Workflow::Store::Db::Operation::Instance'
-}
-
-sub model_instance_class_name {
-    'Workflow::Store::Db::Model::Instance'
-}
-
-sub instance_execution_class_name {
-    'Workflow::Store::Db::Operation::InstanceExecution'
-}
-
-sub _resolve_subclass_name {
-    my ($class, $self) = @_;
-
-    if (ref($self) && UNIVERSAL::isa($self,'Workflow::Operation::Instance')) {
-
-=pod
-        my $dbh = $self->operation_instance_class_name->get_data_source->get_default_handle;
-        
-        my ($child_count) = @{ $dbh->selectrow_arrayref(
-            'SELECT count(instance_id) 
-               FROM instance 
-              WHERE parent_instance_id = ?', {}, 
-            $self->id
-        ) };
-
-        if ($child_count > 0) {
-            return 'Workflow::Store::Db::Model::Instance';
-        }
-=cut
-
-        my @children = Workflow::Store::Db::Operation::Instance->get(parent_instance_id => $self->id);
-        if (scalar @children > 0) {
-            return 'Workflow::Store::Db::Model::Instance';
-        }
-    }
-
-    return $class;
-}
-
-sub create {
-    my $class = shift;
-    my $self = $class->SUPER::create(@_);
-
-    if (!defined $self->cache_workflow_id && 
-        !defined $self->parent_instance && 
-        !defined $self->peer_of) {
-        my $c = Workflow::Store::Db::Cache->create(
-            xml => $self->operation->save_to_xml
-        );
-
-        $self->cache_workflow($c);
-    }
-    
-    return $self;
-}
-
-sub serialize_input {
-    my ($self) = @_;
-
-    return if !defined $self->input;
-
-    local $Storable::forgive_me = 1;
-    $self->input_stored(freeze $self->input);
-}
-
-sub serialize_output {
-    my ($self) = @_;
-
-    return if !defined $self->output;
-
-    local $Storable::forgive_me = 1;
-    $self->output_stored(freeze $self->output);
-}
-
 our @OBSERVERS = (
     __PACKAGE__->add_observer(
         aspect => 'load',
@@ -144,7 +67,7 @@ our @OBSERVERS = (
             }
             
             if (!$self->parent_instance) {
-                my $store = Workflow::Store::Db->create;
+                my $store = Workflow::Store::Db->get;
                 $self->store($store);
             }
             
@@ -162,6 +85,25 @@ our @OBSERVERS = (
         }
     ),
     __PACKAGE__->add_observer(
+        aspect => 'create', # due to weird inheritance this is better as an observer 
+        callback => sub {
+            my $self = shift;
+
+            if (!defined $self->cache_workflow_id && 
+                !defined $self->parent_instance && 
+                !defined $self->peer_of) {
+                my $c = Workflow::Store::Db::Cache->create(
+                    xml => $self->operation->save_to_xml
+                );
+
+                $self->cache_workflow($c);
+            }
+
+            $self->name($self->operation->name);
+
+        }
+    ),
+    __PACKAGE__->add_observer(
         aspect => 'input',
         callback => \&serialize_input
     ),    
@@ -170,5 +112,25 @@ our @OBSERVERS = (
         callback => \&serialize_output
     )
 );
+
+sub serialize_input {
+    my ($self) = @_;
+
+    return if !defined $self->input;
+
+    local $Storable::forgive_me = 1;
+    $self->input_stored(freeze $self->input);
+}
+
+sub serialize_output {
+    my ($self) = @_;
+
+    return if !defined $self->output;
+
+    local $Storable::forgive_me = 1;
+    $self->output_stored(freeze $self->output);
+}
+
+
 
 1;

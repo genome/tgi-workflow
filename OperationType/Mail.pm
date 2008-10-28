@@ -9,8 +9,9 @@ use MIME::Entity;
 class Workflow::OperationType::Mail {
     isa => 'Workflow::OperationType',
     has => [
-        default_input => { is => 'HASH' },
-        executor => { is => 'Workflow::Executor', id_by => 'workflow_executor_id' },
+        default_input => { 
+            is => 'HASH' 
+        },
     ]
 };
 
@@ -61,9 +62,6 @@ sub create {
     $args{output_properties} = ['result'];
 
     my $self = $class->SUPER::create(%args);
-
-#    my $serial_executor = Workflow::Executor::Serial->create;
-#    $self->executor($serial_executor);
 
     return $self;
 }

@@ -111,7 +111,7 @@ sub execute {
     }
     
     unless (exists $params{store} && $params{store} && $params{store}->can('sync')) {
-        $params{store} = Workflow::Store::None->create();
+        $params{store} = Workflow::Store::None->get();
     }
 
     {
@@ -126,9 +126,7 @@ sub execute {
         }
     }
 
-    my $class = $params{store}->instance_class_name;
-
-    my $operation_instance = $class->create(
+    my $operation_instance = Workflow::Operation::Instance->create(
         operation => $self,
         store => $params{store},
         output_cb => $params{output_cb},

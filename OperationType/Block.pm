@@ -7,7 +7,9 @@ use warnings;
 class Workflow::OperationType::Block {
     isa => 'Workflow::OperationType',
     has => [
-        executor => { is => 'Workflow::Executor', id_by => 'workflow_executor_id' },
+        stay_in_process => {
+            value => 1
+        }
     ]
 };
 
@@ -46,9 +48,6 @@ sub create {
         input_properties => \@{ $args{properties} },
         output_properties => \@{ $args{properties} },
     );
-
-    my $serial_executor = Workflow::Executor::Serial->create;
-    $self->executor($serial_executor);
 
     return $self;
 }

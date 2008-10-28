@@ -11,7 +11,7 @@ require_ok('Workflow::Operation');
 my $w = Workflow::Operation->create(
     name => 'echo',
     operation_type => Workflow::Test::Command::Echo->operation_type,
-    executor => Workflow::Executor::SerialDeferred->create
+    executor => Workflow::Executor::SerialDeferred->get()
 );
 ok($w,'add echo operation');
 isa_ok($w,'Workflow::Operation');

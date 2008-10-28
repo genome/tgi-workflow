@@ -16,7 +16,7 @@ sub execute {
     $opdata->current->status('running');
     $opdata->current->start_time(UR::Time->now);
 
-#    $self->status_message('exec/' . $opdata->id . '/' . $opdata->operation->name);
+    $self->debug_message($opdata->id . ' ' . $opdata->operation->name);
     my $outputs = $opdata->operation->operation_type->execute(%{ $opdata->input }, %{ $params{edited_input} });
 
     $opdata->output({ %{ $opdata->output }, %{ $outputs } });

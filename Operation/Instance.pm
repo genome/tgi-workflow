@@ -6,14 +6,21 @@ use warnings;
 use Workflow ();
 
 class Workflow::Operation::Instance {
+    sub_classification_method_name => '_resolve_subclass_name',
     id_by => [
         instance_id => { }
     ],
     has => [
-        operation => {
+        operation => { # Allow subclasses to make this optional
             is => 'Workflow::Operation',
             id_by => 'workflow_operation_id',
             is_transient => 1
+        },
+        operation_type => { # Required but could possibly be redefined to stand alone
+            via => 'operation'
+        },
+        name => {
+            via => 'operation'
         },
         parent_instance => {
             is => 'Workflow::Model::Instance',
@@ -73,20 +80,72 @@ class Workflow::Operation::Instance {
         debug_mode => { 
             via => 'current',
             is_mutable => 1
+        },
+        executor => { #TODO store executor upon creation
+            is => 'Workflow::Executor',
+            calculate => q{
+                my $executor = $self->operation->executor || $self->parent_instance->executor;
+                
+                if ($self->operation_type->stay_in_process) {
+                    $executor = Workflow::Executor::Serial->get;
+                }
+                return $executor;
+            },
         }
     ]
 };
 
-sub operation_instance_class_name {
-    'Workflow::Operation::Instance'
-}
+sub _resolve_subclass_name {
+    my $class = shift;
 
-sub model_instance_class_name {
-    'Workflow::Model::Instance'
-}
+    my $store;
+    if (ref($_[0]) and $_[0]->isa(__PACKAGE__)) {
+        $store = $_[0]->store;
+    } elsif (my $id = $class->get_rule_for_params(@_)->specified_value_for_property_name('workflow_store_id')) {
+        $store = Workflow::Store->get($id);
+    } else {
+        die 'dont know how to subclass';
+    }
 
-sub instance_execution_class_name {
-    'Workflow::Operation::InstanceExecution'
+    if (!$store) {
+        if ($class =~ /^(.*?)::(Operation|Model)::Instance$/) {
+            my $store_class_prefix = $1;
+            
+            $store = Workflow::Store->get(class_prefix => $store_class_prefix);
+        } else {
+            die 'Can\'t parse class name';
+        }
+    }
+
+    my $suffix;
+    foreach my $prefix ('Workflow::Store::Db','Workflow') {
+        if ($class =~ /^($prefix)::(.+)$/) {
+            $suffix = $2;
+            last;
+        }
+    }
+    
+    if (ref($_[0]) && $_[0]->isa(__PACKAGE__)) {
+        if ($_[0]->operation && $_[0]->operation->class eq 'Workflow::Model') {
+            $suffix = 'Model::Instance';
+        } else {
+            my $opiclass = $store->class_prefix . '::Operation::Instance';
+
+            my @children = $opiclass->get(parent_instance_id => $_[0]->id);
+            if (scalar @children > 0) {
+                $suffix = 'Model::Instance';
+            }
+        }
+    } elsif (my $id = $class->get_rule_for_params(@_)->specified_value_for_property_name('workflow_operation_id')) {
+        my $operation = Workflow::Operation->get($id);
+        if ($operation->class eq 'Workflow::Model') {
+            $suffix = 'Model::Instance';
+        }
+    } else {
+        die 'dont know how to subclass';
+    }
+
+    return $store->class_prefix . '::' . $suffix;
 }
 
 our @observers = (
@@ -151,7 +210,7 @@ sub _undo_done_instance {
             if ($instance->status eq 'done');
     }
     
-    if ($self->operation->name eq 'output connector' && $self->parent_instance->status eq 'done') {    
+    if ($self->name eq 'output connector' && $self->parent_instance->status eq 'done') {    
         # Being an output connector with my parent's status as done
         # I have to set my parent to crashed.  If this were a full clean
         # restart of my parent, it would have already been set to new
@@ -164,30 +223,11 @@ sub _undo_done_instance {
 
 sub create {
     my $class = shift;
-    my %args = (@_);
-    my $self;
-    
-    my $load = $args{load_mode};
+    my $self = $class->SUPER::create(@_);
 
-    if ($class->can('name') && $args{operation}) {
-        $args{name} = $args{operation}->name;
-    }
-    if ($class eq $class->operation_instance_class_name && $args{operation} && $args{operation}->isa('Workflow::Model')) {
-        my $model_instance_class = $class->model_instance_class_name;
-
-        $self = $model_instance_class->create(%args);
-        delete $args{load_mode};
-    } else {
-        delete $args{load_mode};
-        $self = $class->UR::Object::create(%args);
-
-    
-#    $self->parallel_by($self->operation->parallel_by)
-#        if (!$load && $self->operation->parallel_by);
-
-        my $instance_exec_class = $class->instance_execution_class_name;
-
-        my $ie = $instance_exec_class->create(
+    unless ($self->current) {
+        # due to the weird inheritance here, this may have already been set
+        my $ie = Workflow::Operation::InstanceExecution->create(
             operation_instance => $self,
             status => 'new',
             is_done => 0,
@@ -195,15 +235,9 @@ sub create {
         );
 
         $self->current($ie);
-
     }
-    
-    return $self;
-}
 
-sub save_instance {
-    Carp::carp('deprecated');
-#    return Workflow::Operation::SavedInstance->create_from_instance(@_);
+    return $self;
 }
 
 sub sync {
@@ -220,6 +254,8 @@ sub serialize_output {
     1;
 }
 
+#FIXME remove use of operation here, at first glance looks problematic anyway
+# this is only called during a model constructor, its _probably_ ok
 sub set_input_links {
     my $self = shift;
 
@@ -256,11 +292,9 @@ sub set_input_links {
 sub is_ready {
     my $self = shift;
 
-#    $DB::single=1 if $self->name eq 'outer cat seq feature';
-
     return 0 if ($self->status eq 'crashed');
 
-    my @required_inputs = @{ $self->operation->operation_type->input_properties };
+    my @required_inputs = @{ $self->operation_type->input_properties };
     my %current_inputs = ();
     if ( defined $self->input ) {
         %current_inputs = %{ $self->input };
@@ -270,8 +304,8 @@ sub is_ready {
     foreach my $input_name (@required_inputs) {
         if (exists $current_inputs{$input_name} && 
             defined $current_inputs{$input_name} ||
-            ($self->operation->operation_type->can('default_input') && 
-            exists $self->operation->operation_type->default_input->{$input_name})) {
+            ($self->operation_type->can('default_input') && 
+            exists $self->operation_type->default_input->{$input_name})) {
             
             my $vallist;
             if (ref($current_inputs{$input_name}) eq 'ARRAY') {
@@ -330,7 +364,7 @@ sub treeview_debug {
     my $self = shift;
     my $indent = shift || 0;
     
-    print((' ' x $indent) . $self->operation->name . '=' . $self->id);
+    print((' ' x $indent) . $self->name . '=' . $self->id);
     if ($self->is_parallel) {
         print ' -' . $self->parallel_index;
     }
@@ -362,8 +396,8 @@ sub treeview_debug {
         my $i = 0;
         my %ops = map { 
             $_->name() => $i++
-        } $self->operation->operations_in_series();
-        foreach my $child (sort { $ops{ $a->operation->name } <=> $ops{ $b->operation->name } || $a->parallel_index <=> $b->parallel_index } $self->child_instances) {
+        } $self->operation->operations_in_series();  #TODO: use sorted_child_instances in Model::Instance?
+        foreach my $child (sort { $ops{ $a->name } <=> $ops{ $b->name } || $a->parallel_index <=> $b->parallel_index } $self->child_instances) {
             $child->treeview_debug($indent+1);
         }
     }
@@ -373,8 +407,7 @@ sub reset_current {
     my ($self) = @_;
     
     if ($self->status eq 'crashed' or $self->status eq 'running') {
-        my $instance_exec_class = $self->instance_execution_class_name;
-        my $ie = $instance_exec_class->create(
+        my $ie = Workflow::Operation::InstanceExecution->create(
             operation_instance => $self,
             status => 'new',
             is_done => 0,
@@ -431,24 +464,10 @@ sub execute_single {
 
     my $executor = $self->executor;
 
-#    print "s: " . $self->id . ' ' . $self->operation->name . "\n";
-
     $executor->execute(
         operation_instance => $self,
         edited_input => \%current_inputs
     );
-}
-
-sub executor {
-    my $self = shift;
-    
-    my $executor = $self->operation->executor || $self->operation->workflow_model->executor;
-    my $operation_type = $self->operation->operation_type;
-    if ($operation_type->can('executor') && defined $operation_type->executor) {
-        $executor = $operation_type->executor;
-    }
-
-    return $executor;
 }
 
 our %retry_count = ();
@@ -456,27 +475,11 @@ our %retry_count = ();
 sub completion {
     my $self = shift;
 
-#    print "e: " . $self->id . ' ' . $self->operation->name . "\n";
-
     $self->is_done(1) unless $self->status eq 'crashed';
     $self->is_running(0);
     $self->sync;
 
-    my $try_again = 0;
-    if ($try_again && $self->current->status eq 'crashed') {
-        die 'incomp';
-        
-        my $new_try = Workflow::Operation::InstanceExecution->create(
-            operation_instance => $self,
-            status => 'new',
-            is_done => 0,
-            is_running => 0
-        );        
-        $self->current($new_try);
-        $self->is_running(1);
-        
-        $self->execute_single();
-    } elsif ($self->parent_instance) {
+    if ($self->parent_instance) {
         my $parent = $self->parent_instance;
         if ($self->current->status eq 'crashed') {
         
@@ -549,28 +552,51 @@ sub completion {
     $self->sync;
 }
 
+# FIXME: the next two methods might be misnamed
+
 sub dependent_operations {
     my ($self) = @_;
 
-    my @ops = $self->operation->dependent_operations;
+    my %instances = ();
+    return () unless $self->parent_instance;
 
-    return map {
-        $self->parent_instance->child_instances(
-            workflow_operation_id => $_->id
-        )
-    } @ops;
+    foreach my $sibling ($self->parent_instance->child_instances) {
+        next if $sibling == $self;
+        
+        foreach my $v (values %{ $sibling->input }) {
+            if (UNIVERSAL::isa($v,'Workflow::Link::Instance')) {
+                $instances{ $sibling->id } = $sibling
+                    if ($v->operation_instance == $self);
+            } elsif ($self->is_parallel && ref($v) eq 'ARRAY') {
+                my $vv = $v->[$self->parallel_index];
+                if (UNIVERSAL::isa($vv,'Workflow::Link::Instance')) {
+                    $instances{ $sibling->id } = $sibling
+                        if ($vv->operation_instance == $self);
+                }
+            }
+        }
+    }
+        
+    return values %instances;
 }
 
 sub depended_on_by {
     my ($self) = @_;
+
+    my %instances = ();
+    foreach my $v (values %{ $self->input }) {
+        if (UNIVERSAL::isa($v,'Workflow::Link::Instance')) {
+            $instances{ $v->operation_instance->id } = $v->operation_instance;
+        } elsif (ref($v) eq 'ARRAY') {
+            foreach my $vv (@$v) {
+                if(UNIVERSAL::isa($v,'Workflow::Link::Instance')) {
+                    $instances{ $vv->operation_instance->id } = $vv->operation_instance;
+                }
+            }
+        }        
+    }
     
-    my @ops = $self->operation->depended_on_by;
-    
-    return map {
-        $self->parent_instance->child_instances(
-            workflow_operation_id => $_->id
-        )
-    } @ops;
+    return values %instances;
 }
 
 sub create_peers {
@@ -591,10 +617,9 @@ sub create_peers {
         }
         $dep->input(\%input);
     }
-    my $operation_class_name = $self->operation_instance_class_name;
 
     for (my $i = 1; $i < scalar @{ $self->input_raw_value($self->parallel_by) }; $i++) {
-        my $peer = $operation_class_name->create(
+        my $peer = Workflow::Operation::Instance->create(
             operation => $self->operation,
             parallel_index => $i,
             store => $self->store,
@@ -662,7 +687,7 @@ sub peers {
     return grep {
         $_ != $self && defined $_->parallel_index
     } Workflow::Operation::Instance->get(
-        operation => $self->operation,
+        operation => $self->operation,  #TODO shouldnt be needed, verify and remove
         peer_of => $self->peer_of
     );
 }

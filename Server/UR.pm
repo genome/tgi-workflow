@@ -124,10 +124,10 @@ evTRACE and print "workflow execute\n";
                 
                 my $workflow = $heap->{workflow_plans}->{$id};
 
-                my $executor = Workflow::Executor::Server->create;
+                my $executor = Workflow::Executor::Server->get;
                 $workflow->set_all_executor($executor);
  
-                my $store = Workflow::Store::Db->create;
+                my $store = Workflow::Store::Db->get;
 
                 my %opts = (
                     input => $input,

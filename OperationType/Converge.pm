@@ -7,21 +7,11 @@ use warnings;
 class Workflow::OperationType::Converge {
     isa => 'Workflow::OperationType',
     has => [
-        executor => { is => 'Workflow::Executor', id_by => 'workflow_executor_id' },
+        stay_in_process => {
+            value => 1
+        }        
     ]
 };
-
-sub create {
-    my $class = shift;
-    my %args = @_;
-
-    my $self = $class->SUPER::create(%args);
-
-    my $serial_executor = Workflow::Executor::Serial->create;
-    $self->executor($serial_executor);
-
-    return $self;
-}
 
 sub execute {
     my $self = shift;

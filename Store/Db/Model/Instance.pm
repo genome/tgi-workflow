@@ -5,7 +5,6 @@ use strict;
 use warnings;
 use Workflow::Model::Instance;
 
-use Workflow ();
 class Workflow::Store::Db::Model::Instance { 
     isa => [ 'Workflow::Store::Db::Operation::Instance' ],
     has => [
@@ -14,18 +13,6 @@ class Workflow::Store::Db::Model::Instance {
         output_connector => { is => 'Workflow::Store::Db::Operation::Instance', id_by => 'output_connector_id' },
     ]
 };
-
-sub operation_instance_class_name {
-    'Workflow::Store::Db::Operation::Instance'
-}
-
-sub model_instance_class_name {
-    'Workflow::Store::Db::Model::Instance'
-}
-
-sub instance_execution_class_name {
-    'Workflow::Store::Db::Operation::InstanceExecution'
-}
 
 sub sorted_child_instances {
     goto &Workflow::Model::Instance::sorted_child_instances;

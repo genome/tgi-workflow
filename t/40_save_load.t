@@ -12,7 +12,9 @@ use Test::More tests => 10;
 use Devel::Size qw(size total_size);
 use Workflow;
 
-my $dir = -d 't/xml.d' ? 't/xml.d' : 'xml.d';
+#my $dir = -d 't/xml.d' ? 't/xml.d' : 'xml.d';
+
+my $dir = Workflow->get_base_directory_name . '/t/xml.d';
 
 my $id;
 
@@ -43,11 +45,13 @@ can_ok('Workflow::Model',qw/create validate is_valid execute/);
             'model input string' => 'abracadabra321',
             'sleep time' => 1
         },
-        store => Workflow::Store::Db->create(),
+        store => Workflow::Store::Db->get,
         output_cb => $collector
     ),'execute');
 
     ok($w->wait,'wait');
+
+    $DB::single=1;
 
     ok(UR::Context->commit,'commit');
     

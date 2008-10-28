@@ -7,8 +7,21 @@ use warnings;
 class Workflow::OperationType {
     is_abstract => 1,
     has => [
-        input_properties => { is => 'ARRAY', doc => 'list of input properties' },
-        output_properties => { is => 'ARRAY', doc => 'list of output properties' },
+        stay_in_process => { 
+            is => 'Boolean',
+            is_class_wide => 1,
+            is_constant => 1,
+            is_abstract => 1,
+            doc => 'Forces serial executor'
+        },
+        input_properties => { 
+            is => 'ARRAY', 
+            doc => 'list of input properties' 
+        },
+        output_properties => { 
+            is => 'ARRAY', 
+            doc => 'list of output properties' 
+        }
     ]
 };
 

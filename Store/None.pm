@@ -5,7 +5,12 @@ use strict;
 
 class Workflow::Store::None {
     isa => 'Workflow::Store',
-    is_transactional => 0
+    is_transactional => 0,
+    has => [
+        class_prefix => {
+            value => 'Workflow'
+        }
+    ]
 };
 
 sub sync {

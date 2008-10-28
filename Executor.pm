@@ -4,8 +4,9 @@ package Workflow::Executor;
 use strict;
 
 class Workflow::Executor {
-    has => [
-    ]
+    is => 'UR::Singleton',
+    is_transactional => 0,
+    is_abstract => 1
 };
 
 sub exception {

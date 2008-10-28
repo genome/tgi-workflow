@@ -13,6 +13,7 @@ class Workflow::Model::Instance {
     ]
 };
 
+## TODO rewrite so it doesnt lean on operation->operations_in_series
 sub sorted_child_instances {
     my $self = shift;
 
@@ -22,27 +23,23 @@ sub sorted_child_instances {
     } $self->operation->operations_in_series();
             
     my @child = sort {
-        $ops{ $a->operation->name } <=> $ops{ $b->operation->name } || 
-        $a->operation->name cmp $b->operation->name || 
+        $ops{ $a->name } <=> $ops{ $b->name } || 
+        $a->name cmp $b->name || 
         $a->parallel_index <=> $b->parallel_index
     } $self->child_instances(@_);
     
     return @child;
 }
 
+# This function can lean on the plan objects for more information.
 sub create {
     my $class = shift;
     my %args = (@_);
-    my $load = delete $args{load_mode};
     my $self = $class->SUPER::create(%args);
 
-    return $self if $load;
-    
-    my $operation_class_name = $self->operation_instance_class_name;
-    
     my @all_opi;
     foreach ($self->operation->operations) {
-        my $this_data = $operation_class_name->create(
+        my $this_data = Workflow::Operation::Instance->create(
             operation => $_,
             parent_instance => $self,
             store => $self->store
@@ -81,18 +78,9 @@ sub incomplete_operation_instances {
 sub reset_current {
     my $self = shift;
     
+    $self->SUPER::reset_current(@_);
+    
     if ($self->status eq 'crashed' or $self->status eq 'running') {
-        my $instance_exec_class = $self->instance_execution_class_name;
-        my $ie = $instance_exec_class->create(
-            operation_instance => $self,
-            status => 'new',
-            is_done => 0,
-            is_running => 0
-        );
-
-        $self->current($ie);    
-        $self->debug_mode(1);
-        
         foreach my $child ($self->child_instances) {
             $child->reset_current;
         }
@@ -184,7 +172,7 @@ sub runq_filter {
     my $self = shift;
     
     my @runq = sort {
-        $a->operation->name cmp $b->operation->name
+        $a->name cmp $b->name
     } grep {
         $_->is_ready &&
         !$_->is_done &&
@@ -197,7 +185,7 @@ sub runq_filter {
 sub delete {
     my $self = shift;
     
-    my @all_data = $self->operation_instances;
+    my @all_data = $self->child_instances;
     foreach (@all_data) {
         $_->delete;
     }

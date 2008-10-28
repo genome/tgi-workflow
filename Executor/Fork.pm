@@ -70,6 +70,7 @@ sub wait {
         sleep 1 if (join('', values %opdone) == 0);
     }
     
+    $self->threads([]);
 }
 
 1;

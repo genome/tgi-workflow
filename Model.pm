@@ -32,10 +32,8 @@ sub create {
         $params{operation_type} = $optype;
     }
 
-    my $serial_executor = Workflow::Executor::Serial->create();
-
     unless ($params{executor}) {
-        $params{executor} = $serial_executor;
+        $params{executor} = Workflow::Executor::SerialDeferred->get();
     }
 
     my $self = $class->SUPER::create(%params);
@@ -44,16 +42,14 @@ sub create {
         name => 'input connector',
         operation_type => Workflow::OperationType::ModelInput->create(
             input_properties => [],
-            output_properties => $optype->input_properties,
-            executor => $serial_executor
+            output_properties => $optype->input_properties
         ),
     );
     $self->add_operation(
         name => 'output connector',
         operation_type => Workflow::OperationType::ModelOutput->create(
             input_properties => $optype->output_properties,
-            output_properties => [],
-            executor => $serial_executor
+            output_properties => []
         ),
     );
 
@@ -97,7 +93,7 @@ sub create_from_xml_simple_structure {
         }
 
         if (my $executor_class = delete $struct->{executor}) {
-            $params{executor} = $executor_class->create();
+            $params{executor} = $executor_class->get();
         }
 
         $self = $class->SUPER::create_from_xml_simple_structure($struct,%params);

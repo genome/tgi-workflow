@@ -6,6 +6,16 @@ use warnings;
 use above 'Workflow';
 use Workflow::Simple;
 
+UR::ModuleBase->message_callback(
+    'debug',
+    sub {
+        my $error = shift;
+        my $self = shift;
+
+        print $self->class . ' ' . $error->string if $self->isa('Workflow::Executor');
+    }
+);
+
 #$Workflow::Simple::start_hub_server = 0;
 #$Workflow::Simple::start_ur_server = 0;
 #$Workflow::Simple::fork_ur_server = 0;
@@ -13,7 +23,7 @@ use Workflow::Simple;
 my $output = run_workflow_lsf(
     \*DATA, 
     'model input string' => 'foo bar baz',
-    'sleep time' => 30 
+    'sleep time' => 0 
 );
 
 print Data::Dumper->new([$output,\@Workflow::Simple::ERROR])->Dump;

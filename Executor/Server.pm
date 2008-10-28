@@ -2,18 +2,17 @@
 package Workflow::Executor::Server;
 
 use strict;
-use POE;
 
 class Workflow::Executor::Server {
-    isa => 'Workflow::Executor',
-    has => [
-        server => { is => 'Workflow::Server', is_optional => 1 }
-    ]
+    isa => 'Workflow::Executor'
 };
 
 sub execute {
     my $self = shift;
     my %params = @_;
+
+    my $opdata = $params{operation_instance};
+    $self->debug_message($opdata->id . ' ' . $opdata->operation->name);
 
     Workflow::Server::UR->dispatch(
         $params{operation_instance},
