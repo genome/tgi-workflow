@@ -5,6 +5,8 @@ use strict;
 use base 'Workflow::Server';
 use POE qw(Component::IKC::Server Component::IKC::Client);
 
+our $store_db = 1;
+
 use Workflow ();
 
 sub evTRACE () { 0 };
@@ -82,7 +84,7 @@ evTRACE and print "workflow quit_stage_2\n";
 
                 $kernel->post($heap->{channel},'shutdown');
 
-                UR::Context->commit();
+                $kernel->call($session,'commit');
                 $kernel->alarm_remove_all;
 
                 $kernel->post('IKC','shutdown');
@@ -91,9 +93,11 @@ evTRACE and print "workflow quit_stage_2\n";
                 my ($kernel) = @_[KERNEL];
 evTRACE and print "workflow commit\n";
 
-                UR::Context->commit();
+                if ($store_db) { 
+                    UR::Context->commit();
 
-                $kernel->delay('commit', 120);
+                    $kernel->delay('commit', 120);
+                }
             },
             conn => sub {
                 my ($name,$real) = @_[ARG1,ARG2];
@@ -112,7 +116,7 @@ evTRACE and print "workflow disc ", ($real ? '' : 'alias '), "$name\n";
                 my ($xml) = @$arg;
 evTRACE and print "workflow load\n";
 
-                my $workflow = Workflow::Model->create_from_xml($xml);
+                my $workflow = Workflow::Operation->create_from_xml($xml);
                 $heap->{workflow_plans}->{$workflow->id} = $workflow;
                 
                 return $workflow->id;
@@ -127,7 +131,7 @@ evTRACE and print "workflow execute\n";
                 my $executor = Workflow::Executor::Server->get;
                 $workflow->set_all_executor($executor);
  
-                my $store = Workflow::Store::Db->get;
+                my $store = $store_db ? Workflow::Store::Db->get : Workflow::Store::None->get;
 
                 my %opts = (
                     input => $input,
@@ -155,7 +159,7 @@ evTRACE and print "workflow execute\n";
                 my ($id, $output_dest, $error_dest) = @$arg;
 evTRACE and print "workflow resume\n";
                 
-                my $instance = Workflow::Store::Db::Operation::Instance->get($id);
+                my $instance = $store_db ? Workflow::Store::Db::Operation::Instance->get($id) : Workflow::Operation::Instance->get($id);
 
                 my $executor = Workflow::Executor::Server->create;
                 $instance->operation->set_all_executor($executor);                
@@ -209,8 +213,8 @@ evTRACE and print "workflow error_relay\n";
                 my ($id,$dispatch_id) = @$arg;
 evTRACE and print "workflow begin_instance\n";
 
-                my $instance = Workflow::Store::Db::Operation::Instance->get($id);
-                
+                my $instance = $store_db ? Workflow::Store::Db::Operation::Instance->get($id) : Workflow::Operation::Instance->get($id);
+
                 $instance->status('running');
                 $instance->current->start_time(UR::Time->now);
                 $instance->current->dispatch_identifier($dispatch_id);
@@ -220,7 +224,7 @@ evTRACE and print "workflow begin_instance\n";
                 my ($id,$status,$output,$error_string) = @$arg;
 evTRACE and print "workflow end_instance\n";
 
-                my $instance = Workflow::Store::Db::Operation::Instance->get($id);
+                my $instance = $store_db ? Workflow::Store::Db::Operation::Instance->get($id) : Workflow::Operation::Instance->get($id);
                 $instance->status($status);
                 $instance->current->end_time(UR::Time->now);
                 if ($status eq 'done') {

@@ -14,7 +14,6 @@ class Workflow::Model {
     has => [
         operations => { is => 'Workflow::Operation', is_many => 1, reverse_id_by => 'workflow_model' },
         links => { is => 'Workflow::Link', is_many => 1 },
-        filename => { is => 'String', is_optional => 1 }
     ]
 };
 
@@ -30,10 +29,6 @@ sub create {
         );
 
         $params{operation_type} = $optype;
-    }
-
-    unless ($params{executor}) {
-        $params{executor} = Workflow::Executor::SerialDeferred->get();
     }
 
     my $self = $class->SUPER::create(%params);
@@ -56,7 +51,7 @@ sub create {
     return $self;
 }
 
-sub create_from_xml {
+sub XOXOXcreate_from_xml {
     my ($class, $filename) = @_;
 
     my $struct = XMLin($filename, KeyAttr=>[], ForceArray=>[qw/operation property inputproperty outputproperty link/]);

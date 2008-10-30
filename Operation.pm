@@ -13,6 +13,7 @@ class Workflow::Operation {
         is_valid => { is => 'Boolean', default_value=>0, doc => 'Flag set when validate has run' },
         executor => { is => 'Workflow::Executor', id_by => 'workflow_executor_id', is_optional => 1 },
         parallel_by => { is => 'String', is_optional=>1 },
+        filename => { is => 'String', is_optional => 1 }
     ]
 };
 
@@ -34,6 +35,26 @@ sub depended_on_by {
     } Workflow::Link->get(right_operation => $self);
     
     return values %operations;
+}
+
+sub create {
+    my $class = shift;
+    my $self = $class->SUPER::create(@_);
+
+    if (!$self->workflow_model && !$self->executor) {
+        $self->executor(Workflow::Executor::SerialDeferred->get);
+    }
+
+    return $self;
+}
+
+sub create_from_xml {
+    my ($class, $filename) = @_;
+
+    my $struct = XMLin($filename, KeyAttr=>[], ForceArray=>[qw/operation property inputproperty outputproperty link/]);
+    my $self = $class->create_from_xml_simple_structure($struct,filename=>$filename);
+
+    return $self;
 }
 
 sub create_from_xml_simple_structure {
@@ -83,7 +104,13 @@ sub save_to_xml {
     my $self = shift;
     my %args = @_;
 
-    return XMLout($self->as_xml_simple_structure, RootName=>'operation', XMLDecl=>1, %args);
+    return XMLout($self->as_xml_simple_structure, KeyAttr=>[], RootName=>'operation', XMLDecl=>1, %args);
+}
+
+sub set_all_executor {
+    my ($self,$exec) = @_;
+
+    $self->executor($exec);
 }
 
 sub validate {

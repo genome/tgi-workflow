@@ -509,7 +509,7 @@ sub completion {
             }
         }
     } elsif ($self->incomplete_peers == 0) {
-        if (defined $self->peer_of && $self->peer_of != $self && defined $self->peer_of->output_cb) {
+        if (defined $self->peer_of && defined $self->peer_of->output_cb) {
             ## this code shouldn't be messing up the primary peer instance but 
             # other changes are required to get around this, downside of the refactor
             my $return = $self->peer_of;
@@ -536,6 +536,9 @@ sub completion {
             }
 
             ### need some way to make sure the signal fires when input and output get changed here
+
+            $self->serialize_input;
+            $self->serialize_output;
 
             $self->peer_of->output_cb->($return);
         } elsif ($self->current->status eq 'crashed') {

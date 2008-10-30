@@ -10,6 +10,7 @@ our @ERROR = ();
 our $start_ur_server = 1;
 our $start_hub_server = 1;
 our $fork_ur_server = 1;
+our $store_db = 1;
 
 use Workflow ();
 use IPC::Run;
@@ -28,7 +29,12 @@ sub run_workflow {
     my $instance;
     my $error;
 
-    my $w = Workflow::Model->create_from_xml($xml);
+    my $w;
+    if (ref($xml) && UNIVERSAL::isa($xml,'Workflow::Operation')) {
+        $w = $xml;
+    } else {
+        $w = Workflow::Model->create_from_xml($xml);
+    }
     $w->execute(
         input => \%inputs,
         output_cb => sub {
@@ -37,7 +43,7 @@ sub run_workflow {
         error_cb => sub {
             $error = 1;
         },
-        store => Workflow::Store::Db->get
+        store => $store_db ? Workflow::Store::Db->get : Workflow::Store::None->get
     );
  
     $w->wait;
@@ -61,12 +67,16 @@ sub run_workflow_lsf {
     my $xml = shift;
     my %inputs = @_;
 
-    if (ref($xml) eq 'GLOB') {
-        my $newxml = '';        
-        while (my $line = <$xml>) {
-            $newxml .= $line;
+    if (ref($xml)) {
+        if (ref($xml) eq 'GLOB') {
+            my $newxml = '';        
+            while (my $line = <$xml>) {
+                $newxml .= $line;
+            }
+            $xml = $newxml;
+        } elsif (UNIVERSAL::isa($xml,'Workflow::Operation')) {
+            $xml = $xml->save_to_xml;
         }
-        $xml = $newxml;
     }
 
     @ERROR = ();
@@ -76,7 +86,7 @@ sub run_workflow_lsf {
     my $error_list;
 
     my @hubcmd = ('perl','-e','use above; use Workflow::Server::Hub; Workflow::Server::Hub->start;');
-    my @urcmd = ('perl','-e','use lib "/gscuser/eclark/lib"; use above; use Workflow::Server::UR; Workflow::Server::UR->start;');
+    my @urcmd = ('perl','-e','use lib "/gscuser/eclark/lib"; use above; use Workflow::Server::UR; $Workflow::Server::UR::store_db=' . $store_db . ';Workflow::Server::UR->start;');
 
     my $h;
     if ($start_hub_server) {    
@@ -184,6 +194,8 @@ evTRACE and print "controller quit\n";
         # keep it in this process, hope you want your current context committed
         
         require Workflow::Server::UR;
+
+        $Workflow::Server::UR::store_db=$store_db;
         Workflow::Server::UR->start($after_connect);
     } else {
         # otherwise just try to connect to anything that i can find
