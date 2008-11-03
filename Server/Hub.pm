@@ -192,7 +192,7 @@ sub setup {
 
                 my $namespace = 'Genome';
 
-                my $cmd = 'bsub -q ' . $queue . ' -N -u "' . $ENV{USER} . '@genome.wustl.edu" -m blades -R "' . $rusage .
+                my $cmd = 'bsub -q ' . $queue . ' -N -u "eclark@genome.wustl.edu" -m blades -R "' . $rusage .
                     '" -J "' . $name . '" perl -e \'use above; use ' . $namespace . '; use Workflow::Server::Worker; Workflow::Server::Worker->start("' . $hostname . '",' . $port . ')\'';
 
                 evTRACE and print "dispatch lsf_cmd $cmd\n";
