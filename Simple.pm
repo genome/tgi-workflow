@@ -11,6 +11,7 @@ our $start_ur_server = 1;
 our $start_hub_server = 1;
 our $fork_ur_server = 1;
 our $store_db = 1;
+our $override_lsf_use = 0;
 
 use Workflow ();
 use IPC::Run;
@@ -64,6 +65,8 @@ use Workflow::Store::Db::Operation::Instance;
 use Workflow::Store::Db::Model::Instance;
 
 sub run_workflow_lsf {
+    return run_workflow(@_) if ($override_lsf_use);
+
     my $xml = shift;
     my %inputs = @_;
 
