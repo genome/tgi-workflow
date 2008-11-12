@@ -24,7 +24,8 @@ class Workflow::Operation::Instance {
         },
         parent_instance => {
             is => 'Workflow::Model::Instance',
-            id_by => 'parent_instance_id'
+            id_by => 'parent_instance_id',
+            is_optional => 1
         },
         output => { is => 'HASH' },
         input => { is => 'HASH' },
@@ -36,12 +37,14 @@ class Workflow::Operation::Instance {
         output_cb => {
             is => 'CODE',
             is_transient => 1,
+            is_optional => 1 
         },
         error_cb => {
             is => 'CODE',
             is_transient => 1,
+            is_optional => 1 
         },
-        parallel_index => { is => 'Integer' },
+        parallel_index => { is => 'Integer', is_optional => 1 },
         peer_of => { 
             is => 'Workflow::Operation::Instance',
             id_by => 'peer_instance_id',

@@ -170,7 +170,7 @@ sub setup {
                         my ($instance, $type, $input) = @$payload;
                         $heap->{job_count}++;
                         
-                        my $lsf_job_id = $kernel->call($_[SESSION],'lsf_bsub',$type->lsf_queue,$type->lsf_resource,$instance->name);
+                        my $lsf_job_id = $kernel->call($_[SESSION],'lsf_bsub',$type->lsf_queue,$type->lsf_resource,$type->command_class_name,$instance->name);
                         $heap->{dispatched}->{$lsf_job_id} = $payload;
 
                         evTRACE and print "dispatch start_jobs $lsf_job_id\n";
@@ -180,7 +180,7 @@ sub setup {
                 }
             },
             lsf_bsub => sub {
-                my ($kernel, $queue, $rusage, $name) = @_[KERNEL, ARG0, ARG1, ARG2];
+                my ($kernel, $queue, $rusage, $command_class, $name) = @_[KERNEL, ARG0, ARG1, ARG2, ARG3];
                 evTRACE and print "dispatch lsf_cmd\n";
 
                 $queue ||= 'long';
@@ -190,10 +190,16 @@ sub setup {
                 my $hostname = hostname;
                 my $port = 13424;
 
-                my $namespace = 'Genome';
+                my $namespace = (split(/::/,$command_class))[0];
+
+                my @libs = UR::Util::used_libs();
+                my $libstring = '';
+                foreach my $lib (@libs) {
+                    $libstring .= 'use lib "' . $lib . '"; ';
+                }
 
                 my $cmd = 'bsub -q ' . $queue . ' -N -u "eclark@genome.wustl.edu" -m blades -R "' . $rusage .
-                    '" -J "' . $name . '" perl -e \'use above; use ' . $namespace . '; use Workflow::Server::Worker; Workflow::Server::Worker->start("' . $hostname . '",' . $port . ')\'';
+                    '" -J "' . $name . '" perl -e \'' . $libstring . 'use ' . $namespace . '; use ' . $command_class . '; use Workflow::Server::Worker; Workflow::Server::Worker->start("' . $hostname . '",' . $port . ')\'';
 
                 evTRACE and print "dispatch lsf_cmd $cmd\n";
 

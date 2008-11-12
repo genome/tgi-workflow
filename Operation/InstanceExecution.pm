@@ -8,20 +8,21 @@ class Workflow::Operation::InstanceExecution {
     sub_classification_method_name => '_resolve_subclass_name',
     has => [
         operation_instance => { is => 'Workflow::Operation::Instance', id_by => 'instance_id' },
-        status => { },
-        start_time => { },
-        end_time => { },
-        exit_code => { },
-        stdout => { },
-        stderr => { },
-        is_done => { is => 'Boolean' },
-        is_running => { is => 'Boolean' },
-        dispatch_identifier => { is => 'String' },
-        debug_mode => { is => 'Boolean', default_value => 0, is_transient => 1 },
+        status => { is_optional => 1 },
+        start_time => { is_optional => 1 },
+        end_time => { is_optional => 1 },
+        exit_code => { is_optional => 1 },
+        stdout => { is_optional => 1 },
+        stderr => { is_optional => 1 },
+        is_done => { is => 'Boolean', is_optional => 1 },
+        is_running => { is => 'Boolean', is_optional => 1  },
+        dispatch_identifier => { is => 'String', is_optional => 1  },
+        debug_mode => { is => 'Boolean', default_value => 0, is_transient => 1, is_optional => 1 },
         errors => { 
             is => 'Workflow::Operation::InstanceExecution::Error', 
             is_many => 1, 
-            reverse_id_by => 'execution'
+            reverse_id_by => 'execution',
+            is_optional => 1 
         }
     ]
 };

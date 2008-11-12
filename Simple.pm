@@ -15,6 +15,7 @@ our $override_lsf_use = 0;
 
 use Workflow ();
 use IPC::Run;
+use UR::Util;
 
 sub POE::Kernel::ASSERT_EVENTS () { 1 };
 use POE qw(Component::IKC::Client);
@@ -88,8 +89,14 @@ sub run_workflow_lsf {
     my $error;
     my $error_list;
 
-    my @hubcmd = ('perl','-e','use above; use Workflow::Server::Hub; Workflow::Server::Hub->start;');
-    my @urcmd = ('perl','-e','use lib "/gscuser/eclark/lib"; use above; use Workflow::Server::UR; $Workflow::Server::UR::store_db=' . $store_db . ';Workflow::Server::UR->start;');
+    my @libs = UR::Util::used_libs();
+    my $libstring = '';
+    foreach my $lib (@libs) {
+        $libstring .= 'use lib "' . $lib . '"; ';
+    }
+
+    my @hubcmd = ('perl','-e',$libstring . 'use Workflow::Server::Hub; Workflow::Server::Hub->start;');
+    my @urcmd = ('perl','-e',$libstring . 'use Workflow::Server::UR; $Workflow::Server::UR::store_db=' . $store_db . ';Workflow::Server::UR->start;');
 
     my $h;
     if ($start_hub_server) {    
