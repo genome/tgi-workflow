@@ -198,7 +198,7 @@ sub setup {
                     $libstring .= 'use lib "' . $lib . '"; ';
                 }
 
-                my $cmd = 'bsub -q ' . $queue . ' -N -u "eclark@genome.wustl.edu" -m blades -R "' . $rusage .
+                my $cmd = 'bsub -q ' . $queue . ' -m blades -R "' . $rusage .
                     '" -J "' . $name . '" perl -e \'' . $libstring . 'use ' . $namespace . '; use ' . $command_class . '; use Workflow::Server::Worker; Workflow::Server::Worker->start("' . $hostname . '",' . $port . ')\'';
 
                 evTRACE and print "dispatch lsf_cmd $cmd\n";
