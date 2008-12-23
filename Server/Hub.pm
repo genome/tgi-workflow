@@ -5,17 +5,19 @@ use strict;
 use base 'Workflow::Server';
 use POE qw(Component::IKC::Server);
 
+our $port_number = 13424;
+
 use Workflow ();
 use Sys::Hostname;
 
-sub evTRACE () { 0 };
+sub evTRACE () { 1 };
 
 sub setup {
     my $class = shift;
     my %args = @_;
     
     our $server = POE::Component::IKC::Server->spawn(
-        port => 13424, name => 'Hub'
+        port => $port_number, name => 'Hub'
     );
 
     our $printer = POE::Session->create(
@@ -62,6 +64,8 @@ sub setup {
                 $kernel->sig('USR1','sig_USR1');
                 $kernel->sig('USR2','sig_USR2');
                 
+                $kernel->yield('unlock_me');
+                
 #                $kernel->delay('periodic_check', $heap->{periodic_check_time});
             },
             sig_USR1 => sub {
@@ -75,6 +79,9 @@ sub setup {
                 
                 $kernel->yield('start_jobs');
                 $kernel->sig_handled();
+            },
+            unlock_me => sub {
+                Workflow::Server->unlock('Hub');
             },
             quit => sub {
                 my ($kernel) = @_[KERNEL];
@@ -188,7 +195,7 @@ sub setup {
                 $name ||= 'worker';
 
                 my $hostname = hostname;
-                my $port = 13424;
+                my $port = $port_number;
 
                 my $namespace = (split(/::/,$command_class))[0];
 

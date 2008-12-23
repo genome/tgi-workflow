@@ -95,23 +95,41 @@ sub run_workflow_lsf {
         $libstring .= 'use lib "' . $lib . '"; ';
     }
 
-    my @hubcmd = ('perl','-e',$libstring . 'use Workflow::Server::Hub; Workflow::Server::Hub->start;');
-    my @urcmd = ('perl','-e',$libstring . 'use Workflow::Server::UR; $Workflow::Server::UR::store_db=' . $store_db . ';Workflow::Server::UR->start;');
+    require Workflow::Server::UR;
+    require Workflow::Server::Hub;
+
+    Workflow::Server->lock('Simple');
+
+    while (!is_port_available($Workflow::Server::UR::port_number)) {
+        $Workflow::Server::UR::port_number+=2;
+    }
+
+    while (!is_port_available($Workflow::Server::Hub::port_number)) {
+        $Workflow::Server::Hub::port_number+=2;
+    }
+
+    my $varstring = '$Workflow::Server::Hub::port_number=' . $Workflow::Server::Hub::port_number . '; $Workflow::Server::UR::port_number=' . $Workflow::Server::UR::port_number;
+
+    my @hubcmd = ('perl','-e',$libstring . 'use Workflow::Server::Hub; $Workflow::Server::Hub::port_number=' . $Workflow::Server::Hub::port_number . '; Workflow::Server::Hub->start;');
+    my @urcmd = ('perl','-e',$libstring . 'use Workflow::Server::UR; $Workflow::Server::Hub::port_number=' . $Workflow::Server::Hub::port_number . '; $Workflow::Server::UR::port_number=' . $Workflow::Server::UR::port_number . '; $Workflow::Server::UR::store_db=' . $store_db . ';Workflow::Server::UR->start;');
+
+    Workflow::Server->lock('Hub');
+    Workflow::Server->lock('UR');
 
     my $h;
-    if ($start_hub_server) {    
+    if ($start_hub_server) {
         $h = IPC::Run::start(\@hubcmd);
-        sleep 3;
+        Workflow::Server->wait_for_lock('Hub');
     }
-    
+        
     $start_ur_server = 1 if $start_hub_server == 1;
     
     my $u;
     if ($start_ur_server && $fork_ur_server) {
         $u = IPC::Run::start(\@urcmd);
-        sleep 3;
+        Workflow::Server->wait_for_lock('UR');
     }
-
+ 
     my $after_connect = sub {
         my $channel_id = shift;
         
@@ -137,6 +155,8 @@ evTRACE and print "controller _stop\n";
                 startup => sub {
                     my ($kernel) = @_[KERNEL];
 evTRACE and print "controller startup\n";                    
+
+
                     
                     $kernel->call(
                         'IKC','call','poe://UR/workflow/load',
@@ -203,7 +223,6 @@ evTRACE and print "controller quit\n";
     if ($start_ur_server && !$fork_ur_server) {
         # keep it in this process, hope you want your current context committed
         
-        require Workflow::Server::UR;
 
         $Workflow::Server::UR::store_db=$store_db;
         Workflow::Server::UR->start($after_connect);
@@ -212,11 +231,13 @@ evTRACE and print "controller quit\n";
         
         $client_session = POE::Component::IKC::Client->spawn( 
         #    ip=>'linusop15.gsc.wustl.edu', 
-            port=>13425,
+            port=> $Workflow::Server::UR::port_number,
             name=>'Controller',
             on_connect=>sub { $after_connect->($poe_kernel->get_active_session()->ID) }
         );
     }
+
+    Workflow::Server->unlock('Simple');
 
     POE::Kernel->run();
 
@@ -237,6 +258,23 @@ evTRACE and print "controller quit\n";
     }
 
     return $done_instance->output;
+}
+
+use Socket;
+
+sub is_port_available {
+    my $port = shift;
+    
+    socket(TESTSOCK,PF_INET,SOCK_STREAM,6);
+    setsockopt(TESTSOCK,SOL_SOCKET,SO_REUSEADDR,1);
+    
+    my $val = bind(TESTSOCK, sockaddr_in($port, INADDR_ANY));
+    
+    shutdown(TESTSOCK,2);
+    close(TESTSOCK);
+    
+    return 1 if $val;
+    return 0;
 }
 
 1;

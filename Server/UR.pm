@@ -4,12 +4,14 @@ package Workflow::Server::UR;
 use strict;
 use base 'Workflow::Server';
 use POE qw(Component::IKC::Server Component::IKC::Client);
+use Workflow::Server::Hub;
 
 our $store_db = 1;
+our $port_number = 13425;
 
 use Workflow ();
 
-sub evTRACE () { 0 };
+sub evTRACE () { 1 };
 
 sub setup {
     my $class = shift;
@@ -17,7 +19,7 @@ sub setup {
     $class->setup_client(@_);
     
     our $srv_session = POE::Component::IKC::Server->spawn(
-        port => 13425, name => 'UR'
+        port => $port_number, name => 'UR'
     );
 
 }
@@ -29,10 +31,10 @@ sub setup_client {
     $Storable::forgive_me = 1;
 
     our $session = POE::Component::IKC::Client->spawn( 
-        ip=>'localhost', 
-        port=>13424,
-        name=>'UR',
-        on_connect=> sub {
+        ip         => 'localhost', 
+        port       => $Workflow::Server::Hub::port_number,
+        name       => 'UR',
+        on_connect => sub {
             __build($poe_kernel->get_active_session()->ID,\@connect_code,\@_);
         } 
     );
@@ -63,9 +65,13 @@ evTRACE and print "workflow _start\n";
                 $kernel->post('IKC','monitor','*'=>{register=>'conn',unregister=>'disc'});
 
                 $kernel->delay('commit',120);
+                $kernel->yield('unlock_me');
             },
             _stop => sub {
 evTRACE and print "workflow _stop\n";
+            },
+            unlock_me => sub {
+                Workflow::Server->unlock('UR');
             },
             quit => sub {
                 my ($kernel,$session,$kill_hub_flag) = @_[KERNEL,SESSION,ARG0];

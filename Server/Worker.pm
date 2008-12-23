@@ -4,13 +4,15 @@ package Workflow::Server::Worker;
 use strict;
 use POE;
 use POE::Component::IKC::Client;
+use Workflow::Server::Hub;
+
 use Workflow ();
 
 sub start {
     my ($class, $host, $port) = @_;
 
     $host ||= 'localhost';
-    $port ||= 13424;
+    $port ||= $Workflow::Server::Hub::port_number;
 
     our $client = POE::Component::IKC::Client->spawn( 
         ip=>$host, 

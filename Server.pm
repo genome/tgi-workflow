@@ -3,6 +3,9 @@ package Workflow::Server;
 
 use strict;
 use POE;
+use POE qw(Component::IKC::Server);
+
+our $lockdir = '/tmp';
 
 sub setup {
     my $class = shift;
@@ -33,6 +36,40 @@ sub check_leaks {
 $kernel->_dump_kr_extra_refs;
     } else {
         warn "$kernel isn't a reference";
+    }
+}
+
+sub lock {
+    my ($class,$service) = @_;
+    
+    $class->wait_for_lock($service);
+
+    my $lockname = $lockdir . '/.workflow-' . $service;
+    
+    my $f = IO::File->new('>' . $lockname);
+    $f->print($$);
+    $f->close;
+}
+
+sub unlock {
+    my ($class,$service) = @_;
+    
+    my $lockname = $lockdir . '/.workflow-' . $service;
+
+    unlink($lockname);
+}
+
+sub wait_for_lock {
+    my ($class,$service) = @_;
+    
+    my $lockname = $lockdir . '/.workflow-' . $service;
+
+    my $waited = 0;
+    while (-e $lockname) {
+        die 'exceeded lock time' if ($waited > 300);
+        sleep 5;
+        $waited += 5;
+        print "$service wait: $waited\n";
     }
 }
 
