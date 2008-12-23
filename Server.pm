@@ -69,7 +69,7 @@ sub wait_for_lock {
         die 'exceeded lock time' if ($waited > 300);
         sleep 5;
         $waited += 5;
-        print "$service wait: $waited\n";
+#        print "$service wait: $waited\n";
     }
 }
 
