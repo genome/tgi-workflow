@@ -11,7 +11,7 @@ our $port_number = 13425;
 
 use Workflow ();
 
-sub evTRACE () { 1 };
+sub evTRACE () { 0 };
 
 sub setup {
     my $class = shift;

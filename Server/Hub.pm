@@ -10,7 +10,7 @@ our $port_number = 13424;
 use Workflow ();
 use Sys::Hostname;
 
-sub evTRACE () { 1 };
+sub evTRACE () { 0 };
 
 sub setup {
     my $class = shift;
