@@ -130,6 +130,7 @@ sub run_workflow_lsf {
         Workflow::Server->wait_for_lock('UR');
     }
  
+    my $finalize_symbol;
     my $after_connect = sub {
         my $channel_id = shift;
         
@@ -151,6 +152,11 @@ evTRACE and print "controller _start\n";
                 },
                 _stop => sub {
 evTRACE and print "controller _stop\n";
+
+                    $u->finish if $start_ur_server && $fork_ur_server;
+                    $h->finish if $start_hub_server;
+                    
+                    $finalize_symbol = disable_final();
                 },
                 startup => sub {
                     my ($kernel) = @_[KERNEL];
@@ -241,12 +247,12 @@ evTRACE and print "controller quit\n";
 
     POE::Kernel->run();
 
+    enable_final($finalize_symbol);
+
     # Should probably consider this a bug in cpan.  They shouldn't keep 
     # this in a global and not reset it on shutdown
     $POE::Component::IKC::Responder::ikc = undef;
 
-    $u->finish if $start_ur_server && $fork_ur_server;
-    $h->finish if $start_hub_server;
 
     if (defined $error) {
         @ERROR = @$error_list;
@@ -275,6 +281,20 @@ sub is_port_available {
     
     return 1 if $val;
     return 0;
+}
+
+sub disable_final {
+    my $old_symbol = *POE::Kernel::_data_sig_finalize;
+    *POE::Kernel::_data_sig_finalize = sub {
+        return 1;
+    };
+    return $old_symbol;
+}
+
+sub enable_final {
+    my $sym = shift;
+    
+    *POE::Kernel::_data_sig_finalize = $sym;
 }
 
 1;
