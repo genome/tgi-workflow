@@ -56,7 +56,7 @@ evTRACE and print "workflow _start\n";
 
                 $kernel->alias_set("workflow");
                 $kernel->post('IKC','publish','workflow',
-                    [qw(load execute resume begin_instance end_instance quit eval)]
+                    [qw(simple_start load execute resume begin_instance end_instance quit eval)]
                 );
                 
                 $heap->{workflow_plans} = {};
@@ -72,6 +72,18 @@ evTRACE and print "workflow _stop\n";
             },
             unlock_me => sub {
                 Workflow::Server->unlock('UR');
+            },
+            simple_start => sub {
+                my ($kernel, $session, $arg) = @_[KERNEL,SESSION,ARG0];
+                my ($arg2, $return) = @$arg;
+                my ($xml,$input) = @$arg2;
+evTRACE and print "workflow simple_start\n";
+
+                my $id = $kernel->call($session,'load',[$xml]);
+                
+                $kernel->call($session,'execute',[$id,$input,$return,$return]);
+                
+                return $id;
             },
             quit => sub {
                 my ($kernel,$session,$kill_hub_flag) = @_[KERNEL,SESSION,ARG0];

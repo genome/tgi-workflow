@@ -2,8 +2,8 @@
 package Workflow::Server;
 
 use strict;
-use POE;
-use POE qw(Component::IKC::Server);
+#use POE;
+#use POE qw(Component::IKC::Server);
 
 our $lockdir = '/tmp';
 
@@ -20,6 +20,7 @@ sub start {
 }
 
 sub check_leaks {
+=pod
     my($kernel)=@_[KERNEL];
     if(ref $kernel) {
         my $kr_queue = $kernel->[5];
@@ -37,6 +38,7 @@ $kernel->_dump_kr_extra_refs;
     } else {
         warn "$kernel isn't a reference";
     }
+=cut
 }
 
 sub lock {
