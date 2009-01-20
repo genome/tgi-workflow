@@ -134,6 +134,13 @@ sub run_workflow_lsf {
 
     my $response = $poe->post_respond('workflow/simple_start',[$xml,\%inputs]);
 
+    $poe->post('workflow/quit',1);
+
+    $u->finish if $start_ur_server && $fork_ur_server;
+    $h->finish if $start_hub_server;
+
+    $poe->disconnect;
+
     unless (defined $response) {
         die 'unexpected response';
     }
