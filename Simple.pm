@@ -149,7 +149,7 @@ sub run_workflow_lsf {
         return $response->[1]->output;
 
     } elsif (scalar @$response == 4) {
-        @ERROR = $response->[3];
+        @ERROR = @{ $response->[3] };
         return undef;
     }
 
