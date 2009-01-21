@@ -148,7 +148,7 @@ sub run_workflow_lsf {
     if (scalar @$response == 3) {
         return $response->[1]->output;
 
-    } elsif (scalar @response == 4) {
+    } elsif (scalar @$response == 4) {
         @ERROR = $response->[3];
         return undef;
     }
