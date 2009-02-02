@@ -129,7 +129,7 @@ sub run_workflow_lsf {
 
     my $poe = create_ikc_client(
         port    => $ur_port,
-        timeout => 10000
+        timeout => 1209600 
     );
 
     my $response = $poe->post_respond('workflow/simple_start',[$xml,\%inputs]);
