@@ -99,6 +99,8 @@ our @OBSERVERS = (
                 $self->cache_workflow($c);
             } elsif (defined $self->parent_instance) {
                 $self->cache_workflow($self->parent_instance->cache_workflow);
+            } elsif (defined $self->peer_of) {
+                $self->cache_workflow($self->peer_of->cache_workflow);
             }
 
             $self->name($self->operation->name);
