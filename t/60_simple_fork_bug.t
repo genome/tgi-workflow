@@ -8,7 +8,7 @@ my $pid = fork();
 if (not defined $pid) {
     die 'cant fork';
 } elsif ($pid == 0) {
-    sleep 300;
+    sleep 3;
     exit(0);
 } else {
 

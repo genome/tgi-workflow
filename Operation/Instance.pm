@@ -485,6 +485,7 @@ sub completion {
     if ($self->parent_instance) {
         my $parent = $self->parent_instance;
         if ($self->current->status eq 'crashed') {
+#print "CRASH PARENT\n";
         
             $retry_count{$self->id} ||= 0;
             
@@ -547,11 +548,15 @@ sub completion {
         } elsif ($self->current->status eq 'crashed') {
             ## crashed with no parent
             if (defined $self->error_cb) {
+#print "CRASH NO PARENT DEFINED ERROR CB\n";
+
                 $self->error_cb->($self);
             } else {
+#print "CRASH NO PARENT UNDEFINED ERROR CB\n";
                 $self->executor->exception($self,'operation died in eval block');
             }
         } elsif (defined $self->output_cb) {
+#print "DONE NO PARENT DEFINED OUTPUT CB\n";
             $self->output_cb->($self);
         }
     }

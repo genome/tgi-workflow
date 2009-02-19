@@ -35,7 +35,7 @@ can_ok('Workflow::Model',qw/create validate is_valid execute/);
             'model input string' => 'abracadabra321',
             'sleep time' => 1
         },
-        store => Workflow::Store::Db->create()
+        store => Workflow::Store::Db->get()
     ),'execute');
     $id = $opi->id;
 

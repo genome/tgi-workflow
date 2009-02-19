@@ -6,9 +6,9 @@ use warnings;
 use Workflow;
 class Workflow::Store::Db::Cache {
     type_name => 'workflow cache',
-    table_name => 'WORKFLOW_CACHE',
+    table_name => 'WORKFLOW_PLAN',
     id_by => [
-        workflow_id => { is => 'INTEGER' },
+        workflow_id => { is => 'INTEGER', column_name => 'workflow_plan_id' },
     ],
     has => [
         xml         => { is => 'BLOB', is_optional => 1 },

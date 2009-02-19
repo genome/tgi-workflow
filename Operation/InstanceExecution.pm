@@ -17,6 +17,11 @@ class Workflow::Operation::InstanceExecution {
         is_done => { is => 'Boolean', is_optional => 1 },
         is_running => { is => 'Boolean', is_optional => 1  },
         dispatch_identifier => { is => 'String', is_optional => 1  },
+        cpu_time      => { is => 'NUMBER', len => 11, is_optional => 1 },
+        max_threads   => { is => 'NUMBER', len => 4, is_optional => 1 },
+        max_swap      => { is => 'NUMBER', len => 6, is_optional => 1 },
+        max_processes => { is => 'NUMBER', len => 4, is_optional => 1 },
+        max_memory    => { is => 'NUMBER', len => 6, is_optional => 1 },
         debug_mode => { is => 'Boolean', default_value => 0, is_transient => 1, is_optional => 1 },
         errors => { 
             is => 'Workflow::Operation::InstanceExecution::Error', 

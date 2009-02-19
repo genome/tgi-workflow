@@ -9,9 +9,9 @@ class Workflow::Store::Db::Operation::Instance {
     sub_classification_method_name => '_resolve_subclass_name',
     is => ['Workflow::Operation::Instance'],
     type_name => 'instance',
-    table_name => 'INSTANCE',
+    table_name => 'WORKFLOW_INSTANCE',
     id_by => [
-        instance_id => { is => 'INTEGER' },
+        instance_id => { is => 'INTEGER', column_name => 'workflow_instance_id' },
     ],
     has => [
         cache_workflow       => { 
@@ -19,7 +19,7 @@ class Workflow::Store::Db::Operation::Instance {
             id_by => 'cache_workflow_id',
             is_optional => 1 
         },
-        cache_workflow_id    => { is => 'INTEGER', is_optional => 1 },
+        cache_workflow_id    => { is => 'INTEGER', column_name => 'workflow_plan_id', is_optional => 1 },
         current => { 
             is => 'Workflow::Store::Db::Operation::InstanceExecution', 
             id_by => 'current_execution_id', 
@@ -97,6 +97,8 @@ our @OBSERVERS = (
                 );
 
                 $self->cache_workflow($c);
+            } elsif (defined $self->parent_instance) {
+                $self->cache_workflow($self->parent_instance->cache_workflow);
             }
 
             $self->name($self->operation->name);

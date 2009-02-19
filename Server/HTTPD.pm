@@ -89,7 +89,7 @@ sub setup {
                 my $class = ($uri->path_segments)[2];
                 return $kernel->yield('not_found','class') unless $class;
 
-                my $object_id = ($uri->path_segments)[3] || '';
+                my $object_id = ($uri->path_segments)[3] ? '"' . ($uri->path_segments)[3] . '"' : '';
 #                return $kernel->yield('not_found','object identifier') unless $object_id;
                 
                 
@@ -97,7 +97,7 @@ sub setup {
                     'IKC','call',
                     'poe://UR/workflow/eval',
                     [q{
-                        my @objects = } . $class . q{->is_loaded("} . $object_id . q{");
+                        my @objects = } . $class . q{->is_loaded(} . $object_id . q{);
                     
                         my %dump;
                         foreach my $object (@objects) {

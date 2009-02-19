@@ -56,7 +56,7 @@ evTRACE and print "workflow _start\n";
 
                 $kernel->alias_set("workflow");
                 $kernel->post('IKC','publish','workflow',
-                    [qw(simple_start load execute resume begin_instance end_instance quit eval)]
+                    [qw(simple_start simple_resume load execute resume begin_instance end_instance quit eval)]
                 );
                 
                 $heap->{workflow_plans} = {};
@@ -64,7 +64,7 @@ evTRACE and print "workflow _start\n";
 
                 $kernel->post('IKC','monitor','*'=>{register=>'conn',unregister=>'disc'});
 
-                $kernel->delay('commit',120);
+                $kernel->delay('commit',30);
                 $kernel->yield('unlock_me');
             },
             _stop => sub {
@@ -82,6 +82,16 @@ evTRACE and print "workflow simple_start\n";
                 my $id = $kernel->call($session,'load',[$xml]);
                 
                 $kernel->call($session,'execute',[$id,$input,$return,$return]);
+                
+                return $id;
+            },
+            simple_resume => sub {
+                my ($kernel, $session, $arg) = @_[KERNEL,SESSION,ARG0];
+                my ($arg2, $return) = @$arg;
+                my ($id) = @$arg2;
+evTRACE and print "workflow simple_start\n";
+
+                $kernel->call($session,'resume',[$id,$return,$return]);
                 
                 return $id;
             },
@@ -114,7 +124,7 @@ evTRACE and print "workflow commit\n";
                 if ($store_db) { 
                     UR::Context->commit();
 
-                    $kernel->delay('commit', 120);
+                    $kernel->delay('commit', 30);
                 }
             },
             conn => sub {
@@ -179,7 +189,7 @@ evTRACE and print "workflow resume\n";
                 
                 my $instance = $store_db ? Workflow::Store::Db::Operation::Instance->get($id) : Workflow::Operation::Instance->get($id);
 
-                my $executor = Workflow::Executor::Server->create;
+                my $executor = Workflow::Executor::Server->get;
                 $instance->operation->set_all_executor($executor);                
 
                 if ($output_dest) {
