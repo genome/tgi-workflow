@@ -485,7 +485,6 @@ sub completion {
     if ($self->parent_instance) {
         my $parent = $self->parent_instance;
         if ($self->current->status eq 'crashed') {
-#print "CRASH PARENT\n";
         
             $retry_count{$self->id} ||= 0;
             
@@ -512,52 +511,65 @@ sub completion {
                 $parent->completion;
             }
         }
-    } elsif ($self->incomplete_peers == 0) {
-        if (defined $self->peer_of && defined $self->peer_of->output_cb) {
-            ## this code shouldn't be messing up the primary peer instance but 
-            # other changes are required to get around this, downside of the refactor
-            my $return = $self->peer_of;
+    } elsif ($self->is_parallel && $self->unreturned_peers == 0) {
+        my $mp = $self->peer_of;
 
-            while (my ($k,$v) = each(%{ $return->input })) {
-                $return->input->{$k} = [$v];
+        my $crashcnt = 0;
+        foreach my $p ($mp, $mp->peers) {
+            $crashcnt++ if $p->status eq 'crashed';
+        }
+
+        if ($crashcnt > 0) {
+            if (defined $mp->error_cb) {
+                $mp->error_cb->($mp);
+            } else {
+                $mp->executor->exception($self,'operation died in eval block');
             }
-            while (my ($k,$v) = each(%{ $return->output })) {
-                $return->output->{$k} = [$v];
+        } else {
+            my $mp = $self->peer_of;
+
+            while (my ($k,$v) = each(%{ $mp->input })) {
+                $mp->input->{$k} = [$v];
+            }
+            while (my ($k,$v) = each(%{ $mp->output })) {
+                $mp->output->{$k} = [$v];
             }
             
             for (my $i = 1; $i <= $self->peers; $i++) {
                 my $peer = Workflow::Operation::Instance->get(
-                    peer_of => $return,
+                    peer_of => $mp,
                     parallel_index => $i
                 );
                 
                 while (my ($k,$v) = each(%{ $peer->input })) {
-                    $return->input->{$k}->[$i] = $v;
+                    $mp->input->{$k}->[$i] = $v;
                 }
                 while (my ($k,$v) = each(%{ $peer->output })) {
-                    $return->output->{$k}->[$i] = $v;
+                    $mp->output->{$k}->[$i] = $v;
                 }
             }
 
             ### need some way to make sure the signal fires when input and output get changed here
 
-            $self->serialize_input;
-            $self->serialize_output;
+            $mp->serialize_input;
+            $mp->serialize_output;
 
-            $self->peer_of->output_cb->($return);
-        } elsif ($self->current->status eq 'crashed') {
-            ## crashed with no parent
+            if (defined $mp->output_cb) {
+                $mp->output_cb->($mp);
+            }
+        
+        }
+    } elsif (!$self->is_parallel) {
+        if ($self->status eq 'crashed') {
             if (defined $self->error_cb) {
-#print "CRASH NO PARENT DEFINED ERROR CB\n";
-
                 $self->error_cb->($self);
             } else {
-#print "CRASH NO PARENT UNDEFINED ERROR CB\n";
                 $self->executor->exception($self,'operation died in eval block');
             }
-        } elsif (defined $self->output_cb) {
-#print "DONE NO PARENT DEFINED OUTPUT CB\n";
-            $self->output_cb->($self);
+        } else {
+            if (defined $self->output_cb) {
+                $self->output_cb->($self);
+            }
         }
     }
     $self->sync;
@@ -716,6 +728,14 @@ sub incomplete_peers {
     
     return grep {
         !$_->is_done
+    } $self->peers;
+}
+
+sub unreturned_peers {
+    my $self = shift;
+    
+    return grep {
+        $_->status ne 'crashed' && !$_->is_done
     } $self->peers;
 }
 

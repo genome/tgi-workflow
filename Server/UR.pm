@@ -305,12 +305,18 @@ sub dispatch {
 
 sub _util_error_walker {
     my $i = shift;
-    my @errors = ($i->current->errors);
-    if ($i->can('child_instances')) {
-        foreach my $ci ($i->child_instances) {
-            push @errors, _util_error_walker($ci);
+    my @errors = ();
+    
+    foreach my $p ($i,$i->peers) {
+        push @errors, $p->current->errors;
+        
+        if ($p->can('child_instances')) {
+            foreach my $ci ($p->child_instances) {
+                push @errors, _util_error_walker($ci);
+            }
         }
     }
+    
     return @errors;
 }
 
