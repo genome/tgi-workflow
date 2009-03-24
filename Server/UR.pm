@@ -11,7 +11,7 @@ our $port_number = 13425;
 
 use Workflow ();
 
-sub evTRACE () { 0 };
+sub evTRACE () { 1 };
 
 sub setup {
     my $class = shift;
@@ -64,10 +64,18 @@ evTRACE and print "workflow _start\n";
 
                 $kernel->post('IKC','monitor','*'=>{register=>'conn',unregister=>'disc'});
 
+                $heap->{record} = Workflow::Service->create();
+                UR::Context->commit();
+
                 $kernel->delay('commit',30);
                 $kernel->yield('unlock_me');
             },
             _stop => sub {
+                my ($heap) = @_[HEAP];
+                
+                $heap->{record}->delete();
+                UR::Context->commit();
+            
 evTRACE and print "workflow _stop\n";
             },
             unlock_me => sub {
@@ -104,13 +112,13 @@ evTRACE and print "workflow quit\n";
                 } else {
                     $kernel->yield('quit_stage_2');
                 }
-
             },
             quit_stage_2 => sub {
                 my ($kernel,$session,$heap) = @_[KERNEL,SESSION,HEAP];
 evTRACE and print "workflow quit_stage_2\n";
 
                 $kernel->post($heap->{channel},'shutdown');
+
 
                 $kernel->call($session,'commit');
                 $kernel->alarm_remove_all;

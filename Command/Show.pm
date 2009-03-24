@@ -49,9 +49,12 @@ sub execute {
         $i->treeview_debug;
     } else {
         print <<MARK;
-Id:     @{[$i->id]}
-Name:   @{[$i->name]}
-Status: @{[$i->status]}
+Id:          @{[$i->id]}
+Name:        @{[$i->name]}
+Status:      @{[$i->status]}
+Start Time:  @{[$i->current->start_time]}
+End Time:    @{[$i->current->end_time]}
+Dispatch Id: @{[$i->current->dispatch_identifier]}
 Input:
 @{[ YAML::Dump($i->input) ]}
 Output:

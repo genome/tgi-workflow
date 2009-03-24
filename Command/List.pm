@@ -7,11 +7,17 @@ use Workflow;
 use Command; 
 
 class Workflow::Store::Db::Operation::RootInstance {
-    table_name => "(SELECT * FROM workflow.workflow_instance wi WHERE parent_instance_id IS NULL AND (peer_instance_id IS NULL OR peer_instance_id = workflow_instance_id)) workflow_instance", 
+    table_name => "
+        (SELECT wi.workflow_instance_id, wi.name, wie.status 
+           FROM workflow.workflow_instance wi
+           JOIN workflow.workflow_instance_execution wie ON (wi.current_execution_id = wie.workflow_execution_id)
+          WHERE wi.parent_instance_id IS NULL 
+            AND (wi.peer_instance_id IS NULL OR wi.peer_instance_id = wi.workflow_instance_id)) workflow_instance", 
     id_properties => ['workflow_instance_id'],
     has => [
         workflow_instance_id => { is => 'Number' },
-        name => { is => 'Varchar2' } 
+        name => { is => 'Varchar2' },
+        status => { is => 'Varchar2' }, 
     ],
     data_source => 'Workflow::DataSource::InstanceSchema'
 };
@@ -27,7 +33,7 @@ class Workflow::Command::List {
     ],
     has => [
         show => {
-            default_value => 'id,name'
+            default_value => 'workflow_instance_id,name,status'
         }
     ]
 };
