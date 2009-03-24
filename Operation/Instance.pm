@@ -127,17 +127,21 @@ sub _resolve_subclass_name {
             last;
         }
     }
-    
+$DB::single=1;    
     if (ref($_[0]) && $_[0]->isa(__PACKAGE__)) {
+    
+        $_[0]->load_operation if ($_[0]->can('load_operation'));
+    
         if ($_[0]->operation && $_[0]->operation->class eq 'Workflow::Model') {
             $suffix = 'Model::Instance';
         } else {
-            my $opiclass = $store->class_prefix . '::Operation::Instance';
+#            warn "unscalable old code.  should not be reached.  fix it";
+#            my $opiclass = $store->class_prefix . '::Operation::Instance';
 
-            my @children = $opiclass->get(parent_instance_id => $_[0]->id);
-            if (scalar @children > 0) {
-                $suffix = 'Model::Instance';
-            }
+#            my @children = $opiclass->get(parent_instance_id => $_[0]->id, '-recurse' => ['parent_instance_id','instance_id']);
+#            if (scalar @children > 0) {
+#                $suffix = 'Model::Instance';
+#            }
         }
     } elsif (my $id = $class->get_rule_for_params(@_)->specified_value_for_property_name('workflow_operation_id')) {
         my $operation = Workflow::Operation->get($id);

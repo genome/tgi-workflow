@@ -45,43 +45,61 @@ class Workflow::Store::Db::Operation::Instance {
     data_source => 'Workflow::DataSource::InstanceSchema',
 };
 
+sub load_operation {
+    my ($self) = shift;
+    
+    if ($self->parent_instance_id) {
+        my $parent = $self->parent_instance;
+        my ($op) = $parent->operation->operations(
+            name => $self->name
+        );
+
+        $self->store($parent->store);
+        $self->operation($op) if $op;
+#        print "not yet\n" unless $op;
+    } elsif ($self->cache_workflow  && !$self->workflow_operation_id) {
+        my $op = Workflow::Model->create_from_xml($self->cache_workflow->xml);
+
+        $self->operation($op);
+    } 
+
+}
+
 our @OBSERVERS = (
     __PACKAGE__->add_observer(
         aspect => 'load',
         callback => sub {
             my ($self) = @_;
                         
-            if ($self->cache_workflow) {
-                my $op = Workflow::Model->create_from_xml($self->cache_workflow->xml);
-
-                $self->operation($op);
-            } elsif (my $parent = $self->parent_instance) {
-                
-                my ($op) = $parent->operation->operations(
-                    name => $self->name
-                );
-                
-                $self->store($parent->store);
-                $self->operation($op) if $op;
-                print "not yet\n" unless $op;
-            }
+            $self->load_operation;
             
-            if (!$self->parent_instance) {
+            if (!$self->parent_instance_id) {
                 my $store = Workflow::Store::Db->get;
                 $self->store($store);
             }
             
             $self->input(thaw $self->input_stored);
             $self->output(thaw $self->output_stored);
-            
-            if ($self->can('child_instances') && $self->operation) {
-                foreach my $i ($self->child_instances(name => ['input connector','output connector'])) {
-                    my $name = $i->name;
-                    $name =~ s/ /_/g;
-                    $self->$name($i);
-                }
-                
-            }
+
+
+            if ($self->parent_instance_id && ($self->name eq 'input connector' || $self->name eq 'output connector')) {
+                my $parent = $self->parent_instance;
+
+                my $name = $self->name;
+                $name =~ s/ /_/g;
+
+                $parent->$name($self);
+            }            
+#            if ($self->can('child_instances') && $self->operation) {
+#                if (!$self->input_connector_id || !$self->output_connector_id) {
+#                    foreach my $i ($self->child_instances(name => ['input connector','output connector'])) {
+#                        my $name = $i->name;
+#                        next unless ($name eq 'input connector' || $name eq 'output connector');
+#                        $name =~ s/ /_/g;
+#                        $self->$name($i);
+#                    }
+#                }               
+#            }
         }
     ),
     __PACKAGE__->add_observer(
