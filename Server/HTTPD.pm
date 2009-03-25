@@ -55,6 +55,8 @@ sub setup {
                 $kernel->yield('status_summary');
             } elsif ($function eq 'browse') {
                 $kernel->yield('object_browser');
+            } elsif ($function eq '') {
+                $kernel->yield('status_summary');
             } else {
                 $kernel->yield('not_found','function');
             }
@@ -250,9 +252,8 @@ MARK
 
                 $response->push_header('Content-type', 'text/html');
                 $response->content(
-                    "<html><head><title>Server status summary</title></head>" .
-                    "<body><table border=1><tr><th>Type</th><th>New</th><th>Scheduled</th>" .
-                    "<th>Running</th><th>Done</th><th>Crashed</th></tr>"
+                    "<html><head><title>Loaded Root Level Workflow Operations</title></head>" .
+                    "<body><table border=1><tr><th>Id</th><th>Name</th><th>Status</th></tr>"
                 );
 
                 $kernel->post(
@@ -262,40 +263,35 @@ MARK
                         q{
                             my @instance = Workflow::Operation::Instance->is_loaded(parent_instance_id => undef);
 
-                            my %counts;
+                            my %infos = ();
                             foreach my $i (@instance) {
-                                my $type = ref($i->operation->operation_type);
-                                if ($type eq 'Workflow::OperationType::Command') {
-                                    $type = $i->operation->operation_type->command_class_name;
+                                if (defined $i->peer_instance_id && $i->peer_instance_id ne $i->id) {
+                                    next;
                                 }
 
-                                $counts{$type}{$i->status} ||= 0;
-                                $counts{$type}{$i->status}++;
+                                $infos{$i->id} = [$i->name,$i->status];
                             }
-                            return %counts;
+                            return %infos;
                         },
                         1
                     ],
-                    "poe:got_counts"
+                    "poe:got_info"
                 );            
             },
-            got_counts => sub {
+            got_info => sub {
                 my ($kernel,$heap,$arg) = @_[KERNEL,HEAP,ARG0];
                 my $response = $heap->{response};
                 my ($ok,$result) = @$arg;
 
                 return $kernel->yield('exception',$result) unless $ok;
-                my %counts = (@$result);
+                my %infos = (@$result);
                 
-                while (my ($type,$h) = each(%counts)) {
-                    $response->add_content("<tr><td>$type</td>");
-
-                    for my $n (qw/new scheduled running done crashed/) {
-                        $response->add_content(
-                            "<td>" . (defined $h->{$n} ? $h->{$n} : '') . '</td>'
-                        );
-                    }
-                    $response->add_content("</tr>");
+                while (my ($id,$info) = each (%infos)) {
+                    my ($name, $status) = @{ $info };
+                    
+                    my $link = '/browse/Workflow::Operation::Instance/' . $id;
+                    
+                    $response->add_content("<tr><td>$id</td><td><a href=\"$link\">$name</a></td><td>$status</td></tr>");
                 }
 
                 $response->add_content(
