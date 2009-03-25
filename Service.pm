@@ -2,7 +2,7 @@ package Workflow::Service;
 
 use strict;
 use warnings;
-use Sys::Hostname;
+use Sys::Hostname ();
 
 use Workflow;
 class Workflow::Service {
@@ -24,7 +24,7 @@ sub create {
     my %args = (@_);
     
     my $self = $class->SUPER::create(
-        hostname => hostname(),
+        hostname => Sys::Hostname::hostname(),
         username => (getpwuid($<))[0],
         process_id => $$,
         port => $args{port} || $Workflow::Server::UR::port_number,
