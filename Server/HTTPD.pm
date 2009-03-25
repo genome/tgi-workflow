@@ -252,8 +252,8 @@ MARK
 
                 $response->push_header('Content-type', 'text/html');
                 $response->content(
-                    "<html><head><title>Loaded Root Level Workflow Operations</title></head>" .
-                    "<body><table border=1><tr><th>Id</th><th>Name</th><th>Status</th></tr>"
+                    "<html><head><title>Summary</title></head>" .
+                    "<body><h1>Root-level workflow instances:</h1><table border=1><tr><th>Id</th><th>Name</th><th>Status</th></tr>"
                 );
 
                 $kernel->post(
@@ -294,10 +294,97 @@ MARK
                     $response->add_content("<tr><td>$id</td><td><a href=\"$link\">$name</a></td><td>$status</td></tr>");
                 }
 
+                $response->add_content("</table><h1>Leaf workflow objects running:</h1><table border=1><tr><th>Id</th><th>Name</th><th>Status</th></tr>");
+
+#                $kernel->yield('got_leaves',[]);
+#                return;
+                
+                $kernel->post(
+                    'IKC','call',
+                    "poe://UR/workflow/eval",
+                    [
+                        q{
+                            my @instance = Workflow::Operation::Instance->is_loaded(is_running => 1);
+                            
+                            my %infos = ();
+                            foreach my $i (@instance) {
+                                if ($i->can('child_instances')) {
+                                    next;
+                                }
+                                
+                                $infos{$i->id} = [$i->name,$i->status];
+                            }
+                            
+                            return %infos;
+                        },
+                        1
+                    ],
+                    "poe:got_leaves"
+                );
+            },
+            got_leaves => sub {
+                my ($kernel,$heap,$arg) = @_[KERNEL,HEAP,ARG0];
+                my $response = $heap->{response};
+                my ($ok,$result) = @$arg;
+
+                return $kernel->yield('exception',$result) unless $ok;
+                my %infos = (@$result);
+                
+                while (my ($id,$info) = each (%infos)) {
+                    my ($name, $status) = @{ $info };
+                    
+                    my $link = '/browse/Workflow::Operation::Instance/' . $id;
+                    
+                    $response->add_content("<tr><td>$id</td><td><a href=\"$link\">$name</a></td><td>$status</td></tr>");
+                }
+
+                $response->add_content("</table><h1>Errors encountered:</h1><table border=1><tr><th>Instance Id</th><th>Path Name</th><th>Error</th></tr>");
+
+                $kernel->post(
+                    'IKC','call',
+                    "poe://UR/workflow/eval",
+                    [
+                        q{
+                            my @errors = Workflow::Operation::InstanceExecution::Error->is_loaded();
+                            
+                            my %infos = ();
+                            foreach my $e (@errors) {
+                                $infos{$e->id} = [
+                                    $e->instance_id,
+                                    $e->path_name,
+                                    $e->name,
+                                    $e->error
+                                ];
+                            }
+                            
+                            return %infos;
+                        },
+                        1
+                    ],
+                    "poe:got_error_list"
+                );
+
+            },
+            got_error_list => sub {
+                my ($kernel,$heap,$arg) = @_[KERNEL,HEAP,ARG0];
+                my $response = $heap->{response};
+                my ($ok,$result) = @$arg;
+
+                return $kernel->yield('exception',$result) unless $ok;
+                my %infos = (@$result);
+                
+                while (my ($id,$info) = each (%infos)) {
+                    my ($instance_id, $path_name, $name, $error) = @{ $info };
+                    
+                    my $link = '/browse/Workflow::Operation::InstanceExecution::Error/' . $id;
+                    
+                    $response->add_content("<tr><td>$instance_id</td><td><a href=\"$link\">$path_name</a></td><td><pre>$error</pre></td></tr>");
+                }
+
                 $response->add_content(
                     "</table></body></html>"
                 );
-
+                
                 $kernel->yield('finish_response');
             },
             finish_response => sub {

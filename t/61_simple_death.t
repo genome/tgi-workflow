@@ -32,7 +32,7 @@ $op->parallel_by('seconds');
 
 $output = run_workflow_lsf(
     $op,
-    seconds => [30,35,40]
+    seconds => [15,30,60]
 );
 
 ok(!defined $output,'output not defined');

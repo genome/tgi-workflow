@@ -47,18 +47,25 @@ sub execute {
     my $hostname = Sys::Hostname::hostname;
     my $port = 8088;
 
-    print "Connected to UR server: " . $self->hostname . ':' . $self->port . "\n\nhttp://$hostname:$port/\n\n";
+    my $connected = 0;
+    print "Connecting to UR server: " . $self->hostname . ':' . $self->port . "\n\nhttp://$hostname:$port/\n\n";
 
     my $client = POE::Component::IKC::Client->spawn(
         ip => $self->hostname,
         port => $self->port,
         name => 'HTTPD',
         on_connect => sub {
+            $connected =1;
             Workflow::Server::HTTPD->setup;
         }
     );
 
     POE::Kernel->run;
+
+    unless ($connected) {
+        print "Can't connect!\n";
+        return 0;
+    };
 }
 
 1;
