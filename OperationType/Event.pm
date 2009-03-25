@@ -39,8 +39,12 @@ sub create_from_xml_simple_structure {
     my ($class, $struct) = @_;
 
     my $id = delete $struct->{eventId};
+    my $self = $class->get($id);
+    
+    $self->lsf_resource(delete $struct->{lsfResource}) if (exists $struct->{lsfResource});
+    $self->lsf_queue(delete $struct->{lsfQueue}) if (exists $struct->{lsfQueue});
 
-    return $class->get($id);
+    return $self;
 }
 
 sub as_xml_simple_structure {
@@ -48,6 +52,9 @@ sub as_xml_simple_structure {
 
     my $struct = $self->SUPER::as_xml_simple_structure;
     $struct->{eventId} = $self->event_id;
+    
+    $struct->{lsfResource} = $self->lsf_resource if ($self->lsf_resource);
+    $struct->{lsfQueue} = $self->lsf_queue if($self->lsf_queue);
 
     # command classes have theirs defined in source code
     delete $struct->{inputproperty};
