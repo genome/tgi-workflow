@@ -194,6 +194,13 @@ sub setup {
                 $rusage ||= 'rusage[tmp=100]';
                 $name ||= 'worker';
 
+                my $lsf_opts;
+                if ($rusage =~ /^-/) {
+                    $lsf_opts = $rusage;
+                } else {
+                    $lsf_opts = '-R "' . $rusage . '"';
+                }
+
                 my $hostname = hostname;
                 my $port = $port_number;
 
@@ -205,8 +212,8 @@ sub setup {
                     $libstring .= 'use lib "' . $lib . '"; ';
                 }
 
-                my $cmd = 'bsub -q ' . $queue . ' -m blades -R "' . $rusage .
-                    '" -J "' . $name . '" perl -e \'' . $libstring . 'use ' . $namespace . '; use ' . $command_class . '; use Workflow::Server::Worker; Workflow::Server::Worker->start("' . $hostname . '",' . $port . ')\'';
+                my $cmd = 'bsub -q ' . $queue . ' -m blades ' . $lsf_opts .
+                    ' -J "' . $name . '" perl -e \'' . $libstring . 'use ' . $namespace . '; use ' . $command_class . '; use Workflow::Server::Worker; Workflow::Server::Worker->start("' . $hostname . '",' . $port . ')\'';
 
                 evTRACE and print "dispatch lsf_cmd $cmd\n";
 
