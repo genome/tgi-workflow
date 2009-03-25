@@ -12,13 +12,15 @@ package Workflow::Command::Httpd;
 class Workflow::Command::Httpd {
     is => ['Workflow::Command'],
     has => [
-        hostname => {
+        host => {
             is => 'String',
-            doc => 'Hostname running the UR server',
+            doc => 'Host running the UR server',
         },
         port => {
             is => 'Integer',
-            doc => 'TCP port number of the UR server',
+            is_optional => 1,
+            default_value => 13425,
+            doc => 'TCP port number of the UR server.  Default is 13425',
         }
     ]
 };
@@ -48,10 +50,10 @@ sub execute {
     my $port = 8088;
 
     my $connected = 0;
-    print "Connecting to UR server: " . $self->hostname . ':' . $self->port . "\n\nhttp://$hostname:$port/\n\n";
+    print "Connecting to UR server: " . $self->host . ':' . $self->port . "\n\nhttp://$hostname:$port/\n\n";
 
     my $client = POE::Component::IKC::Client->spawn(
-        ip => $self->hostname,
+        ip => $self->host,
         port => $self->port,
         name => 'HTTPD',
         on_connect => sub {
