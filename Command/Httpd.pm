@@ -26,7 +26,7 @@ class Workflow::Command::Httpd {
 sub sub_command_sort_position { 10 }
 
 sub help_brief {
-    "Show";
+    "Web based object browser for workflow servers";
 }
 
 sub help_synopsis {

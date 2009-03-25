@@ -41,7 +41,7 @@ class Workflow::Command::List {
 sub sub_command_sort_position { 10 }
 
 sub help_brief {
-    "List";
+    "List root level workflow instances";
 }
 
 sub help_synopsis {

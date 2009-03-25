@@ -18,7 +18,7 @@ class Workflow::Command::ListServers {
 sub sub_command_sort_position { 10 }
 
 sub help_brief {
-    "List";
+    "List Servers that are running anywhere in the Genome Center";
 }
 
 sub help_synopsis {
