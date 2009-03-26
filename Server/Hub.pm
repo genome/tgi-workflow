@@ -10,7 +10,13 @@ our $port_number = 13424;
 use Workflow ();
 use Sys::Hostname;
 
-sub evTRACE () { 0 };
+BEGIN {
+    if (defined $ENV{WF_TRACE_HUB}) {
+        eval 'sub evTRACE () { 1 }';
+    } else {
+        eval 'sub evTRACE () { 0 }';
+    }
+};
 
 sub setup {
     my $class = shift;
@@ -179,6 +185,8 @@ sub setup {
                         
                         my $lsf_job_id = $kernel->call($_[SESSION],'lsf_bsub',$type->lsf_queue,$type->lsf_resource,$type->command_class_name,$instance->name);
                         $heap->{dispatched}->{$lsf_job_id} = $payload;
+
+                        $kernel->post('IKC','post','poe://UR/workflow/schedule_instance',[$instance->id,$lsf_job_id]);
 
                         evTRACE and print "dispatch start_jobs $lsf_job_id\n";
                     } else {

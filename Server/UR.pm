@@ -11,7 +11,13 @@ our $port_number = 13425;
 
 use Workflow ();
 
-sub evTRACE () { 0 };
+BEGIN {
+    if (defined $ENV{WF_TRACE_UR}) {
+        eval "sub evTRACE () { 1 }";
+    } else {
+        eval "sub evTRACE () { 0 }";
+    }
+};
 
 sub setup {
     my $class = shift;
@@ -56,7 +62,7 @@ evTRACE and print "workflow _start\n";
 
                 $kernel->alias_set("workflow");
                 $kernel->post('IKC','publish','workflow',
-                    [qw(simple_start simple_resume load execute resume begin_instance end_instance quit eval)]
+                    [qw(simple_start simple_resume load execute resume begin_instance end_instance schedule_instance quit eval)]
                 );
                 
                 $heap->{workflow_plans} = {};
@@ -274,7 +280,16 @@ evTRACE and print "workflow end_instance\n";
 
                 $instance->completion;
             },
-            eval => sub {  ## this is somewhat dangerous to let people do
+            'schedule_instance' => sub {
+                my ($kernel, $heap, $arg) = @_[KERNEL,HEAP,ARG0];
+                my ($id,$dispatch_id) = @$arg;
+evTRACE and print "workflow schedule_instance\n";
+
+                my $instance = $store_db ? Workflow::Store::Db::Operation::Instance->get($id) : Workflow::Operation::Instance->get($id);
+
+                $instance->current->dispatch_identifier($dispatch_id);
+            },
+            'eval' => sub {  ## this is somewhat dangerous to let people do
                 my ($kernel, $heap, $arg) = @_[KERNEL,HEAP,ARG0];
                 my ($string,$array_context) = @$arg;
 evTRACE and print "workflow eval\n";
