@@ -82,11 +82,11 @@ $DB::single = $DB::stopper;
     }
     unless ($event) {
         $self->error_message('No event found with id '.$self->event_id);
-        return;
+        die 'no event found';
     }
-    if (($event->event_status and $event->event_status !~ /Scheduled|Waiting/) and ! $self->reschedule) {
-        $self->error_message("Refusing to re-run event with status ".$event->event_status);
-        return;
+    if ($event->event_status and $event->event_status =~ /Succeeded|Abandoned/) {
+        $self->error_message("Shortcutting event with status ".$event->event_status);
+        return { result => 1 };
     }
 
     unless ($event->verify_prior_event) {
@@ -147,6 +147,7 @@ $DB::single = $DB::stopper;
 
     UR::Context->commit();
 
+    return unless $command_obj->event_status('Succeeded');
     return { result => $rv };
 }
 
