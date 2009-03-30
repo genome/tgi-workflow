@@ -203,6 +203,8 @@ sub setup {
                 $name ||= 'worker';
 
                 my $lsf_opts;
+
+                $rusage =~ s/^\s+//;
                 if ($rusage =~ /^-/) {
                     $lsf_opts = $rusage;
                 } else {
