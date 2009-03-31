@@ -201,6 +201,13 @@ evTRACE and print "workflow execute\n";
                 my ($id, $output_dest, $error_dest) = @$arg;
 evTRACE and print "workflow resume\n";
                 
+                if ($store_db) {
+                    my @tree = Workflow::Store::Db::Operation::Instance->get(
+                        id => $id,
+                        -recurse => ['parent_instance_id','instance_id']
+                    );
+                }
+                
                 my $instance = $store_db ? Workflow::Store::Db::Operation::Instance->get($id) : Workflow::Operation::Instance->get($id);
 
                 my $executor = Workflow::Executor::Server->get;

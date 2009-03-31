@@ -127,7 +127,6 @@ sub _resolve_subclass_name {
             last;
         }
     }
-$DB::single=1;    
     if (ref($_[0]) && $_[0]->isa(__PACKAGE__)) {
     
         $_[0]->load_operation if ($_[0]->can('load_operation'));
