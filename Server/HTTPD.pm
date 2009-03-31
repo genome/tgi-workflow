@@ -55,6 +55,12 @@ sub setup {
                 $kernel->yield('status_summary');
             } elsif ($function eq 'browse') {
                 $kernel->yield('object_browser');
+            } elsif ($function eq 'lsf') {
+                $kernel->yield('bjobs');
+            } elsif ($function eq 'poke') {
+                $kernel->yield('poke');
+            } elsif ($function eq 'kill') {
+                $kernel->yield('kill');
             } elsif ($function eq '') {
                 $kernel->yield('status_summary');
             } else {
@@ -82,6 +88,86 @@ sub setup {
                 
                 $response->content("Cannot find what $thing you're looking for.\n");
                 $kernel->yield('finish_response');                
+            },
+            'kill' => sub {
+                my ($kernel,$heap) = @_[KERNEL,HEAP];
+                my $response = $heap->{response};
+                my $uri = $heap->{request}->uri;
+
+                my $id = ($uri->path_segments)[2];
+                return $kernel->yield('not_found','lsf_job_id') unless $id;
+
+                $kernel->post(
+                    'IKC','call',
+                    'poe://UR/workflow/eval',
+                    [q{
+                        system('bkill } . $id . q{');
+                        return 1;
+                    },0],
+                    'poe:got_poked'
+                );
+
+            },
+            got_kill => sub {
+                my ($kernel,$heap,$arg) = @_[KERNEL,HEAP,ARG0];
+                my $response = $heap->{response};
+                my ($ok,$result) = @$arg;
+
+                return $kernel->yield('exception',$result) unless $ok;
+                return $kernel->yield('not_found','result') unless $result;
+
+                $response->code('302');
+                $response->push_header('Location','http://' . $heap->{request}->uri->host  . ':8088/');
+
+                $kernel->yield('finish_response');
+
+            },
+            poke => sub {
+                my ($kernel,$heap) = @_[KERNEL,HEAP];
+                my $response = $heap->{response};
+                my $uri = $heap->{request}->uri;
+
+                my $id = ($uri->path_segments)[2];
+                return $kernel->yield('not_found','instance_id') unless $id;
+
+                $kernel->post(  
+                    'IKC','call',
+                    'poe://UR/workflow/eval',
+                    [q{
+                        my $i = Workflow::Operation::Instance->is_loaded(} . $id . q{);
+                        $i->is_running(1);
+                        $i->resume;
+                        return $i;
+                    },0],
+                    'poe:got_poked'
+                );
+            },
+            got_poked => sub {
+                my ($kernel,$heap,$arg) = @_[KERNEL,HEAP,ARG0];
+                my $response = $heap->{response};
+                my ($ok,$result) = @$arg;
+
+                return $kernel->yield('exception',$result) unless $ok;
+                return $kernel->yield('not_found','object') unless $result;
+
+                $response->code('302'); 
+                $response->push_header('Location','http://' . $heap->{request}->uri->host  . ':8088/');
+
+                $kernel->yield('finish_response');
+            },
+            bjobs => sub {
+                my ($kernel,$heap) = @_[KERNEL,HEAP];
+                my $response = $heap->{response};
+                my $uri = $heap->{request}->uri;
+                
+                my $job_id = ($uri->path_segments)[2];
+                return $kernel->yield('not_found','job_id') unless $job_id;
+                
+                $response->push_header('Content-type','text/plain');
+                my $out = `bjobs -l $job_id 2>&1`;
+                $response->content($out);
+                
+                $kernel->yield('finish_response');
             },
             object_browser => sub {
                 my ($kernel,$heap) = @_[KERNEL,HEAP];
@@ -294,25 +380,34 @@ MARK
                     $response->add_content("<tr><td>$id</td><td><a href=\"$link\">$name</a></td><td>$status</td></tr>");
                 }
 
-                $response->add_content("</table><h1>Leaf workflow objects running:</h1><table border=1><tr><th>Id</th><th>Name</th><th>Status</th></tr>");
-
-#                $kernel->yield('got_leaves',[]);
-#                return;
+                $response->add_content("</table><h1>Instances of interest:</h1><table border=1><tr><th>Id</th><th>Name</th><th>Status</th><th>Result</th><th>LSF Job Id</th><th></th><th></th></tr>");
                 
                 $kernel->post(
                     'IKC','call',
                     "poe://UR/workflow/eval",
                     [
                         q{
-                            my @instance = Workflow::Operation::Instance->is_loaded(is_running => 1);
+                            my @instance = Workflow::Operation::Instance->get();
                             
                             my %infos = ();
                             foreach my $i (@instance) {
                                 if ($i->can('child_instances')) {
                                     next;
                                 }
+                                my $result;
+                                if (exists($i->output->{result})) {
+                                    if (defined $i->output->{result}) {
+                                        $result = $i->output->{result};
+                                    } else {
+                                        $result = '(undef)';
+                                    }
+                                } else {
+                                    $result = '';
+                                }
+
+                                next unless ($i->is_running() || $result eq '(undef)');
                                 
-                                $infos{$i->id} = [$i->name,$i->status];
+                                $infos{$i->id} = [$i->name,$i->status,$result,$i->current->dispatch_identifier];
                             }
                             
                             return %infos;
@@ -331,11 +426,11 @@ MARK
                 my %infos = (@$result);
                 
                 while (my ($id,$info) = each (%infos)) {
-                    my ($name, $status) = @{ $info };
+                    my ($name, $status, $opresult, $dispatch_id) = @{ $info };
                     
                     my $link = '/browse/Workflow::Operation::Instance/' . $id;
                     
-                    $response->add_content("<tr><td>$id</td><td><a href=\"$link\">$name</a></td><td>$status</td></tr>");
+                    $response->add_content("<tr><td>$id</td><td><a href=\"$link\">$name</a></td><td>$status</td><td>$opresult</td><td><a href=\"/lsf/$dispatch_id\">$dispatch_id</a></td><td><a href=\"/kill/$dispatch_id\">Kill</a></td><td><a href=\"/poke/$id\">Resume</a></td></tr>");
                 }
 
                 $response->add_content("</table><h1>Errors encountered:</h1><table border=1><tr><th>Instance Id</th><th>Path Name</th><th>Error</th></tr>");
