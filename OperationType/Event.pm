@@ -108,9 +108,9 @@ $DB::single = $DB::stopper;
     my $command_obj = $event;
     $command_obj->revert;
 
-    unless ($command_obj->lsf_job_id) {
+#    unless ($command_obj->lsf_job_id) {
         $command_obj->lsf_job_id($ENV{'LSB_JOBID'});
-    }
+#    }
     $command_obj->date_scheduled(UR::Time->now());
     $command_obj->date_completed(undef);
     $command_obj->event_status('Running');
