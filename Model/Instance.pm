@@ -77,10 +77,12 @@ sub incomplete_operation_instances {
 
 sub reset_current {
     my $self = shift;
+
+    my $oldstatus = $self->status;
     
     $self->SUPER::reset_current(@_);
     
-    if ($self->status eq 'crashed' or $self->status eq 'running') {
+    if ($oldstatus eq 'crashed' or $oldstatus eq 'running') {
         foreach my $child ($self->child_instances) {
             $child->reset_current;
         }
