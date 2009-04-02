@@ -3,6 +3,7 @@ package Workflow::Service;
 use strict;
 use warnings;
 use Sys::Hostname ();
+use IO::File;
 
 use Workflow;
 class Workflow::Service {
@@ -14,6 +15,21 @@ class Workflow::Service {
         process_id => { is => 'NUMBER', len => 10 },
         port       => { is => 'NUMBER', len => 7 },
         start_time => { is => 'TIMESTAMP', len => 20 },
+    ],
+    has_optional => [
+        cmd => { 
+            is => 'String',
+            calculate => q{
+                my $psline;
+                my $f = IO::File->new('ssh ' . $self->hostname . ' ps -o cmd ' . $self->process_id . ' 2>/dev/null |');
+                $f->getline;
+                $psline = $f->getline;
+                chomp ($psline) if defined $psline;
+                $f->close;
+                
+                return $psline;
+            }
+        }
     ],
     schema_name => 'InstanceSchema',
     data_source => 'Workflow::DataSource::InstanceSchema',
