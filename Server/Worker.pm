@@ -51,7 +51,7 @@ sub __build {
                 if ($@) {
                     print STDERR "Command module died.\n";
                     print STDERR $@;
-                    $error_string = $@;
+                    $error_string = "$@";
                     $status = 'crashed';
                 }
 
