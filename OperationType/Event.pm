@@ -128,6 +128,9 @@ $DB::single = $DB::stopper;
 #        }
 #    }
 
+
+    my $rethrow;
+
     my $rv;
     eval { $rv = $command_obj->execute(); };
 
@@ -135,6 +138,7 @@ $DB::single = $DB::stopper;
     if ($@) {
         $self->error_message($@);
         $command_obj->event_status('Crashed');
+        $rethrow = $@;
     } elsif($rv <= 1) {
         $command_obj->event_status($rv ? 'Succeeded' : 'Failed');
     }elsif($rv == 2) {
@@ -146,6 +150,8 @@ $DB::single = $DB::stopper;
     }
 
     UR::Context->commit();
+
+    die $rethrow if defined $rethrow;
 
     return unless $command_obj->event_status('Succeeded');
     return { result => $rv };
