@@ -53,7 +53,7 @@ EOS
 sub execute {
     my $self = shift;
 
-    eval "use " . $self->namespace;
+    eval "use " . $self->namespace if (defined $self->namespace);
     # i dont care what the result is, so we're not checking $@ 
     
     my @i = Workflow::Store::Db::Operation::Instance->get(
