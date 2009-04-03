@@ -68,9 +68,10 @@ sub execute {
     my $self = shift;
     my %properties = @_;
 
+    require Genome;
+
     umask 0022;
 
-$DB::single = $DB::stopper;
     # Give the add-reads top level step a chance to sync database so these events
     # show up
     my $try_count = 10;
@@ -99,18 +100,11 @@ $DB::single = $DB::stopper;
         return;
     }
 
-#    unless ($event->model_id == $self->model_id) {
-#        $self->error_message("The model id for the loaded event ".$event->model_id.
-#                             " does not match the command line ".$self->model_id);
-#        return;
-#    }
-    
+   
     my $command_obj = $event;
     $command_obj->revert;
 
-#    unless ($command_obj->lsf_job_id) {
-        $command_obj->lsf_job_id($ENV{'LSB_JOBID'});
-#    }
+    $command_obj->lsf_job_id($ENV{'LSB_JOBID'});
     $command_obj->date_scheduled(UR::Time->now());
     $command_obj->date_completed(undef);
     $command_obj->event_status('Running');
@@ -118,15 +112,16 @@ $DB::single = $DB::stopper;
 
     UR::Context->commit();
 
-#    if ($Workflow::DEBUG_GLOBAL) {
-#        if (UNIVERSAL::can('Devel::ptkdb','brkonsub')) {
-#            Devel::ptkdb::brkonsub($command_name . '::execute');
-#        } elsif (UNIVERSAL::can('DB','cmd_b_sub')) {
-#            DB::cmd_b_sub($command_name . '::execute');
-#        } else {
-#            $DB::single=2;
-#        }
-#    }
+    if ($Workflow::DEBUG_GLOBAL) {
+        my $command_name = ref($command_obj);
+        if (UNIVERSAL::can('Devel::ptkdb','brkonsub')) {
+            Devel::ptkdb::brkonsub($command_name . '::execute');
+        } elsif (UNIVERSAL::can('DB','cmd_b_sub')) {
+            DB::cmd_b_sub($command_name . '::execute');
+        } else {
+            $DB::single=2;
+        }
+    }
 
 
     my $rethrow;
