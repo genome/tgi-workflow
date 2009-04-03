@@ -19,6 +19,11 @@ class Workflow::Command::Resume {
             is_optional => 1,
             doc => 'namespace to use, ex: Genome',
         },
+        reset_status_on_id => {
+            is => 'Number',
+            doc => 'Resets the status to crashed for this id',
+            is_optional => 1
+        }
 #        debug => {
 #            is => 'Boolean',
 #            is_optional => 1,
@@ -59,6 +64,11 @@ sub execute {
     my $i = Workflow::Operation::Instance->get($self->instance_id);
 
     $i->operation->set_all_executor(Workflow::Executor::SerialDeferred->get);
+
+    if ($self->reset_status_on_id) {
+        my $reset_i = Workflow::Operation::Instance->get($self->reset_status_on_id);
+        $reset_i->status('crashed');
+    }
 
     $i->is_running(1);
     $i->resume;
