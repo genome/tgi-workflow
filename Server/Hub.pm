@@ -48,7 +48,7 @@ sub setup {
     
     our $dispatch = POE::Session->create(
         heap => {
-            periodic_check_time => 1800,
+            periodic_check_time => 300,
             job_limit           => 500,
             job_count           => 0,
             dispatched          => {}, # keyed on lsf job id
@@ -72,7 +72,7 @@ sub setup {
                 
                 $kernel->yield('unlock_me');
                 
-#                $kernel->delay('periodic_check', $heap->{periodic_check_time});
+                $kernel->delay('periodic_check', $heap->{periodic_check_time});
             },
             sig_USR1 => sub {
                 my ($kernel) = @_[KERNEL];
