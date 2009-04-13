@@ -495,8 +495,11 @@ sub completion {
                 $retry_count{$self->id}++;
                 $self->resume;
             } else {
-                $parent->current->status('crashed');
-                $parent->completion;
+                my @running_siblings = grep { $_->is_running } ($parent->child_instances);
+                unless (@running_siblings) {
+                    # when there are siblings of mine running, i will assume they will call completion on my parent
+                    $parent->completion;
+                }
             }
         } else {
             my @incomplete_operations = $parent->incomplete_operation_instances;
@@ -510,6 +513,13 @@ sub completion {
                 foreach my $this_data (@runq) {
                     $this_data->execute;
                 }        
+
+                my @running = grep { $_->is_running } ($parent->child_instances);
+                if (scalar @runq == 0 && scalar @running == 0) {
+                    # nothing running and nothing able to run next
+                    
+                    $parent->completion;
+                }
             } else {
                 $parent->completion;
             }

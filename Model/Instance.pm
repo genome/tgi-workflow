@@ -143,6 +143,10 @@ sub execute_single {
 sub completion {
     my $self = shift;
 
+    if ($self->incomplete_operation_instances) {
+        $self->current->status('crashed');
+    }
+
     my $oc = $self->output_connector;
     my %newoutputs = ();
     foreach my $output_name (keys %{ $oc->input }) {
