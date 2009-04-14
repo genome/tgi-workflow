@@ -7,8 +7,8 @@ our @EXPORT = qw/run_workflow run_workflow_lsf resume_lsf/;
 our @EXPORT_OK = qw//;
 
 our @ERROR = ();
-our $start_ur_server = 1;
-our $start_hub_server = 1;
+our $start_servers = 1;
+our $connect_port = 13425;
 our $store_db = 1;
 our $override_lsf_use = 0;
 
@@ -159,57 +159,61 @@ sub run_workflow_lsf {
 
     @ERROR = ();
 
-    my @libs = UR::Util::used_libs();
-    my $libstring = '';
-    foreach my $lib (@libs) {
-        $libstring .= 'use lib "' . $lib . '"; ';
-    }
-
-    Workflow::Server->lock('Simple');
-
-    my $ur_port = 13425;
-    while (!is_port_available($ur_port)) {
-        $ur_port+=2;
-    }
-
-    my $hub_port = 13424;
-    while (!is_port_available($hub_port)) {
-        $hub_port+=2;
-    }
-
-    my @hubcmd = ('perl','-e',$libstring . 'use Workflow::Server::Hub; $Workflow::Server::Hub::port_number=' . $hub_port . '; Workflow::Server::Hub->start;');
-    my @urcmd = ('perl','-e',$libstring . 'use Workflow::Server::UR; $Workflow::Server::Hub::port_number=' . $hub_port . '; $Workflow::Server::UR::port_number=' . $ur_port . '; $Workflow::Server::UR::store_db=' . $store_db . ';Workflow::Server::UR->start;');
-
-    Workflow::Server->lock('Hub');
-    Workflow::Server->lock('UR');
-
+    my $u;
     my $h;
-    if ($start_hub_server) {
+    
+    my $ur_port_used;
+    if ($start_servers) {
+        my @libs = UR::Util::used_libs();
+        my $libstring = '';
+        foreach my $lib (@libs) {
+            $libstring .= 'use lib "' . $lib . '"; ';
+        }
+
+        Workflow::Server->lock('Simple');
+
+        my $ur_port = 13425;
+        while (!is_port_available($ur_port)) {
+            $ur_port+=2;
+        }
+
+        my $hub_port = 13424;
+        while (!is_port_available($hub_port)) {
+            $hub_port+=2;
+        }
+
+        my @hubcmd = ('perl','-e',$libstring . 'use Workflow::Server::Hub; $Workflow::Server::Hub::port_number=' . $hub_port . '; Workflow::Server::Hub->start;');
+        my @urcmd = ('perl','-e',$libstring . 'use Workflow::Server::UR; $Workflow::Server::Hub::port_number=' . $hub_port . '; $Workflow::Server::UR::port_number=' . $ur_port . '; $Workflow::Server::UR::store_db=' . $store_db . ';Workflow::Server::UR->start;');
+
+        Workflow::Server->lock('Hub');
+        Workflow::Server->lock('UR');
+
         $h = IPC::Run::start(\@hubcmd);
         Workflow::Server->wait_for_lock('Hub');
-    }
-        
-    $start_ur_server = 1 if $start_hub_server == 1;
-    
-    my $u;
-    if ($start_ur_server) {
+
         $u = IPC::Run::start(\@urcmd);
         Workflow::Server->wait_for_lock('UR');
+
+        $ur_port_used = $ur_port;
+
+        Workflow::Server->unlock('Simple');
+    } else {
+        $ur_port_used = $connect_port;
     }
 
-    Workflow::Server->unlock('Simple');
-
     my $poe = create_ikc_client(
-        port    => $ur_port,
+        port    => $ur_port_used,
         timeout => 1209600 
     );
 
     my $response = $poe->post_respond('workflow/simple_start',[$xml,\%inputs]);
 
-    $poe->post('workflow/quit',1);
+    if ($start_servers) {
+        $poe->post('workflow/quit',1);
 
-    $u->finish if $start_ur_server && $fork_ur_server;
-    $h->finish if $start_hub_server;
+        $u->finish if $start_ur_server && $fork_ur_server;
+        $h->finish if $start_hub_server;
+    }
 
     $poe->disconnect;
 

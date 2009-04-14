@@ -497,6 +497,8 @@ sub completion {
             
             if (!$self->can('child_instances') && $retry_count{$self->id} < 2) {
                 $retry_count{$self->id}++;
+
+                $self->is_running(1);
                 $self->resume;
             } else {
                 my @running_siblings = grep { $_->is_running } ($parent->child_instances);
