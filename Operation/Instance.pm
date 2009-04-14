@@ -417,11 +417,10 @@ sub reset_current {
             operation_instance => $self,
             status => 'new',
             is_done => 0,
-            is_running => 0
+            is_running => 1
         );
 
         $self->current($ie);    
-        $self->debug_mode(1);
     }
 }
 
@@ -429,6 +428,7 @@ sub resume {
     my ($self) = @_;
     
     $self->reset_current;
+    $self->is_running(1);
     $self->execute;
 }
 
@@ -485,6 +485,8 @@ our %retry_count = ();
 sub completion {
     my $self = shift;
 
+#    warn $self->name . "\n";
+
     $self->is_done(1) unless $self->status eq 'crashed';
     $self->is_running(0);
     $self->sync;
@@ -498,7 +500,6 @@ sub completion {
             if (!$self->can('child_instances') && $retry_count{$self->id} < 2) {
                 $retry_count{$self->id}++;
 
-                $self->is_running(1);
                 $self->resume;
             } else {
                 my @running_siblings = grep { $_->is_running } ($parent->child_instances);
