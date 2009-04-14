@@ -163,7 +163,7 @@ sub completion {
     $self->output(\%newoutputs);
 
     $self->current->end_time(UR::Time->now);
-    $self->current->status('done') if ($self->current->status eq 'running');
+    $self->current->status('done') if ($oc->current->status eq 'done');
 
     $self->SUPER::completion;
 }

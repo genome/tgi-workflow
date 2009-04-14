@@ -439,6 +439,10 @@ sub execute {
         $self->create_peers;
         $self->sync;
         
+        foreach my $peer ($self->peers) {
+            $peer->is_running(1);
+        }
+        
         foreach my $peer ($self, $self->peers) {
             $peer->execute_single;
         }
@@ -664,6 +668,11 @@ sub create_peers {
         $peer->parent_instance($self->parent_instance) if ($self->parent_instance);
         $peer->input($self->input);
         $peer->output({});
+        
+        $peer->is_running($self->is_running);
+        $peer->current->status($self->status);
+        $peer->current->start_time(UR::Time->now);
+        
         $peer->fix_parallel_input_links;
         
         foreach my $dep (@deps) {
