@@ -45,7 +45,7 @@ sub create {
     my $class_meta = $command->get_class_object;
     die 'invalid command class' unless $class_meta;
 
-    my @property_meta = $class_meta->get_all_property_objects();
+    my @property_meta = $class_meta->all_property_metas();
 
     foreach my $type (qw/input output/) {
         my $my_method = $type . '_properties';
@@ -63,7 +63,7 @@ sub create {
     my @params = qw/lsf_resource lsf_queue/;
     foreach my $param_name (@params) {
         unless ($self->$param_name) {
-            my $prop = $class_meta->get_property_meta_by_name($param_name);
+            my $prop = $class_meta->property_meta_for_name($param_name);
 
             if ($prop && $prop->{is_param}) {
                 if ($prop->default_value) {
@@ -130,7 +130,7 @@ sub create_from_command {
 sub _validate_property {
     my ($self, $class, $direction, $name) = @_;
 
-    my $meta = $class->get_class_object->get_property_meta_by_name($name);
+    my $meta = $class->get_class_object->property_meta_for_name($name);
 
     if (($direction ne 'output' && $meta->property_name eq 'result') ||
         ($direction ne 'output' && $meta->is_calculated)) {

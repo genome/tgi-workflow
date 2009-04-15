@@ -199,7 +199,7 @@ sub setup {
                                 via => {},
                                 many => {}
                             };
-                            foreach my $prop ($class->get_all_property_objects) {
+                            foreach my $prop ($class->all_property_metas) {
                                 my $name = $prop->property_name;
                                 if ($prop->is_many) {
                                     my @stuff = $object->$name;

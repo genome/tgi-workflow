@@ -29,8 +29,8 @@ sub init {
 
     my $class_meta = $self->get_class_object;    
     my %default_values = ();
-    for my $co ( reverse( $class_meta, $class_meta->get_inherited_class_objects ) ) {
-        foreach my $prop ( $co->get_property_objects ) {
+    for my $co ( reverse( $class_meta, $class_meta->ancestry_class_metas ) ) {
+        foreach my $prop ( $co->direct_property_metas ) {
             $default_values{ $prop->property_name } = $prop->default_value if (defined $prop->default_value);
         }
     }
@@ -56,7 +56,7 @@ sub _resolve_id_for_subclass_name {
     my $subclass_name = shift;
     
     my $class_meta = $subclass_name->get_class_object;
-    my $id = $class_meta->get_property_meta_by_name('class_prefix')->default_value;
+    my $id = $class_meta->property_meta_for_name('class_prefix')->default_value;
 
     return $id;
 }

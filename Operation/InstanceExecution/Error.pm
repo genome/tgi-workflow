@@ -81,7 +81,7 @@ our @observers = (
             my $self = shift;
 
             my $class_meta = $self->get_class_object;
-            my @property_meta = $class_meta->get_all_property_objects();
+            my @property_meta = $class_meta->all_property_metas();
             
             foreach my $property (grep { defined $_->{copy_on_create} } @property_meta) {
                 my $property_name = $property->property_name;
