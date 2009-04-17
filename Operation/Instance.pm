@@ -417,7 +417,7 @@ sub reset_current {
             operation_instance => $self,
             status => 'new',
             is_done => 0,
-            is_running => 1
+            is_running => 0
         );
 
         $self->current($ie);    
@@ -427,7 +427,7 @@ sub reset_current {
 sub resume {
     my ($self) = @_;
     
-    $self->reset_current;
+#    $self->reset_current;
     $self->is_running(1);
     $self->execute;
 }
@@ -500,6 +500,7 @@ sub completion {
             if (!$self->can('child_instances') && $retry_count{$self->id} < 2) {
                 $retry_count{$self->id}++;
 
+                $self->reset_current;
                 $self->resume;
             } else {
                 my @running_siblings = grep { $_->is_running } ($parent->child_instances);

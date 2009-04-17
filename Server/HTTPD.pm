@@ -10,7 +10,44 @@ use URI::QueryParam;
 
 use Workflow ();
 
+our $server_and_port;
+our $server_channel;
+
 sub setup {
+
+    our $monitor = POE::Session->create(
+        inline_states => {
+            _start => sub {
+                my ($kernel) = @_[KERNEL];
+                POE::Component::IKC::Responder->spawn();
+
+#                $kernel->post('IKC','monitor','*'=>{register=>'reg',unregister=>'unreg',subscribe=>'sub',unsubscribe=>'unsub'});
+            },
+            reg => sub {
+                my ($name,$real) = @_[ARG1,ARG2];
+
+                print "connect ", ($real ? '' : 'alias '), "$name\n";
+            },
+            unreg => sub {
+                my ($name,$real) = @_[ARG1,ARG2];
+
+                $server_and_port = undef;
+                $server_channel = undef;
+
+                print "disconnect ", ($real ? '' : 'alias '), "$name\n";
+            },
+            'sub' => sub {
+                my ($name,$real) = @_[ARG1,ARG2];
+
+                print "joined ", ($real ? '' : 'alias '), "$name\n";
+            }, 
+            unsub => sub {
+                my ($name,$real) = @_[ARG1,ARG2];
+
+                print "left ", ($real ? '' : 'alias '), "$name\n";
+            }
+        }
+    );
 
     our $httpd = POE::Component::Server::TCP->new(
         Alias        => "httpd",
@@ -37,6 +74,7 @@ sub setup {
             
             my $query = $heap->{query} = $uri->query_form_hash;
 
+=pod
             print $request->as_string;
             print "scheme: " . $uri->scheme . "\n";
             print "host: " . $uri->host . "\n";
@@ -45,26 +83,40 @@ sub setup {
             print "query: " . $uri->query . "\n";
             print "query_form_hash:\n";
             print Data::Dumper->new([$uri->query_form_hash])->Dump . "\n";
+=cut
 
             my $response = HTTP::Response->new(200);
             $heap->{response} = $response;
 
-            my $function = ($uri->path_segments)[1];
+            my $advanced = $heap->{advanced} = ($uri->query eq 'advanced' ? $uri->query : undef);
 
-            if ($function eq 'summary') {
-                $kernel->yield('status_summary');
-            } elsif ($function eq 'browse') {
-                $kernel->yield('object_browser');
-            } elsif ($function eq 'lsf') {
-                $kernel->yield('bjobs');
-            } elsif ($function eq 'poke') {
-                $kernel->yield('poke');
-            } elsif ($function eq 'kill') {
-                $kernel->yield('kill');
-            } elsif ($function eq '') {
-                $kernel->yield('status_summary');
+            my @segments = $uri->path_segments;
+
+            my $function = $segments[1];
+            if ($function eq 'switch' || defined $server_and_port) {
+                if ($function eq 'servers') {
+                    $kernel->yield('servers');
+                } elsif ($function eq 'switch') {
+                    $kernel->yield('switch');
+                } elsif ($function eq 'summary') {
+                    $kernel->yield('status_summary');
+                } elsif ($function eq 'browse') {
+                    $kernel->yield('object_browser');
+                } elsif ($function eq 'abandon' && $advanced) {
+                    $kernel->yield('abandon');
+                } elsif ($function eq 'lsf') {
+                    $kernel->yield('bjobs');
+                } elsif ($function eq 'poke' && $advanced) {
+                    $kernel->yield('poke');
+                } elsif ($function eq 'kill' && $advanced) {
+                    $kernel->yield('kill');
+                } elsif ($function eq '') {
+                    $kernel->yield('servers');
+                } else {
+                    $kernel->yield('not_found','function');
+                }
             } else {
-                $kernel->yield('not_found','function');
+                $kernel->yield('servers');
             }
         },
         InlineStates => {
@@ -88,6 +140,91 @@ sub setup {
                 
                 $response->content("Cannot find what $thing you're looking for.\n");
                 $kernel->yield('finish_response');                
+            },
+            'servers' => sub {
+                my ($kernel,$heap) = @_[KERNEL,HEAP];
+                my $response = $heap->{response};
+
+                my $advanceduri = ($heap->{advanced} ? '?' . $heap->{advanced} : '');
+
+                $response->push_header('Content-type', 'text/html');
+                $response->content(
+                    "<html><head><title>Server list</title></head>" .
+                    "<body><h1>All servers:</h1><table border=1><tr><th>Hostname:Port</th><th>Username</th><th>Process ID</th><th>Start Time</th><th>Running</th></tr>"
+                );
+
+
+                $heap->{run_results} = {};
+
+                my @servers = Workflow::Service->load();
+                foreach my $s (sort { UR::Time->compare_dates($a->start_time,$b->start_time) }@servers) {
+                    my $hostname = $s->hostname;
+                    my $port = $s->port;
+
+                    my $hp = "$hostname:$port";
+
+                    if (defined $server_and_port && $hp eq $server_and_port) {
+                        $hp = '<b>' . $hp . '</b>';
+                    }
+
+                    $response->add_content("<tr><td><a href=\"/switch/$hostname:$port$advanceduri\">$hp</a></td><td>" . join("</td><td>", $s->username, $s->process_id, $s->start_time) . "</td></tr>");
+                    
+                    
+                    $heap->{run_result}->{"$hostname:$port"};
+                }
+                
+                Workflow::Service->unload();
+
+                $response->add_content("</table>");
+                $kernel->yield('finish_response');
+            },
+            
+            'switch' => sub {
+                my ($kernel,$heap,$session) = @_[KERNEL,HEAP,SESSION];
+                my $response = $heap->{response};
+                my $uri = $heap->{request}->uri;
+
+                my $server_port = ($uri->path_segments)[2];
+                my ($ur_host,$ur_port) = split(':', $server_port);
+
+                if ($server_port eq $server_and_port) {
+                    $kernel->yield('finish_switch');
+                    return;
+                }
+
+                if (defined $server_channel) {
+                    $kernel->call($server_channel => 'shutdown');
+                }
+
+                my $web_client_session_id = $session->ID;
+                POE::Component::IKC::Client->spawn(
+                    ip => $ur_host,
+                    port => $ur_port,
+                    name => 'HTTPD',
+                    on_connect => sub {
+                        $server_and_port = $server_port;
+                        $server_channel = $poe_kernel->get_active_session()->ID;
+
+                        $poe_kernel->post($web_client_session_id => 'finish_switch');
+                    },
+                    on_error => sub {
+                        my ($op, $errnum, $errstr) = @_;
+
+                        print "arggg $op $errnum $errstr\n";
+                        $poe_kernel->post($web_client_session_id => 'finish_switch');
+                    }
+                ); 
+            },
+            'finish_switch' => sub {
+                my ($kernel,$heap,$session) = @_[KERNEL,HEAP,SESSION];
+                my $response = $heap->{response};
+
+                my $advanceduri = ($heap->{advanced} ? '?' . $heap->{advanced} : '');
+
+                $response->code('302');
+                $response->push_header('Location','http://' . $heap->{request}->uri->host  . ':8088/summary' . $advanceduri);
+
+                $kernel->yield('finish_response');
             },
             'kill' => sub {
                 my ($kernel,$heap) = @_[KERNEL,HEAP];
@@ -116,8 +253,10 @@ sub setup {
                 return $kernel->yield('exception',$result) unless $ok;
                 return $kernel->yield('not_found','result') unless $result;
 
+                my $advanceduri = ($heap->{advanced} ? '?' . $heap->{advanced} : '');
+
                 $response->code('302');
-                $response->push_header('Location','http://' . $heap->{request}->uri->host  . ':8088/');
+                $response->push_header('Location','http://' . $heap->{request}->uri->host  . ':8088/summary' . $advanceduri);
 
                 $kernel->yield('finish_response');
 
@@ -150,8 +289,48 @@ sub setup {
                 return $kernel->yield('exception',$result) unless $ok;
                 return $kernel->yield('not_found','object') unless $result;
 
+                my $advanceduri = ($heap->{advanced} ? '?' . $heap->{advanced} : '');
+
                 $response->code('302'); 
-                $response->push_header('Location','http://' . $heap->{request}->uri->host  . ':8088/');
+                $response->push_header('Location','http://' . $heap->{request}->uri->host  . ':8088/summary' . $advanceduri);
+
+                $kernel->yield('finish_response');
+            },
+            abandon => sub {
+                my ($kernel,$heap) = @_[KERNEL,HEAP];
+                my $response = $heap->{response};
+                my $uri = $heap->{request}->uri;
+
+                my $id = ($uri->path_segments)[2];
+                return $kernel->yield('not_found','instance_id') unless $id;
+
+                unless ($id =~ /^\d+/) {
+                    $id = "'$id'";
+                }
+
+                $kernel->post(   
+                    'IKC','call',
+                    'poe://UR/workflow/eval',
+                    [q{
+                        my $i = Workflow::Operation::Instance->is_loaded(} . $id . q{);
+                        $i->is_running(0);
+                        $i->status('crashed');
+                        $i->completion;
+                        return $i;
+                    },0],
+                    'poe:got_abandon'
+                );
+            },
+            got_abandon => sub {
+                my ($kernel,$heap,$arg) = @_[KERNEL,HEAP,ARG0];
+                my $response = $heap->{response};
+                my ($ok,$result) = @$arg;
+
+                return $kernel->yield('exception',$result) unless $ok;
+                return $kernel->yield('not_found','object') unless $result;
+
+                $response->code('302');
+                $response->push_header('Location','http://' . $heap->{request}->uri->host  . ':8088/summary');
 
                 $kernel->yield('finish_response');
             },
@@ -292,11 +471,9 @@ MARK
                     foreach my $psecn (sort { $sortorder{$a} <=> $sortorder{$b} } keys %$odesc) {
                         my $psecd = $odesc->{$psecn};
                         $html .= "<tr class=sectionname><td colspan=3>$psecn</td></tr>";
-#                        while (my ($propn,$propv) = each(%$psecd)) {
                         foreach my $propn (sort keys %$psecd) {
                             my $propv = $psecd->{$propn};
                             if ($psecn eq 'via') {
-#                                while (my ($vian,$viav) = each(%$propv)) {
                                 foreach my $vian (sort keys %$propv) {
                                     my $viav = $propv->{$vian};
                                     my $value = Data::Dumper->new([$viav])->Useqq(1)->Dump;
@@ -335,11 +512,14 @@ MARK
             status_summary => sub {
                 my ($kernel,$heap) = @_[KERNEL,HEAP];
                 my $response = $heap->{response};
+                my $advanceduri = ($heap->{advanced} ? '?' . $heap->{advanced} : '');
 
                 $response->push_header('Content-type', 'text/html');
                 $response->content(
                     "<html><head><title>Summary</title></head>" .
-                    "<body><h1>Root-level workflow instances:</h1><table border=1><tr><th>Id</th><th>Name</th><th>Status</th></tr>"
+                    "<body><b>Current Server:</b> $server_and_port <a href=\"/servers$advanceduri\">Server List</a><br>" . 
+                    "<h1>Root-level workflow instances:</h1><table border=1><tr><th>Id</th><th>Name</th><th>Status</th><th></th></tr>" 
+                    
                 );
 
                 $kernel->post(
@@ -369,6 +549,8 @@ MARK
                 my $response = $heap->{response};
                 my ($ok,$result) = @$arg;
 
+                my $advanceduri = ($heap->{advanced} ? '?' . $heap->{advanced} : '');
+
                 return $kernel->yield('exception',$result) unless $ok;
                 my %infos = (@$result);
                 
@@ -377,7 +559,9 @@ MARK
                     
                     my $link = '/browse/Workflow::Operation::Instance/' . $id;
                     
-                    $response->add_content("<tr><td>$id</td><td><a href=\"$link\">$name</a></td><td>$status</td></tr>");
+                    $response->add_content("<tr><td>$id</td><td><a href=\"$link\">$name</a></td><td>$status</td>");
+                    $response->add_content("<td><a href=\"/abandon/$id$advanceduri\">Kill</a></tr>") if ($heap->{advanced});
+                    $response->add_content("</tr>");
                 }
 
                 $response->add_content("</table><h1>Instances of interest:</h1><table border=1><tr><th>Id</th><th>Name</th><th>Status</th><th>Result</th><th>LSF Job Id</th><th></th><th></th></tr>");
@@ -405,7 +589,7 @@ MARK
                                     $result = '';
                                 }
 
-                                next unless ($i->is_running() || $result eq '(undef)');
+                                next unless ($i->is_running() || $i->status eq 'running' || $result eq '(undef)');
                                 
                                 $infos{$i->id} = [$i->name,$i->status,$result,$i->current->dispatch_identifier];
                             }
@@ -422,6 +606,8 @@ MARK
                 my $response = $heap->{response};
                 my ($ok,$result) = @$arg;
 
+                my $advanceduri = ($heap->{advanced} ? '?' . $heap->{advanced} : '');
+
                 return $kernel->yield('exception',$result) unless $ok;
                 my %infos = (@$result);
                 
@@ -430,7 +616,9 @@ MARK
                     
                     my $link = '/browse/Workflow::Operation::Instance/' . $id;
                     
-                    $response->add_content("<tr><td>$id</td><td><a href=\"$link\">$name</a></td><td>$status</td><td>$opresult</td><td><a href=\"/lsf/$dispatch_id\">$dispatch_id</a></td><td><a href=\"/kill/$dispatch_id\">Kill</a></td><td><a href=\"/poke/$id\">Resume</a></td></tr>");
+                    $response->add_content("<tr><td>$id</td><td><a href=\"$link\">$name</a></td><td>$status</td><td>$opresult</td><td><a href=\"/lsf/$dispatch_id\">$dispatch_id</a></td>");
+                    $response->add_content("<td><a href=\"/kill/$dispatch_id$advanceduri\">Kill</a></td><td><a href=\"/poke/$id$advanceduri\">Resume</a></td>") if ($heap->{advanced});
+                    $response->add_content("</tr>");
                 }
 
                 $response->add_content("</table><h1>Errors encountered:</h1><table border=1><tr><th>Instance Id</th><th>Path Name</th><th>Error</th></tr>");

@@ -75,30 +75,15 @@ sub incomplete_operation_instances {
     } @all_data;
 }
 
-sub reset_current {
-    my $self = shift;
-
-    my $oldstatus = $self->status;
-    
-    $self->SUPER::reset_current(@_);
-    
-    if ($oldstatus eq 'crashed' or $oldstatus eq 'running') {
-        foreach my $child ($self->child_instances) {
-            $child->reset_current;
-        }
-    }
-}
-
 sub resume {
     my $self = shift;
     die 'tried to resume a finished operation: ' . $self->id if ($self->is_done);
 
     $self->input_connector->output($self->input);
-    foreach my $this ($self->child_instances) {
-        $this->is_running(0) if ($this->is_running);
-    }
 
-    $self->reset_current;
+    foreach my $child ($self->child_instances) {
+        $child->reset_current;
+    }
     
     $self->current->status('running');
     $self->is_running(1);        

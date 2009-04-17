@@ -15,6 +15,7 @@ class Workflow::Command::Httpd {
         host => {
             is => 'String',
             doc => 'Host running the UR server',
+            is_optional => 1
         },
         port => {
             is => 'Integer',
@@ -49,25 +50,11 @@ sub execute {
     my $hostname = Sys::Hostname::hostname;
     my $port = 8088;
 
-    my $connected = 0;
-    print "Connecting to UR server: " . $self->host . ':' . $self->port . "\n\nhttp://$hostname:$port/\n\n";
+    print "URL: http://$hostname:$port/\n";
 
-    my $client = POE::Component::IKC::Client->spawn(
-        ip => $self->host,
-        port => $self->port,
-        name => 'HTTPD',
-        on_connect => sub {
-            $connected =1;
-            Workflow::Server::HTTPD->setup;
-        }
-    );
+    Workflow::Server::HTTPD->setup;
 
     POE::Kernel->run;
-
-    unless ($connected) {
-        print "Can't connect!\n";
-        return 0;
-    };
 }
 
 1;

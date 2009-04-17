@@ -46,6 +46,70 @@ sub setup {
         }
     );
     
+    our $watchdog = POE::Session->create(
+        heap => {
+            watchlist => POE::Queue::Array->new()
+        },
+        inline_states => {
+            _start => sub {
+                my ($kernel, $heap) = @_[KERNEL, HEAP];
+                evTRACE and print "watchdog _start\n";
+
+                $kernel->alias_set("watchdog");
+                $kernel->call('IKC','publish','watchdog',[qw(create delete)]);
+            },
+            create => sub {
+                my ($kernel, $heap, $arg) = @_[KERNEL, HEAP, ARG0];
+                my ($dispatch_id,$duration) = @$arg;
+                
+                evTRACE and print "watchdog create $dispatch_id $duration\n";
+                
+                my $start_time = time;
+                $heap->{watchlist}->enqueue($start_time + $duration, $dispatch_id);
+                
+                $heap->{alarm_id} = $kernel->alarm(check => $heap->{watchlist}->get_next_priority);
+                return 1;
+            },
+            delete => sub {
+                my ($kernel, $heap, $arg) = @_[KERNEL, HEAP, ARG0];
+                my ($dispatch_id) = @$arg;
+
+                evTRACE and print "watchdog delete $dispatch_id\n";
+            
+                $heap->{watchlist}->remove_items(sub {
+                    shift == $dispatch_id
+                });
+                
+                if ($heap->{watchlist}->get_item_count) {
+                    $heap->{alarm_id} = $kernel->alarm(check => $heap->{watchlist}->get_next_priority);
+                } else {
+                    $kernel->alarm_remove_all();
+                }
+                return 1;
+            },
+            check => sub {
+                my ($kernel, $heap) = @_[KERNEL, HEAP];
+                evTRACE and print "watchdog check\n";
+                
+                while ($heap->{watchlist}->get_next_priority && $heap->{watchlist}->get_next_priority <= time) {
+                    my ($priority, $id, $dispatch_id) = $heap->{watchlist}->dequeue_next;
+                    
+                    $kernel->yield('kill_job',$dispatch_id);
+                }
+
+                if ($heap->{watchlist}->get_item_count) {
+                    $heap->{alarm_id} = $kernel->alarm(check => $heap->{watchlist}->get_next_priority);
+                }
+            },
+            kill_job => sub {
+                my ($kernel,$heap,$dispatch_id) = @_[KERNEL, HEAP, ARG0];
+                evTRACE and print "watchdog kill_job $dispatch_id\n";
+                
+                system('bkill ' . $dispatch_id);
+            }
+        }
+    );
+    
     our $dispatch = POE::Session->create(
         heap => {
             periodic_check_time => 300,

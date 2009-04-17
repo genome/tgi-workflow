@@ -70,7 +70,8 @@ sub execute {
         $reset_i->status('crashed');
     }
 
-    $i->is_running(1);
+    $i->reset_current();
+
     $i->resume;
 
     $i->operation->wait;

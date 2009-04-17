@@ -108,8 +108,6 @@ $model->add_link(
     right_property => 'sleep2_result'
 );
 
-$model->as_png('/tmp/test.png');
-
 $output = run_workflow_lsf(
     $model,
     die_seconds => 2,

@@ -13,7 +13,7 @@ if ($pid) {
     Workflow::Server::Hub->start;
 } elsif (defined $pid) {
     print "$$ child\n";
-    Workflow::Server::HTTPD->start;
+#    Workflow::Server::HTTPD->start;
     Workflow::Server::UR->start;
 } else {
     warn "no child?";

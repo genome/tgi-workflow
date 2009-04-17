@@ -16,9 +16,7 @@ UR::ModuleBase->message_callback(
     }
 );
 
-#$Workflow::Simple::start_hub_server = 0;
-#$Workflow::Simple::start_ur_server = 0;
-#$Workflow::Simple::fork_ur_server = 0;
+$Workflow::Simple::start_servers = 0;
 $Workflow::Simple::store_db = 1;
 
 my $output = run_workflow_lsf(

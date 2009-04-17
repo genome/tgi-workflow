@@ -338,7 +338,8 @@ sub _util_error_walker {
     my @errors = ();
     
     foreach my $p ($i,$i->peers) {
-        push @errors, $p->current->errors;
+        my @new = $p->current->errors;
+        push @errors, @new;
         
         if ($p->can('child_instances')) {
             foreach my $ci ($p->child_instances) {

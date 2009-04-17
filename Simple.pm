@@ -12,6 +12,10 @@ our $connect_port = 13425;
 our $store_db = 1;
 our $override_lsf_use = 0;
 
+if (defined $ENV{NO_LSF} && $ENV{NO_LSF}) {
+    $override_lsf_use = 1;
+}
+
 use Workflow ();
 use IPC::Run;
 use UR::Util;

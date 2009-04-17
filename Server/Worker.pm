@@ -9,8 +9,10 @@ use Workflow::Server::Hub;
 use Workflow ();
 
 sub start {
-    my ($class, $host, $port) = @_;
-
+    my $class = shift;
+    our $host = shift;
+    our $port = shift;
+    
     $host ||= 'localhost';
     $port ||= $Workflow::Server::Hub::port_number;
 

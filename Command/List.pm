@@ -50,12 +50,6 @@ sub help_synopsis {
 EOS
 }
 
-sub help_detail {
-    return <<"EOS"
-This command is used for diagnostic purposes.
-EOS
-}
-
 #sub _base_filter {
 #    'parent_instance_id=,peer_instance_id='
 #}
