@@ -8,7 +8,8 @@ use Workflow::Simple;
 package Workflow::Operation::Command;
 
 class Workflow::Operation::Command {
-    is => ['Workflow::Command'],
+    is => ['Command'],
+    subclass_description_preprocessor => '_add_properties',
     has => [
         operation => {
             is => 'Workflow::Operation',
@@ -20,30 +21,70 @@ class Workflow::Operation::Command {
     ]
 };
 
-sub input_property_names {
-    my $class = ref($_[0]) || $_[0];
+sub _add_properties {
+    my $class = shift;
+    my $desc = shift;
     
-    my $class_meta = $class->get_class_object;
+    unless (exists $desc->{'extra'}->{'workflow'}) {
+        die 'workflow not defined in class definition';
+    }
+    
+    my $operation_code = delete $desc->{'extra'}->{'workflow'};
+    my $operation = $operation_code->();
+
+    my $inputs = $operation->operation_type->input_properties;
+    my $outputs = $operation->operation_type->output_properties;
+    
+    my $has = {
+        (map { 
+            $_ => { is_input => 1 }
+        } @{ $inputs }),
+        (map {
+            $_ => { 
+                is_output => 1,
+                is_optional => 1
+            }
+        } grep { $_ ne 'result' } @{ $outputs }),
+        workflow_operation_id => {
+            is_param => 1,
+            is_constant => 1,
+            is_class_wide => 1,
+            value => $operation->id
+        }
+    };
+    
+    while (my ($property_name, $old_property) = each(%$has)) {
+        my %new = $class->get_class_object->_normalize_property_description($property_name, $old_property, $desc);
+        $desc->{has}->{$property_name} = \%new;
+    }
+    
+#    print Data::Dumper->new([$class,$desc])->Dump;
+    
+    return $desc;
+}
+
+sub input_property_names {
+    my $self = shift;
+    my $class_meta = $self->get_class_object;
     
     my @props = map { 
         $_->property_name
     } grep {
         defined $_->{'is_input'} && $_->{'is_input'}
-    } $class_meta->get_all_property_objects();
+    } $class_meta->get_all_property_metas();
     
     return @props;
 }
 
 sub output_property_names {
-    my $class = ref($_[0]) || $_[0];
-    
-    my $class_meta = $class->get_class_object;
+    my $self = shift;
+    my $class_meta = $self->get_class_object;
     
     my @props = map { 
         $_->property_name
     } grep {
         defined $_->{'is_output'} && $_->{'is_output'}
-    } $class_meta->get_all_property_objects();
+    } $class_meta->get_all_property_metas();
     
     return @props;
 }

@@ -126,43 +126,6 @@ sub operations_in_series {
     return ($self);
 }
 
-sub generate_command {
-    my ($self, $class_name) = @_;
-
-    die 'must provide a class name to create' unless $class_name;
-
-    my $inputs = $self->operation_type->input_properties;
-    my $outputs = $self->operation_type->output_properties;
-
-    my $has = [
-        (map { 
-            $_ => { is_input => 1 }
-        } @{ $inputs }),
-        (map {
-            $_ => { 
-                is_output => 1,
-                is_optional => 1
-            }
-        } grep { $_ ne 'result' } @{ $outputs }),
-        workflow_operation_id => {
-            is_param => 1,
-            type => 'Workflow::Operation',
-            is_constant => 1,
-            is_class_wide => 1,
-            value => $self->id
-        }
-    ];
-
-    my $class = UR::Object::Type->define(
-        class_name => $class_name,
-        extends => [ 'Workflow::Operation::Command' ],
-        english_name => $self->name,
-        has => $has
-    );
-
-    return $class;
-}
-
 sub execute {
     my $self = shift;
     my %params = (@_);
