@@ -42,22 +42,13 @@ $kernel->_dump_kr_extra_refs;
 sub lockname {
     my ($class,$service) = @_;
     
-    my $wf_root = '/gsc/var/tmp/workflow';
-    my $lock_root = $wf_root . '/lock';
+    my $lock_root = '/gsc/var/lock/workflow';
     
     my $hostname = `hostname -s`;
     chomp $hostname;
     
     my $lockname = $lock_root . '/' . $hostname . '-' . $service;
-
     my $gid = getgrnam('gsc');
-    
-    if (!-e $wf_root) {
-        mkdir $wf_root;
-        
-        chown -1, $gid, $wf_root;
-        chmod oct('2775'), $wf_root;
-    }
     
     if (!-e $lock_root) {
         mkdir $lock_root;
