@@ -5,8 +5,6 @@ use strict;
 #use POE;
 #use POE qw(Component::IKC::Server);
 
-our $lockdir = '/tmp';
-
 sub setup {
     my $class = shift;
     die "$class didn't implement setup method!"; 
@@ -41,12 +39,42 @@ $kernel->_dump_kr_extra_refs;
 =cut
 }
 
+sub lockname {
+    my ($class,$service) = @_;
+    
+    my $wf_root = '/gsc/var/tmp/workflow';
+    my $lock_root = $wf_root . '/lock';
+    
+    my $hostname = `hostname -s`;
+    chomp $hostname;
+    
+    my $lockname = $lock_root . '/' . $hostname . '-' . $service;
+
+    my $gid = getgrnam('gsc');
+    
+    if (!-e $wf_root) {
+        mkdir $wf_root;
+        
+        chown -1, $gid, $wf_root;
+        chmod oct('2775'), $wf_root;
+    }
+    
+    if (!-e $lock_root) {
+        mkdir $lock_root;
+        
+        chown -1, $gid, $lock_root;
+        chmod oct('2775'), $lock_root;
+    }
+    
+    return $lockname;
+}
+
 sub lock {
     my ($class,$service) = @_;
     
     $class->wait_for_lock($service);
 
-    my $lockname = $lockdir . '/.workflow-' . $service;
+    my $lockname = $class->lockname($service);
     
     my $f = IO::File->new('>' . $lockname);
     $f->print($$);
@@ -56,7 +84,7 @@ sub lock {
 sub unlock {
     my ($class,$service) = @_;
     
-    my $lockname = $lockdir . '/.workflow-' . $service;
+    my $lockname = $class->lockname($service);
 
     unlink($lockname);
 }
@@ -64,7 +92,7 @@ sub unlock {
 sub wait_for_lock {
     my ($class,$service) = @_;
     
-    my $lockname = $lockdir . '/.workflow-' . $service;
+    my $lockname = $class->lockname($service);
 
     my $waited = 0;
     while (-e $lockname) {
