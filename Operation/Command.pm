@@ -11,7 +11,7 @@ class Workflow::Operation::Command {
     is => ['Command'],
     subclass_description_preprocessor => '_add_properties',
     has => [
-        operation => {
+        _operation => {
             is => 'Workflow::Operation',
             id_by => 'workflow_operation_id'
         },
@@ -114,7 +114,7 @@ sub execute {
     } $self->input_property_names;
     
     my $result = Workflow::Simple::run_workflow_lsf(
-        $self->operation,
+        $self->_operation,
         %stuff
     );
 
@@ -122,6 +122,11 @@ sub execute {
         while (my ($k,$v) = each(%$result)) {
             $self->$k($v);
         }
+    } else {
+        foreach my $error (@Workflow::Simple::ERROR) {
+            $self->error_message($error->error);
+        }
+        die 'too many errors';
     }
     
     return $self->post_execute;

@@ -146,6 +146,19 @@ sub execute {
     my %properties = @_;
 
     my $command_name = $self->command_class_name;
+
+    my @errors = ();
+
+    my $error_cb = UR::ModuleBase->message_callback('error');
+    UR::ModuleBase->message_callback(
+        'error',
+        sub {
+            my ($error, $self) = @_;
+            
+            push @errors, $error->package_name . ': ' . $error->text;
+        }
+    );
+
     my $command = $command_name->create(%properties);
 
     if ($Workflow::DEBUG_GLOBAL) {
@@ -157,8 +170,14 @@ sub execute {
             $DB::single=2;
         }
     }
-    
+
+    if (!defined $command) {
+        die "Undefined value returned from $command_name->create\n" . join("\n", @errors) . "\n";
+    }
+
     my $retvalue = $command->execute;
+
+    UR::ModuleBase->message_callback('error',$error_cb);
 
     my %outputs = ();
     foreach my $output_property (@{ $self->output_properties }) {
