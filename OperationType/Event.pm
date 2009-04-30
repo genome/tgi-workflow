@@ -70,7 +70,7 @@ sub execute {
 
     require Genome;
 
-    umask 0022;
+    #umask 0022;
 
     # Give the add-reads top level step a chance to sync database so these events
     # show up
@@ -100,7 +100,6 @@ sub execute {
         return;
     }
 
-   
     my $command_obj = $event;
     $command_obj->revert;
 
@@ -111,6 +110,13 @@ sub execute {
     $command_obj->user_name($ENV{'USER'});
 
     UR::Context->commit();
+
+    $self->status_message('#################################################');
+    $self->status_message('Date Scheduled:  '. $command_obj->date_scheduled);
+    $self->status_message('LSF Job Id:  '. $command_obj->lsf_job_id);
+    $self->status_message('HOST:  '. $ENV{HOST});
+    $self->status_message('USER:  '. $command_obj->user_name);
+
 
     if ($Workflow::DEBUG_GLOBAL) {
         my $command_name = ref($command_obj);
