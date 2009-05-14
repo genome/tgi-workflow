@@ -9,6 +9,7 @@ class Workflow::OperationType {
     has => [
         stay_in_process => { 
             is => 'Boolean',
+            is_optional => 0,
             is_class_wide => 1,
             is_constant => 1,
             is_abstract => 1,
