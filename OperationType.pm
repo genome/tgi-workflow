@@ -17,7 +17,12 @@ class Workflow::OperationType {
         },
         input_properties => { 
             is => 'ARRAY', 
-            doc => 'list of input properties' 
+            doc => 'list of all input properties' 
+        },
+        optional_input_properties => {
+            is => 'ARRAY',
+            doc => 'list of optional input properties',
+            value => []
         },
         output_properties => { 
             is => 'ARRAY', 
@@ -42,6 +47,9 @@ sub create_from_xml_simple_structure {
         }
         unless ($self->output_properties) {
             $self->output_properties([@{$struct->{outputproperty}},'result']);
+        }
+        unless ($self->optional_input_properties) {
+            $self->optional_input_properties([]);
         }
     } else {
         $self = $my_class->create(

@@ -55,6 +55,17 @@ sub create {
             } grep { 
                 defined $_->{'is_' . $type} && $_->{'is_' . $type}
             } @property_meta;
+
+            if ($type eq 'input') {
+                my @opt_input = map {
+                    $_->property_name
+                } grep {
+                    $_->is_optional &&
+                    defined $_->{'is_input'} && $_->{'is_input'}
+                } @property_meta;
+
+                $self->optional_input_properties(\@opt_input);
+            }
         
             $self->$my_method(\@props);
         }

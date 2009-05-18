@@ -300,14 +300,15 @@ sub is_ready {
 
     return 0 if ($self->status eq 'crashed');
 
-    my @required_inputs = @{ $self->operation_type->input_properties };
+    my %optional = map { $_ => 1 } @{ $self->operation_type->optional_input_properties };
+    my @all_inputs = @{ $self->operation_type->input_properties };
     my %current_inputs = ();
     if ( defined $self->input ) {
         %current_inputs = %{ $self->input };
     }
 
     my @unfinished_inputs = ();
-    foreach my $input_name (@required_inputs) {
+    foreach my $input_name (@all_inputs) {
         if (exists $current_inputs{$input_name} && 
             defined $current_inputs{$input_name} ||
             ($self->operation_type->can('default_input') && 
@@ -335,7 +336,7 @@ sub is_ready {
                     last VALCHECK;
                 }
             }
-        } else {
+        } elsif (!exists $optional{$input_name}) {
             push @unfinished_inputs, $input_name;
         }
     }
