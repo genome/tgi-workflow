@@ -40,10 +40,18 @@ sub _add_properties {
             $_ => { is_input => 1 }
         } @{ $inputs }),
         (map {
-            $_ => { 
+            my $prop = $_;
+            my $prop_hash = {
                 is_output => 1,
-                is_optional => 1
+                is_optional => 1,
+            };
+            
+            if (grep { $prop eq $_ } @{ $inputs }) {
+                # bidirectional
+                $prop_hash->{is_input} = 1;
             }
+            
+            $prop => $prop_hash;
         } grep { $_ ne 'result' } @{ $outputs }),
         workflow_operation_id => {
             is_param => 1,
@@ -57,8 +65,6 @@ sub _add_properties {
         my %new = $class->get_class_object->_normalize_property_description($property_name, $old_property, $desc);
         $desc->{has}->{$property_name} = \%new;
     }
-    
-#    print Data::Dumper->new([$class,$desc])->Dump;
     
     return $desc;
 }
