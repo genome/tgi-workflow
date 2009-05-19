@@ -32,6 +32,11 @@ sub _add_properties {
     my $operation_code = delete $desc->{'extra'}->{'workflow'};
     my $operation = $operation_code->();
 
+    my @errors = $operation->validate;
+    if (@errors) {
+        warn join("\n", @errors);
+    } 
+
     my $inputs = $operation->operation_type->input_properties;
     my $outputs = $operation->operation_type->output_properties;
     
