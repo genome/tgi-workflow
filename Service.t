@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 2;
+use Test::More tests => 4;
 
 $ENV{UR_DBI_NO_COMMIT} = 1;
 
