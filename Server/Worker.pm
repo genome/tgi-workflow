@@ -55,6 +55,8 @@ sub __build {
                     print STDERR $@;
                     $error_string = "$@";
                     $status = 'crashed';
+                }else{
+                    UR::Context->commit();
                 }
 
                 $kernel->post('IKC','post','poe://Hub/dispatch/end_work',[$ENV{LSB_JOBID}, $kernel->ID, $instance->id, $status, $output, $error_string]);
