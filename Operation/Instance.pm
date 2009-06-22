@@ -299,7 +299,18 @@ sub is_ready {
     my $self = shift;
 
     return 0 if ($self->status eq 'crashed');
+    my @unfinished_inputs = $self->unfinished_inputs;
 
+    if (scalar @unfinished_inputs == 0) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+sub unfinished_inputs {
+    my $self = shift;
+    
     my %optional = map { $_ => 1 } @{ $self->operation_type->optional_input_properties };
     my @all_inputs = @{ $self->operation_type->input_properties };
     my %current_inputs = ();
@@ -340,12 +351,8 @@ sub is_ready {
             push @unfinished_inputs, $input_name;
         }
     }
-
-    if (scalar @unfinished_inputs == 0) {
-        return 1;
-    } else {
-        return 0;
-    }
+    
+    return @unfinished_inputs;    
 }
 
 sub input_raw_value {

@@ -130,6 +130,23 @@ sub completion {
 
     if ($self->incomplete_operation_instances) {
         $self->current->status('crashed');
+        # since we're throwing an error, lets generate something useful
+        
+        my $reason = "Execution halted due to unresolvable dependencies or crashed children.  Status and incomplete inputs:\n";
+        
+        foreach my $child ($self->child_instances) {
+            $reason .= $child->name . ' <' . $child->id . '> (' . $child->status .")\n";
+            if ($child->status eq 'new') {
+                foreach my $input ($child->unfinished_inputs) {
+                    $reason .= '  ' . $input . "\n";
+                }
+            }
+        }
+        
+        Workflow::Operation::InstanceExecution::Error->create(
+            execution => $self->current,
+            error => $reason
+        );
     }
 
     my $oc = $self->output_connector;
