@@ -60,7 +60,7 @@ can_ok('Workflow::Model',qw/create validate is_valid execute/);
 
 $DB::single=1;
 
-foreach my $ds (UR::DataSource->all_objects_loaded) {
+foreach my $ds (UR::Context->all_objects_loaded('UR::DataSource')) {
     $ds->_set_all_objects_saved_committed;
 }
 
@@ -68,7 +68,7 @@ UR::Context->_reverse_all_changes();
 UR::Context->clear_cache;
 
 my $pass = 1;
-foreach my $o (UR::Object->all_objects_loaded) {
+foreach my $o (UR::Context->all_objects_loaded('UR::Object')) {
     my @c = $o->inheritance();
     unshift @c, $o->class;
     pop @c if ($c[-1] eq 'UR::ModuleBase');
