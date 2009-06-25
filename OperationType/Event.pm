@@ -140,6 +140,8 @@ sub execute {
         $self->error_message($@);
         $command_obj->event_status('Crashed');
         $rethrow = $@;
+    } elsif(!defined $rv) {
+	$command_obj->event_status('Failed');
     } elsif($rv <= 1) {
         $command_obj->event_status($rv ? 'Succeeded' : 'Failed');
     }elsif($rv == 2) {
@@ -154,7 +156,7 @@ sub execute {
 
     die $rethrow if defined $rethrow;
 
-    return unless $command_obj->event_status('Succeeded');
+    return unless ($command_obj->event_status eq 'Succeeded');
     return { result => $rv };
 }
 
