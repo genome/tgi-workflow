@@ -50,10 +50,14 @@ sub __build {
                 eval {
                     $output = $type->execute(%{ $instance->input }, %$input);
                 };
-                if ($@) {
-                    print STDERR "Command module died.\n";
-                    print STDERR $@;
-                    $error_string = "$@";
+                if ($@ || !defined($output) ) {
+                    print STDERR "Command module died or returned undef.\n";
+                    if ($@) {
+                        print STDERR $@;
+                        $error_string = "$@";
+                    } else {
+                        $error_string = "Command module returned undef";
+                    }
                     $status = 'crashed';
                 }else{
                     UR::Context->commit();
