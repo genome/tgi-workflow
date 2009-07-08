@@ -589,7 +589,7 @@ MARK
                                     $result = '';
                                 }
 
-                                next unless ($i->is_running() || $i->status eq 'running' || $result eq '(undef)');
+                                next unless ($i->is_running() || $i->status eq 'running' || $i->status eq 'crashed' || $result eq '(undef)');
                                 
                                 $infos{$i->id} = [$i->name,$i->status,$result,$i->current->dispatch_identifier];
                             }
