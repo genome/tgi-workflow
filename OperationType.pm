@@ -52,11 +52,33 @@ sub create_from_xml_simple_structure {
             $self->optional_input_properties([]);
         }
     } else {
+
+        my $input_property = $struct->{inputproperty};
+        my $optional_input_property = [];
+
+        if ($input_property) {
+            my $new_input_property = [];
+            foreach my $prop (@{ $input_property }) {
+                if (ref($prop) eq 'HASH') {
+                    push @{ $new_input_property }, $prop->{content};
+                    if (defined($prop->{isOptional}) && $prop->{isOptional} ne lc('n') && $prop->{isOptional} ne lc('f')) {
+                        push @{ $optional_input_property }, $prop->{content};
+                    }
+                } else {
+                    push @{ $new_input_property }, $prop;
+                }
+            }
+            $input_property = $new_input_property;
+        }
+
+
         $self = $my_class->create(
-            input_properties => $struct->{inputproperty},
-            output_properties => $struct->{outputproperty}
+            input_properties => $input_property,
+            output_properties => $struct->{outputproperty},
+            optional_input_properties => $optional_input_property
         );
     }
+
     return $self;
 }
 
@@ -69,7 +91,16 @@ sub as_xml_simple_structure {
         $struct->{typeClass} = ref($self);
     }
 
-    $struct->{inputproperty} = $self->input_properties;
+    my $inputproperty = [];
+    foreach my $prop (@{ $self->input_properties }) {
+        if (grep { $_ eq $prop } @{ $self->optional_input_properties }) {
+            push @$inputproperty, { content => $prop, isOptional => 'Y'};
+        } else {
+            push @$inputproperty, $prop;
+        }
+    }
+
+    $struct->{inputproperty} = $inputproperty;
     $struct->{outputproperty} = $self->output_properties;
 
     return $struct;

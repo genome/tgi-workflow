@@ -37,18 +37,23 @@ sub _add_properties {
         warn join("\n", @errors);
     } 
 
-    my $inputs = $operation->operation_type->input_properties;
+    my $optional_inputs = $operation->operation_type->optional_input_properties;
+    my $inputs = [grep { my $v = $_; !grep { $v eq $_ } @$optional_inputs } @{ $operation->operation_type->input_properties}];
     my $outputs = $operation->operation_type->output_properties;
     
     my $has = {
         (map { 
-            $_ => { is_input => 1 }
+            $_ => { is_input => 1, doc => 'Input' }
         } @{ $inputs }),
+        (map {
+            $_ => { is_input => 1, is_optional => 1, doc => 'Optional Input' }
+        } @{ $optional_inputs }),
         (map {
             my $prop = $_;
             my $prop_hash = {
                 is_output => 1,
                 is_optional => 1,
+                doc => 'Output'
             };
             
             if (grep { $prop eq $_ } @{ $inputs }) {
