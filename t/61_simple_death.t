@@ -21,8 +21,8 @@ $output = run_workflow_lsf(
 );
 
 ok(!defined $output,'output not defined');
-ok(scalar(@Workflow::Simple::ERROR) == 1, 'one error');
-ok($Workflow::Simple::ERROR[0]->error =~ /death by test case/, 'error message correct');
+ok(scalar(@Workflow::Simple::ERROR) == 2, 'two errors');
+ok($Workflow::Simple::ERROR[1]->error =~ /death by test case/, 'second error message correct');
 
 my $op;
 $op = Workflow::Operation->create(
@@ -118,7 +118,7 @@ $output = run_workflow_lsf(
 ok(!defined $output,'output not defined');
 
 ok(scalar(@Workflow::Simple::ERROR) == 2, 'two errors');
-ok($Workflow::Simple::ERROR[0]->error =~ /death by test case/, 'error message correct');
+ok($Workflow::Simple::ERROR[1]->error =~ /death by test case/, 'error message correct');
 
 __DATA__
 <?xml version='1.0' standalone='yes'?>
