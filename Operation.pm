@@ -51,7 +51,7 @@ sub create {
 sub create_from_xml {
     my ($class, $filename) = @_;
 
-    my $struct = XMLin($filename, KeyAttr=>[], ForceArray=>[qw/operation property inputproperty outputproperty link/]);
+    my $struct = XMLin($filename, KeyAttr=>[], ForceArray=>[qw/operation property inputproperty outputproperty link output/]);
     my $self = $class->create_from_xml_simple_structure($struct,filename=>$filename);
 
     return $self;

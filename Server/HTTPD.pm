@@ -611,7 +611,9 @@ MARK
                 return $kernel->yield('exception',$result) unless $ok;
                 my %infos = (@$result);
                 
-                while (my ($id,$info) = each (%infos)) {
+#                while (my ($id,$info) = each (%infos)) {
+                foreach my $id ( sort { $a <=> $b } keys %infos ) {
+                    my $info = $infos{$id};
                     my ($name, $status, $opresult, $dispatch_id) = @{ $info };
                     
                     my $link = '/browse/Workflow::Operation::Instance/' . $id;

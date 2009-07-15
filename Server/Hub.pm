@@ -252,7 +252,7 @@ sub setup {
 
                         $kernel->post('IKC','post','poe://UR/workflow/schedule_instance',[$instance->id,$lsf_job_id]);
 
-                        evTRACE and print "dispatch start_jobs $lsf_job_id\n";
+                        evTRACE and print "dispatch start_jobs submitted $lsf_job_id\n";
                     } else {
                         last;
                     }

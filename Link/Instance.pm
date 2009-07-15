@@ -9,6 +9,8 @@ class Workflow::Link::Instance {
         operation_instance => { is => 'Workflow::Operation::Instance', id_by => 'other_operation_instance_id' },
         property => { is => 'SCALAR' },
         index => { is => 'INTEGER', is_optional=>1 },
+        broken => { is => 'Boolean', default_value => 0 },
+        broken_value => { is_optional => 1 },
     ]
 };
 
@@ -21,6 +23,17 @@ sub clone {
     );
 }
 
+sub break {
+    my $self = shift;
+    my $value = shift;
+    
+    $self->broken(1);
+    $self->broken_value($value);
+    $self->index(undef);
+    
+    return $self;
+}
+
 sub left_value {
     my $self = shift;
     return $self->value;
@@ -29,7 +42,11 @@ sub left_value {
 sub raw_value {
     my $self = shift;
     
-    return $self->operation_instance->output->{ $self->property };
+    if ($self->broken) {
+        return $self->broken_value;
+    } else {
+        return $self->operation_instance->output->{ $self->property };
+    }
 }
 
 sub value {

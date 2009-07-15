@@ -117,7 +117,7 @@ $output = run_workflow_lsf(
 
 ok(!defined $output,'output not defined');
 
-ok(scalar(@Workflow::Simple::ERROR) == 1, 'three errors');
+ok(scalar(@Workflow::Simple::ERROR) == 2, 'two errors');
 ok($Workflow::Simple::ERROR[0]->error =~ /death by test case/, 'error message correct');
 
 __DATA__

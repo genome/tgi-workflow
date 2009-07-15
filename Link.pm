@@ -13,6 +13,7 @@ class Workflow::Link {
         right_property => { is => 'BLOB' },
         left_operation => { is => 'Workflow::Operation', id_by => 'left_workflow_operation_id' },
         left_property => { is => 'BLOB' },
+        breakable => { is => 'Boolean', default_value => 0 }
     ]
 };
 

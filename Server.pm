@@ -68,8 +68,13 @@ sub lock {
     my $lockname = $class->lockname($service);
     
     my $f = IO::File->new('>' . $lockname);
-    $f->print($$);
-    $f->close;
+
+    if (defined $f) {
+        $f->print($$);
+        $f->close;
+    } else {
+        die 'cannot open lock file for writing: ' . $lockname;
+    }
 }
 
 sub unlock {

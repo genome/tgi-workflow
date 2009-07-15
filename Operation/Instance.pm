@@ -333,13 +333,20 @@ sub unfinished_inputs {
             }
             VALCHECK: foreach my $v (@$vallist) {
                 if (UNIVERSAL::isa($v,'Workflow::Link::Instance')) {
-                    if ($v->operation_instance->incomplete_peers) {
-                        push @unfinished_inputs, $input_name;
-                        last VALCHECK;
-                    } else {
-                        unless ($v->operation_instance->is_done && defined $self->input_value($input_name)) {
+                    if ($v->broken) {
+                        unless (defined $self->input_value($input_name)) {
                             push @unfinished_inputs, $input_name;
                             last VALCHECK;
+                        }
+                    } else {
+                        if ($v->operation_instance->incomplete_peers) {
+                            push @unfinished_inputs, $input_name;
+                            last VALCHECK;
+                        } else {
+                            unless ($v->operation_instance->is_done && defined $self->input_value($input_name)) {
+                                push @unfinished_inputs, $input_name;
+                                last VALCHECK;
+                            }
                         }
                     }
                 } elsif (!defined $v) {
@@ -443,6 +450,8 @@ sub resume {
 sub execute {
     my $self = shift;
 
+#$self->status_message('s| ' . $self->name);
+
     if ($self->is_parallel && !defined $self->parallel_index) {
         $self->create_peers;
         $self->sync;
@@ -488,16 +497,93 @@ sub execute_single {
     );
 }
 
+sub orphan {
+    my $self = shift;
+    my %outputs = @_;
+    
+    my @deps = $self->dependent_operations;    
+    foreach my $dep (@deps) {
+        if (defined $dep->input) {
+            while (my ($k,$v) = each(%{ $dep->input })) {
+                if (UNIVERSAL::isa($v,'Workflow::Link::Instance')) {
+                    if ($v->operation_instance == $self) {
+                        unless ($v->broken) {
+                            my $break_val = $outputs{ $v->property };
+                            $v->break($break_val);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    $self->spin;
+}
+
+sub is_orphan {
+    my $self = shift;
+
+    my $broken = 1;
+
+    my @deps = $self->dependent_operations;
+    # this may all be worthless, because dependent_operations excludes those with broken links
+    foreach my $dep (@deps) {
+        if (defined $dep->input) {
+            while (my ($k,$v) = each(%{ $dep->input })) {
+                if (UNIVERSAL::isa($v,'Workflow::Link::Instance')) {
+                    if ($v->operation_instance == $self) {
+                        unless ($v->broken) {
+                            $broken = 0;
+                        }
+                    }
+                } elsif (ref($v) eq 'ARRAY') {
+                    foreach my $vv (@$v) {
+                        if (UNIVERSAL::isa($vv,'Workflow::Link::Instance')) {
+                            if ($vv->operation_instance == $self) {
+                                unless ($vv->broken) {
+                                    $broken = 0;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if ($self->name eq 'output connector' || !$self->parent_instance) {
+        # output connectors have no deps but are not broken.  everything else must have deps
+        # operations with no parent can't be broken by definition
+        $broken = 0;
+    }
+
+#    if ($self->name eq 'Example Inner Workflow') {
+#        $self->status_message('       ' . $self->name . ' is ' . ($broken ? '' : 'not ') . 'an orphan (' . scalar(@deps) . ')[' . $self->id . ']' );
+# 
+#        print Data::Dumper->new([\@deps])->Dump . "\n"; 
+#    }
+
+    return $broken;
+}
+
 our %retry_count = ();
 
 sub completion {
     my $self = shift;
 
-#    warn $self->name . "\n";
+#    $self->status_message('e| ' . $self->name . '|' . $self->is_orphan);
 
     $self->is_done(1) unless $self->status eq 'crashed';
     $self->is_running(0);
     $self->sync;
+
+    $self->spin unless ($self->is_orphan);
+}
+
+sub spin {
+    my $self = shift;
+
+#    $self->status_message('spin| ' . $self->name);
 
     if ($self->parent_instance) {
         my $parent = $self->parent_instance;
@@ -511,7 +597,7 @@ sub completion {
                 $self->reset_current;
                 $self->resume;
             } else {
-                my @running_siblings = grep { $_->is_running } ($parent->child_instances);
+                my @running_siblings = grep { $_->is_running && !$_->is_orphan } ($parent->child_instances);
                 unless (@running_siblings) {
                     # when there are siblings of mine running, i will assume they will call completion on my parent
                     $parent->completion;
@@ -530,13 +616,17 @@ sub completion {
                     $this_data->execute;
                 }        
 
-                my @running = grep { $_->is_running } ($parent->child_instances);
+                my @running = grep { $_->is_running && !$_->is_orphan } ($parent->child_instances);
                 if (scalar @runq == 0 && scalar @running == 0) {
                     # nothing running and nothing able to run next
-                    
+
+#$self->status_message($self->name . ' comp1');
+#my @foo = grep { $_->is_running } ($parent->child_instances);
+#for (@foo) { $self->status_message($_->name); }
                     $parent->completion;
                 }
             } else {
+#$self->status_message($self->name . ' comp2');
                 $parent->completion;
             }
         }
@@ -618,12 +708,12 @@ sub dependent_operations {
         foreach my $v (values %{ $sibling->input }) {
             if (UNIVERSAL::isa($v,'Workflow::Link::Instance')) {
                 $instances{ $sibling->id } = $sibling
-                    if ($v->operation_instance == $self);
+                    if ($v->operation_instance == $self && !$v->broken);
             } elsif ($self->is_parallel && ref($v) eq 'ARRAY') {
                 my $vv = $v->[$self->parallel_index];
                 if (UNIVERSAL::isa($vv,'Workflow::Link::Instance')) {
                     $instances{ $sibling->id } = $sibling
-                        if ($vv->operation_instance == $self);
+                        if ($vv->operation_instance == $self && !$vv->broken);
                 }
             }
         }
@@ -637,11 +727,11 @@ sub depended_on_by {
 
     my %instances = ();
     foreach my $v (values %{ $self->input }) {
-        if (UNIVERSAL::isa($v,'Workflow::Link::Instance')) {
+        if (UNIVERSAL::isa($v,'Workflow::Link::Instance') && !$v->broken) {
             $instances{ $v->operation_instance->id } = $v->operation_instance;
         } elsif (ref($v) eq 'ARRAY') {
             foreach my $vv (@$v) {
-                if(UNIVERSAL::isa($v,'Workflow::Link::Instance')) {
+                if(UNIVERSAL::isa($v,'Workflow::Link::Instance') && !$v->broken) {
                     $instances{ $vv->operation_instance->id } = $vv->operation_instance;
                 }
             }
