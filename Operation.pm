@@ -148,7 +148,7 @@ sub execute {
         }
 
         if (scalar keys %ikeys) {
-            Carp::croak('execute: Extra inputs provided');
+            Carp::croak('execute: Extra inputs provided: ' . join (', ', keys %ikeys));
             return;
         }
     }
