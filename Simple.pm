@@ -12,13 +12,22 @@ our $connect_port = 13425;
 our $store_db = 1;
 our $override_lsf_use = 0;
 
+our $server_location_file;
+
+our $start_ur_server;
+our $start_hub_server;
+our $fork_ur_server;
+
 if (defined $ENV{NO_LSF} && $ENV{NO_LSF}) {
     $override_lsf_use = 1;
 }
 
+use strict;
+
 use Workflow ();
 use IPC::Run;
 use UR::Util;
+use Sys::Hostname;
 
 use Workflow::Server;
 use POE::Component::IKC::ClientLite;
@@ -205,6 +214,12 @@ sub run_workflow_lsf {
         $ur_port_used = $connect_port;
     }
 
+    if (defined $server_location_file) {
+        open FH, ('>' . $server_location_file);
+        print FH Sys::Hostname::hostname . ':' . $ur_port_used . "\n";
+        close FH;
+    }
+
     my $poe = create_ikc_client(
         port    => $ur_port_used,
         timeout => 1209600 
@@ -217,6 +232,8 @@ sub run_workflow_lsf {
 
         $u->finish if $start_ur_server && $fork_ur_server;
         $h->finish if $start_hub_server;
+
+        unlink ($server_location_file);
     }
 
     $poe->disconnect;
