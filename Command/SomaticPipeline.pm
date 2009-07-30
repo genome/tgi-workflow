@@ -87,6 +87,7 @@ sub filenames_to_generate {
             dbsnp_output
             annotate_output_snp
             ucsc_output
+            ucsc_unannotated_output
             tier_output_snp
             indel_lib_filter_output
             adaptor_output_indel
@@ -126,6 +127,7 @@ __DATA__
 
   <link fromOperation="Novel Variations" fromProperty="output_file" toOperation="Annotate UCSC" toProperty="input_file" />
   <link fromOperation="input connector" fromProperty="ucsc_output" toOperation="Annotate UCSC" toProperty="output_file" /> 
+  <link fromOperation="input connector" fromProperty="ucsc_unannotated_output" toOperation="Annotate UCSC" toProperty="output_file" /> 
   <link fromOperation="input connector" fromProperty="only_tier_1" toOperation="Annotate UCSC" toProperty="skip" /> 
     
   <link fromOperation="input connector" fromProperty="tier_output_snp" toOperation="Tier Variants Snp" toProperty="output_file" />
@@ -215,6 +217,7 @@ __DATA__
     <inputproperty isOptional="Y">transcript_annotation_filter</inputproperty>
     
     <inputproperty isOptional="Y">ucsc_output</inputproperty>
+    <inputproperty isOptional="Y">ucsc_unannotated_output</inputproperty>
 
     <inputproperty isOptional="Y">tier_output_snp</inputproperty>
 
