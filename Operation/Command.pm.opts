@@ -1,0 +1,4 @@
+$Workflow::Operation::Command::OPTS_SPEC = [
+          'help!',
+          undef
+        ];
