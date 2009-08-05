@@ -133,17 +133,21 @@ sub execute {
     my $rethrow;
 
     my $rv;
-    eval { $rv = $command_obj->execute(); };
+    eval { 
+        local $ENV{UR_STACK_DUMP_ON_DIE} = 1;
+        $rv = $command_obj->execute(); 
+    };
 
-    $command_obj->date_completed(UR::Time->now());
     if ($@) {
         $self->error_message($@);
-        $command_obj->event_status('Crashed');
         $rethrow = $@;
-    } elsif(!defined $rv) {
-	$command_obj->event_status('Failed');
+        UR::Context->rollback();
+        $command_obj->event_status('Crashed');
+
+    } elsif(!defined $rv || !$rv) {
+        $command_obj->event_status('Failed');
     } elsif($rv <= 1) {
-        $command_obj->event_status($rv ? 'Succeeded' : 'Failed');
+        $command_obj->event_status('Succeeded');
     }elsif($rv == 2) {
         $command_obj->event_status('Waiting');
     }
@@ -152,7 +156,26 @@ sub execute {
         $command_obj->event_status('Succeeded');
     }
 
-    UR::Context->commit();
+    $command_obj->date_completed(UR::Time->now());
+
+
+    my $commit_rv;
+    eval {
+        $commit_rv = UR::Context->commit();
+    };
+    if ($@ || !$commit_rv) {
+        UR::Context->rollback();
+        
+        $command_obj->event_status('Failed');
+        $command_obj->date_completed(UR::Time->now());
+        UR::Context->commit();
+
+        if ($rethrow) {
+            $rethrow .= "\n" . $@;
+        } else {
+            $rethrow = $@;
+        }
+    }
 
     die $rethrow if defined $rethrow;
 
