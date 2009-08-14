@@ -14,10 +14,6 @@ our $override_lsf_use = 0;
 
 our $server_location_file;
 
-our $start_ur_server;
-our $start_hub_server;
-our $fork_ur_server;
-
 if (defined $ENV{NO_LSF} && $ENV{NO_LSF}) {
     $override_lsf_use = 1;
 }
@@ -83,57 +79,18 @@ sub resume_lsf {
     
     @ERROR = ();
 
-    my @libs = UR::Util::used_libs();
-    my $libstring = '';
-    foreach my $lib (@libs) {
-        $libstring .= 'use lib "' . $lib . '"; ';
-    }
-
-    Workflow::Server->lock('Simple');
-
-    my $ur_port = 13425;
-    while (!is_port_available($ur_port)) {
-        $ur_port+=2;
-    }
-
-    my $hub_port = 13424;
-    while (!is_port_available($hub_port)) {
-        $hub_port+=2;
-    }
-
-    my @hubcmd = ('perl','-e',$libstring . 'use Workflow::Server::Hub; $Workflow::Server::Hub::port_number=' . $hub_port . '; Workflow::Server::Hub->start;');
-    my @urcmd = ('perl','-e',$libstring . 'use Workflow::Server::UR; $Workflow::Server::Hub::port_number=' . $hub_port . '; $Workflow::Server::UR::port_number=' . $ur_port . '; $Workflow::Server::UR::store_db=' . $store_db . ';Workflow::Server::UR->start;');
-
-    Workflow::Server->lock('Hub');
-    Workflow::Server->lock('UR');
-
-    my $h;
-    if ($start_hub_server) {
-        $h = IPC::Run::start(\@hubcmd);
-        Workflow::Server->wait_for_lock('Hub');
-    }
-        
-    $start_ur_server = 1 if $start_hub_server == 1;
-    
-    my $u;
-    if ($start_ur_server) {
-        $u = IPC::Run::start(\@urcmd);
-        Workflow::Server->wait_for_lock('UR');
-    }
-
-    Workflow::Server->unlock('Simple');
-
-    my $poe = create_ikc_client(
-        port    => $ur_port,
-        timeout => 1209600 
-    );
+    my ($u,$h,$poe) = _start_servers();
 
     my $response = $poe->post_respond('workflow/simple_resume',[$id]);
 
-    $poe->post('workflow/quit',1);
+    if ($start_servers) {
+        $poe->post('workflow/quit',1);
 
-    $u->finish if $start_ur_server && $fork_ur_server;
-    $h->finish if $start_hub_server;
+        $h->finish; # if $start_ur_server && $fork_ur_server;
+        $u->finish; # if $start_hub_server;
+
+        unlink ($server_location_file);
+    }
 
     $poe->disconnect;
 
@@ -172,9 +129,46 @@ sub run_workflow_lsf {
 
     @ERROR = ();
 
+    my ($u,$h,$poe) = _start_servers();
+
+    my $response = $poe->post_respond('workflow/simple_start',[$xml,\%inputs]);
+
+    if ($start_servers) {
+        $poe->post('workflow/quit',1);
+
+        $u->finish; # if $start_ur_server && $fork_ur_server;
+        $h->finish; # if $start_hub_server;
+
+        unlink ($server_location_file);
+    }
+
+    $poe->disconnect;
+
+    unless (defined $response) {
+        die 'unexpected response';
+    }
+
+    if (scalar @$response == 3) {
+        return $response->[1]->output;
+
+    } elsif (scalar @$response == 4) {
+        @ERROR = @{ $response->[3] };
+        return undef;
+    }
+
+    die 'confused';
+}
+
+sub _start_servers {
+    my @libs = UR::Util::used_libs();
+    my $libstring = '';
+    foreach my $lib (@libs) {
+        $libstring .= 'use lib "' . $lib . '"; ';
+    }
+    
     my $u;
     my $h;
-    
+
     my $ur_port_used;
     if ($start_servers) {
         my @libs = UR::Util::used_libs();
@@ -224,33 +218,8 @@ sub run_workflow_lsf {
         port    => $ur_port_used,
         timeout => 1209600 
     );
-
-    my $response = $poe->post_respond('workflow/simple_start',[$xml,\%inputs]);
-
-    if ($start_servers) {
-        $poe->post('workflow/quit',1);
-
-        $u->finish if $start_ur_server && $fork_ur_server;
-        $h->finish if $start_hub_server;
-
-        unlink ($server_location_file);
-    }
-
-    $poe->disconnect;
-
-    unless (defined $response) {
-        die 'unexpected response';
-    }
-
-    if (scalar @$response == 3) {
-        return $response->[1]->output;
-
-    } elsif (scalar @$response == 4) {
-        @ERROR = @{ $response->[3] };
-        return undef;
-    }
-
-    die 'confused';
+    
+    return ($u,$h,$poe);
 }
 
 sub is_port_available {

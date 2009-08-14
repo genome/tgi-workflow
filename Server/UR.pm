@@ -78,11 +78,10 @@ evTRACE and print "workflow _start\n";
             },
             _stop => sub {
                 my ($heap) = @_[HEAP];
+evTRACE and print "workflow _stop\n";
                 
                 $heap->{record}->delete();
                 UR::Context->commit();
-            
-evTRACE and print "workflow _stop\n";
             },
             unlock_me => sub {
                 Workflow::Server->unlock('UR');
@@ -103,7 +102,7 @@ evTRACE and print "workflow simple_start\n";
                 my ($kernel, $session, $arg) = @_[KERNEL,SESSION,ARG0];
                 my ($arg2, $return) = @$arg;
                 my ($id) = @$arg2;
-evTRACE and print "workflow simple_start\n";
+evTRACE and print "workflow simple_resume\n";
 
                 $kernel->call($session,'resume',[$id,$return,$return]);
                 
@@ -118,6 +117,7 @@ evTRACE and print "workflow quit\n";
                 } else {
                     $kernel->yield('quit_stage_2');
                 }
+                return 1;
             },
             quit_stage_2 => sub {
                 my ($kernel,$session,$heap) = @_[KERNEL,SESSION,HEAP];
@@ -125,9 +125,9 @@ evTRACE and print "workflow quit_stage_2\n";
 
                 $kernel->post($heap->{channel},'shutdown');
 
-
                 $kernel->call($session,'commit');
                 $kernel->alarm_remove_all;
+                $kernel->alias_remove('workflow');
 
                 $kernel->post('IKC','shutdown');
             },
@@ -202,10 +202,10 @@ evTRACE and print "workflow execute\n";
 evTRACE and print "workflow resume\n";
                 
                 if ($store_db) {
-                    my @tree = Workflow::Store::Db::Operation::Instance->get(
-                        id => $id,
-                        -recurse => ['parent_instance_id','instance_id']
-                    );
+#                    my @tree = Workflow::Store::Db::Operation::Instance->get(
+#                        id => $id,
+#                        -recurse => ['parent_instance_id','instance_id']
+#                    );
                 }
                 
                 my $instance = $store_db ? Workflow::Store::Db::Operation::Instance->get($id) : Workflow::Operation::Instance->get($id);
@@ -220,6 +220,17 @@ evTRACE and print "workflow resume\n";
                 if ($error_dest) {
                     my $cb = $session->postback('error_relay',$error_dest);
                     $instance->error_cb($cb);
+                }
+
+                if ($instance->is_done) {
+                    Workflow::Operation::InstanceExecution::Error->create(
+                        execution => $instance->current,
+                        error => "Cannot resume finished workflow"
+                    );
+                    
+                    $kernel->yield('error_relay',[$error_dest],[$instance]);
+
+                    return $instance->id;
                 }
                 
                 $instance->resume();
@@ -330,7 +341,9 @@ sub dispatch {
 
     $instance->status('scheduled');
     
-    POE::Kernel->post('IKC','post','poe://Hub/dispatch/add_work', [ $instance, $instance->operation->operation_type, $input ]);
+    my $try_shortcut_first = $instance->operation->operation_type->can('shortcut') ? 1 : 0;
+    
+    POE::Kernel->post('IKC','post','poe://Hub/dispatch/add_work', [ $instance, $instance->operation->operation_type, $input, $try_shortcut_first ]);
 }
 
 sub _util_error_walker {

@@ -58,6 +58,9 @@ sub setup {
                 $kernel->alias_set("watchdog");
                 $kernel->call('IKC','publish','watchdog',[qw(create delete)]);
             },
+            _stop => sub {
+                evTRACE and print "watchdog _stop\n";
+            },
             create => sub {
                 my ($kernel, $heap, $arg) = @_[KERNEL, HEAP, ARG0];
                 my ($dispatch_id,$duration) = @$arg;
@@ -115,6 +118,8 @@ sub setup {
             periodic_check_time => 300,
             job_limit           => 500,
             job_count           => 0,
+            fork_limit          => 5,
+            fork_count          => 0,
             dispatched          => {}, # keyed on lsf job id
             claimed             => {}, # keyed on remote kernel name
             failed              => {}, # keyed on instance id
@@ -133,10 +138,14 @@ sub setup {
                 
                 $kernel->sig('USR1','sig_USR1');
                 $kernel->sig('USR2','sig_USR2');
+                $kernel->sig('CHLD','sig_CHLD');
                 
                 $kernel->yield('unlock_me');
                 
                 $kernel->delay('periodic_check', $heap->{periodic_check_time});
+            },
+            _stop => sub {
+                evTRACE and print "dispatch _stop\n";
             },
             sig_USR1 => sub {
                 my ($kernel) = @_[KERNEL];
@@ -145,10 +154,20 @@ sub setup {
                 $kernel->sig_handled();
             },
             sig_USR2 => sub {
-                my ($kernel) = @_[KERNEL];
+                my ($kernel, $heap) = @_[KERNEL, HEAP];
                 
-                $kernel->yield('start_jobs');
+                $kernel->delay('start_jobs',0);
+
+                my @entire_queue = $heap->{queue}->peek_items(sub { 1 });
+                print STDERR Data::Dumper->new([$heap,\@entire_queue],['heap','queue'])->Dump . "\n";
+
                 $kernel->sig_handled();
+            },
+            sig_CHLD => sub {
+                my ($heap, $kernel, $pid, $child_error) = @_[HEAP, KERNEL, ARG1, ARG2];
+                $heap->{fork_count}--;
+
+                evTRACE and print "dispatch sig_CHLD $pid $child_error\n";
             },
             unlock_me => sub {
                 Workflow::Server->unlock('Hub');
@@ -166,6 +185,7 @@ sub setup {
                 evTRACE and print "dispatch quit_stage_2\n";
 
                 $kernel->alarm_remove_all;
+                $kernel->alias_remove('dispatch');
                 $kernel->post('IKC','shutdown');
             },
             conn => sub {
@@ -184,10 +204,15 @@ sub setup {
                 
                 if (exists $heap->{claimed}->{$remote_kernel}) {
                     my $payload = delete $heap->{claimed}->{$remote_kernel};
-                    my ($instance, $type, $input) = @$payload;
+                    my ($instance, $type, $input, $sc) = @$payload;
                    
                     warn 'Blade failed on ' . $instance->id . ' ' . $instance->name . "\n";
-                    $heap->{failed}->{$instance->id}++;
+
+                    if ($sc) {
+                        $payload->[3] = 0;
+                    } else {
+                        $heap->{failed}->{$instance->id}++;
+                    }
 
                     if ($heap->{failed}->{$instance->id} <= 5) {
                         $heap->{queue}->enqueue(200,$payload);
@@ -198,11 +223,11 @@ sub setup {
             },
             add_work => sub {
                 my ($kernel, $heap, $arg) = @_[KERNEL, HEAP, ARG0];
-                my ($instance, $type, $input) = @$arg;
+                my ($instance, $type, $input, $sc) = @$arg;
                 evTRACE and print "dispatch add_work " . $instance->id . "\n";
 
                 $heap->{failed}->{$instance->id} = 0;
-                $heap->{queue}->enqueue(100,[$instance,$type,$input]);
+                $heap->{queue}->enqueue(100,[$instance,$type,$input,$sc]);
                 
                 $kernel->delay('start_jobs',0);                
             },
@@ -213,12 +238,12 @@ sub setup {
 
                 if ($heap->{dispatched}->{$dispatch_id}) {
                     my $payload = delete $heap->{dispatched}->{$dispatch_id};
-                    my ($instance, $type, $input) = @$payload;
+                    my ($instance, $type, $input, $sc) = @$payload;
 
                     $heap->{claimed}->{$remote_kernel} = $payload;
 
                     $kernel->post('IKC','post','poe://UR/workflow/begin_instance',[ $instance->id, $dispatch_id ]);
-                    $kernel->post('IKC','post',$where,[$instance, $type, $input]);
+                    $kernel->post('IKC','post',$where,[$instance, $type, $input, $sc]);
                 } else {
                     warn "dispatch get_work: unknown id $dispatch_id\n";
                 }
@@ -230,31 +255,98 @@ sub setup {
 
                 delete $heap->{failed}->{$id};
 
+                my $was_shortcutting = 0;
+
                 if ($remote_kernel) {
-                    delete $heap->{claimed}->{$remote_kernel};
+                    my $payload = delete $heap->{claimed}->{$remote_kernel};
+                    if ($payload) {
+                        my ($instance,$type,$input,$sc) = @$payload;
+                        if ($sc && !defined $output) {
+                            $was_shortcutting = 1;
+                            $kernel->yield('add_work',[$instance,$type,$input,0]);
+                        }
+                    }
+                    
                     $heap->{cleaning_up}->{$remote_kernel} = 1;
                 }
 
-                $kernel->post('IKC','post','poe://UR/workflow/end_instance',[ $id, $status, $output, $error_string ]);
+                $kernel->post('IKC','post','poe://UR/workflow/end_instance',[ $id, $status, $output, $error_string ])
+                    unless $was_shortcutting;
             },
             start_jobs => sub {
                 my ($kernel, $heap) = @_[KERNEL, HEAP];
                 evTRACE and print "dispatch start_jobs " . $heap->{job_count} . ' ' . $heap->{job_limit} . "\n";
                 
+                my @requeue = ();
                 while ($heap->{job_count} < $heap->{job_limit}) {
                     my ($priority, $queue_id, $payload) = $heap->{queue}->dequeue_next();
                     if (defined $priority) {
-                        my ($instance, $type, $input) = @$payload;
-                        $heap->{job_count}++;
-                        
-                        my $lsf_job_id = $kernel->call($_[SESSION],'lsf_bsub',$type->lsf_queue,$type->lsf_resource,$type->command_class_name,$instance->name);
+                        my ($instance, $type, $input, $sc) = @$payload;
+
+                        my $lsf_job_id;
+                        if ($sc) {
+                            if ($heap->{fork_count} >= $heap->{fork_limit}) {
+                                push @requeue, $payload;
+                                next;
+                            }
+                            
+                            $lsf_job_id = $kernel->call($_[SESSION],'fork_worker',$type->command_class_name);
+                            $heap->{fork_count}++;
+                            $heap->{job_count}++;
+                        } else {
+                            $lsf_job_id = $kernel->call($_[SESSION],'lsf_bsub',$type->lsf_queue,$type->lsf_resource,$type->command_class_name,$instance->name);
+                            $heap->{job_count}++;
+                        }
+
                         $heap->{dispatched}->{$lsf_job_id} = $payload;
 
                         $kernel->post('IKC','post','poe://UR/workflow/schedule_instance',[$instance->id,$lsf_job_id]);
 
-                        evTRACE and print "dispatch start_jobs submitted $lsf_job_id\n";
+                        evTRACE and print "dispatch start_jobs submitted $lsf_job_id $sc\n";
                     } else {
                         last;
+                    }
+                }
+                
+                foreach my $payload (@requeue) {
+                    $heap->{queue}->enqueue(125,$payload);
+                }
+            },
+            fork_worker => sub {
+                my ($kernel, $command_class) = @_[KERNEL, ARG0];
+                evTRACE and print "dispatch fork_worker\n";
+
+                my $hostname = hostname;
+                my $port = $port_number;
+
+                my $namespace = (split(/::/,$command_class))[0];
+
+                my @libs = UR::Util::used_libs();
+                my $libstring = '';
+                foreach my $lib (@libs) {
+                    $libstring .= 'use lib "' . $lib . '"; ';
+                }
+
+                my @cmd = (
+                    'perl',
+                    '-e',
+                    $libstring . 'use ' . $namespace . '; use ' . $command_class . '; use Workflow::Server::Worker; Workflow::Server::Worker->start("' . $hostname . '",' . $port . ',1)'
+                );
+
+                my $pid;
+                {
+                    if ($pid = fork()) {
+                        # parent
+                        evTRACE and print "dispatch fork_worker " . join(' ', @cmd) . "\n";
+
+                        return 'P' . $pid;
+                    } elsif (defined $pid) {
+                        # child
+                        evTRACE and print "dispatch fork_worker started $$\n";
+
+                        exec @cmd;
+                    } else {
+                    
                     }
                 }
             },
@@ -317,6 +409,7 @@ sub setup {
                 
                 my $number_restarted = 0;
                 foreach my $lsf_job_id (keys %{ $heap->{dispatched} }) {
+                    next if ($lsf_job_id =~ /^P/);
                     my $restart = 0;
                 
                     if (my ($info,$events) = lsf_state($lsf_job_id)) {

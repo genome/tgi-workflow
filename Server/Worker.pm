@@ -8,13 +8,22 @@ use Workflow::Server::Hub;
 
 use Workflow ();
 
+our $job_id;
+
 sub start {
     my $class = shift;
     our $host = shift;
     our $port = shift;
+    my $use_pid = shift;
     
     $host ||= 'localhost';
     $port ||= $Workflow::Server::Hub::port_number;
+
+    if ($use_pid) {
+        $job_id = 'P' . $$;
+    } else {
+        $job_id = $ENV{LSB_JOBID};
+    }
 
     our $client = POE::Component::IKC::Client->spawn( 
         ip=>$host, 
@@ -40,7 +49,7 @@ sub __build {
             },
             execute => sub {
                 my ($kernel, $heap, $arg) = @_[KERNEL, HEAP, ARG0];
-                my ($instance, $type, $input) = @$arg;
+                my ($instance, $type, $input, $sc_flag) = @$arg;
                 
                 $kernel->alarm_remove_all;
 
@@ -48,7 +57,11 @@ sub __build {
                 my $output;
                 my $error_string;
                 eval {
-                    $output = $type->execute(%{ $instance->input }, %$input);
+                    if ($sc_flag) {
+                        $output = $type->shortcut(%{ $instance->input }, %$input);
+                    } else {
+                        $output = $type->execute(%{ $instance->input }, %$input);
+                    }
                 };
                 if ($@ || !defined($output) ) {
                     print STDERR "Command module died or returned undef.\n";
@@ -63,7 +76,7 @@ sub __build {
                     UR::Context->commit();
                 }
 
-                $kernel->post('IKC','post','poe://Hub/dispatch/end_work',[$ENV{LSB_JOBID}, $kernel->ID, $instance->id, $status, $output, $error_string]);
+                $kernel->post('IKC','post','poe://Hub/dispatch/end_work',[$job_id, $kernel->ID, $instance->id, $status, $output, $error_string]);
                 $kernel->yield('disconnect');
             },
             disconnect => sub {
@@ -75,7 +88,7 @@ sub __build {
                 my $kernel_name = $kernel->ID;
 
                 $kernel->post(
-                    'IKC','post','poe://Hub/dispatch/get_work',[$ENV{LSB_JOBID}, $kernel->ID, "poe://$kernel_name/worker/execute"]
+                    'IKC','post','poe://Hub/dispatch/get_work',[$job_id, $kernel->ID, "poe://$kernel_name/worker/execute"]
                 );
             }
         }

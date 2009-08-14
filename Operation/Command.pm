@@ -142,7 +142,7 @@ sub execute {
         foreach my $error (@Workflow::Simple::ERROR) {
             $self->error_message($error->error);
         }
-        die 'too many errors';
+        die 'Errors occured while executing "' . $self->_operation->name . "\"\n";
     }
     
     return $self->post_execute;
