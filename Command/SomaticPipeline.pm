@@ -34,15 +34,12 @@ sub pre_execute {
     }
 
     # Set (hardcoded) defaults for tools that have defaults that do not agree with somatic pipeline
-    unless ($self->novel_variations_no_headers) {
-        $self->novel_variations_no_headers(1);
-    }
-    unless ($self->novel_variations_report_mode) {
-        $self->novel_variations_report_mode("novel-only");
+    unless ($self->lookup_variants_report_mode) {
+        $self->lookup_variants_report_mode("novel-only");
     }
     # Submitters to exclude from somatic pipeline as per dlarson. These guys submit cancer samples to dbsnp, or somesuch
-    unless ($self->novel_variations_submitter_filter_not) {
-        $self->novel_variations_submitter_filter_not("SNP500CANCER,OMIMSNP,CANCER-GENOME,CGAP-GAI,LCEISEN,ICRCG");
+    unless ($self->lookup_variants_filter_out_submitters) {
+        $self->lookup_variants_filter_out_submitters("SNP500CANCER,OMIMSNP,CANCER-GENOME,CGAP-GAI,LCEISEN,ICRCG");
     }
     unless ($self->annotate_no_headers) {
         $self->annotate_no_headers(1);
@@ -114,18 +111,17 @@ __DATA__
   <link fromOperation="input connector" fromProperty="adaptor_output_snp" toOperation="Sniper Adaptor Snp" toProperty="output_file" />
   <link fromOperation="Snp Filter" fromProperty="output_file" toOperation="Sniper Adaptor Snp" toProperty="somatic_file" />
 
-  <link fromOperation="input connector" fromProperty="dbsnp_output" toOperation="Novel Variations" toProperty="output_file" />
-  <link fromOperation="Sniper Adaptor Snp" fromProperty="output_file" toOperation="Novel Variations" toProperty="variant_file" />
-  <link fromOperation="input connector" fromProperty="novel_variations_no_headers" toOperation="Novel Variations" toProperty="no_headers" />
-  <link fromOperation="input connector" fromProperty="novel_variations_report_mode" toOperation="Novel Variations" toProperty="report_mode" />
-  <link fromOperation="input connector" fromProperty="novel_variations_submitter_filter_not" toOperation="Novel Variations" toProperty="submitter_filter_not" />
+  <link fromOperation="input connector" fromProperty="dbsnp_output" toOperation="Lookup Variants" toProperty="output_file" />
+  <link fromOperation="Sniper Adaptor Snp" fromProperty="output_file" toOperation="Lookup Variants" toProperty="variant_file" />
+  <link fromOperation="input connector" fromProperty="lookup_variants_report_mode" toOperation="Lookup Variants" toProperty="report_mode" />
+  <link fromOperation="input connector" fromProperty="lookup_variants_filter_out_submitters" toOperation="Lookup Variants" toProperty="filter_out_submitters" />
   
-  <link fromOperation="Novel Variations" fromProperty="output_file" toOperation="Annotate Transcript Variants Snp" toProperty="variant_file" />
+  <link fromOperation="Lookup Variants" fromProperty="output_file" toOperation="Annotate Transcript Variants Snp" toProperty="variant_file" />
   <link fromOperation="input connector" fromProperty="annotate_output_snp" toOperation="Annotate Transcript Variants Snp" toProperty="output_file" />
   <link fromOperation="input connector" fromProperty="annotate_no_headers" toOperation="Annotate Transcript Variants Snp" toProperty="no_headers" />
   <link fromOperation="input connector" fromProperty="transcript_annotation_filter" toOperation="Annotate Transcript Variants Snp" toProperty="annotation_filter" />
 
-  <link fromOperation="Novel Variations" fromProperty="output_file" toOperation="Annotate UCSC" toProperty="input_file" />
+  <link fromOperation="Lookup Variants" fromProperty="output_file" toOperation="Annotate UCSC" toProperty="input_file" />
   <link fromOperation="input connector" fromProperty="ucsc_output" toOperation="Annotate UCSC" toProperty="output_file" /> 
   <link fromOperation="input connector" fromProperty="ucsc_unannotated_output" toOperation="Annotate UCSC" toProperty="unannotated_file" /> 
   <link fromOperation="input connector" fromProperty="only_tier_1" toOperation="Annotate UCSC" toProperty="skip" /> 
@@ -166,8 +162,8 @@ __DATA__
   <operation name="Sniper Adaptor Snp">
     <operationtype commandClass="Genome::Model::Tools::Annotate::Adaptor::Sniper" typeClass="Workflow::OperationType::Command" />
   </operation>
-  <operation name="Novel Variations">
-      <operationtype commandClass="Genome::Model::Tools::Annotate::NovelVariations" typeClass="Workflow::OperationType::Command" />
+  <operation name="Lookup Variants">
+      <operationtype commandClass="Genome::Model::Tools::Annotate::LookupVariants" typeClass="Workflow::OperationType::Command" />
   </operation>   
   <operation name="Annotate UCSC">
       <operationtype commandClass="Genome::Model::Tools::Somatic::UcscAnnotator" typeClass="Workflow::OperationType::Command" />
@@ -208,9 +204,8 @@ __DATA__
     <inputproperty isOptional="Y">adaptor_output_snp</inputproperty>
 
     <inputproperty isOptional="Y">dbsnp_output</inputproperty>
-    <inputproperty isOptional="Y">novel_variations_no_headers</inputproperty>
-    <inputproperty isOptional="Y">novel_variations_report_mode</inputproperty>
-    <inputproperty isOptional="Y">novel_variations_submitter_filter_not</inputproperty>
+    <inputproperty isOptional="Y">lookup_variants_report_mode</inputproperty>
+    <inputproperty isOptional="Y">lookup_variants_filter_out_submitters</inputproperty>
 
     <inputproperty isOptional="Y">annotate_output_snp</inputproperty>
     <inputproperty isOptional="Y">annotate_no_headers</inputproperty>
