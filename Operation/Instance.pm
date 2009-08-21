@@ -260,6 +260,47 @@ sub serialize_output {
     1;
 }
 
+#
+# walk the tree up from me and find the first one with a log_dir
+sub log_dir {
+    my $self = shift;
+
+    my $log_dir = $self->operation->log_dir;
+    if (!$log_dir && $self->parent_instance) {
+        $log_dir = $self->parent_instance->log_dir;
+        if ($log_dir) {
+            $log_dir .= '/' . $self->parent_instance->id;
+            if (!-e $log_dir) {
+                mkdir($log_dir);
+            }
+        }
+    }
+
+    return $log_dir;
+}
+
+sub _log_file {
+    my $log_dir = $_[0]->log_dir;
+    if ($log_dir) {
+        return $log_dir . '/' . $_[0]->id;
+    } else {
+        return undef;
+    }
+}
+
+sub out_log_file {
+    if (my $f = $_[0]->_log_file) {
+        return "$f.out";
+    }
+}
+
+sub err_log_file {
+    if (my $f = $_[0]->_log_file) {
+        return "$f.err";
+    }
+}
+
+
 #FIXME remove use of operation here, at first glance looks problematic anyway
 # this is only called during a model constructor, its _probably_ ok
 sub set_input_links {

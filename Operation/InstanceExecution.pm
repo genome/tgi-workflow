@@ -55,4 +55,18 @@ sub _resolve_subclass_name {
     return $store->class_prefix . '::' . $suffix;
 }
 
+sub create {
+    my $class = shift;
+    my $self = $class->SUPER::create(@_);
+
+    if (my $out = $self->operation_instance->out_log_file) {
+        $self->stdout($out);
+    }
+    if (my $err = $self->operation_instance->err_log_file) {
+        $self->stderr($err);
+    }
+
+    return $self;
+}
+
 1;

@@ -342,8 +342,15 @@ sub dispatch {
     $instance->status('scheduled');
     
     my $try_shortcut_first = $instance->operation->operation_type->can('shortcut') ? 1 : 0;
-    
-    POE::Kernel->post('IKC','post','poe://Hub/dispatch/add_work', [ $instance, $instance->operation->operation_type, $input, $try_shortcut_first ]);
+
+    POE::Kernel->post('IKC','post','poe://Hub/dispatch/add_work', { 
+        instance => $instance, 
+        operation_type => $instance->operation->operation_type, 
+        input => $input, 
+        shortcut_flag => $try_shortcut_first,
+        out_log => $instance->current->stdout,
+        err_log => $instance->current->stderr
+    });
 }
 
 sub _util_error_walker {

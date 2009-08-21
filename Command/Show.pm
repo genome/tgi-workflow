@@ -17,7 +17,7 @@ class Workflow::Command::Show {
         debug => {
             is => 'Boolean',
             is_optional => 1,
-            doc => 'Show a tree of all underlying operations for debugging'
+            doc => 'Show a tree of all underlying operations with debug flags'
         }
     ]
 };
@@ -55,12 +55,32 @@ Status:      @{[$i->status]}
 Start Time:  @{[$i->current->start_time]}
 End Time:    @{[$i->current->end_time]}
 Dispatch Id: @{[$i->current->dispatch_identifier]}
+Stdout Log:  @{[$i->current->stdout]}
+Stderr Log:  @{[$i->current->stderr]}
 Input:
 @{[ YAML::Dump($i->input) ]}
 Output:
 @{[ YAML::Dump($i->output) ]} 
 MARK
 
+        if ($i->can('sorted_child_instances')) {
+            print sprintf("%9s %-60s %9s\n%80s\n",qw/id name status/,('-'x 80));
+            $self->_print_child($i,0);
+        }
+    }
+}
+
+sub _print_child {
+    my $self = shift;
+    my $i = shift;
+    my $d = shift;
+    
+#    print join("\t",$i->id,$i->name, $i->status) . "\n";
+    print sprintf("%9s %-60s %9s\n",$i->id, (' 'x$d) . $i->name, $i->status);
+    if ($i->can('sorted_child_instances')) {
+        foreach my $c ($i->sorted_child_instances) {
+            $self->_print_child($c,$d+1);
+        }
     }
 }
 

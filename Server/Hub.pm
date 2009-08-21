@@ -204,8 +204,10 @@ sub setup {
                 
                 if (exists $heap->{claimed}->{$remote_kernel}) {
                     my $payload = delete $heap->{claimed}->{$remote_kernel};
-                    my ($instance, $type, $input, $sc) = @$payload;
-                   
+#                    my ($instance, $type, $input, $sc) = @$payload;
+                    my $instance = $payload->{instance};
+                    my $sc = $payload->{shortcut_flag};
+                    
                     warn 'Blade failed on ' . $instance->id . ' ' . $instance->name . "\n";
 
                     if ($sc) {
@@ -222,12 +224,12 @@ sub setup {
                 }                
             },
             add_work => sub {
-                my ($kernel, $heap, $arg) = @_[KERNEL, HEAP, ARG0];
-                my ($instance, $type, $input, $sc) = @$arg;
+                my ($kernel, $heap, $params) = @_[KERNEL, HEAP, ARG0];
+                my $instance = $params->{instance};
                 evTRACE and print "dispatch add_work " . $instance->id . "\n";
 
                 $heap->{failed}->{$instance->id} = 0;
-                $heap->{queue}->enqueue(100,[$instance,$type,$input,$sc]);
+                $heap->{queue}->enqueue(100,$params);
                 
                 $kernel->delay('start_jobs',0);                
             },
@@ -238,7 +240,7 @@ sub setup {
 
                 if ($heap->{dispatched}->{$dispatch_id}) {
                     my $payload = delete $heap->{dispatched}->{$dispatch_id};
-                    my ($instance, $type, $input, $sc) = @$payload;
+                    my ($instance, $type, $input, $sc) = @{ $payload }{qw/instance operation_type input shortcut_flag/};
 
                     $heap->{claimed}->{$remote_kernel} = $payload;
 
@@ -260,10 +262,12 @@ sub setup {
                 if ($remote_kernel) {
                     my $payload = delete $heap->{claimed}->{$remote_kernel};
                     if ($payload) {
-                        my ($instance,$type,$input,$sc) = @$payload;
+#                        my ($instance,$type,$input,$sc) = @$payload;
+                        my $sc = $payload->{shortcut_flag};
                         if ($sc && !defined $output) {
                             $was_shortcutting = 1;
-                            $kernel->yield('add_work',[$instance,$type,$input,0]);
+                            $payload->{shortcut_flag} = 1;
+                            $kernel->yield('add_work',$payload);
                         }
                     }
                     
@@ -281,28 +285,37 @@ sub setup {
                 while ($heap->{job_count} < $heap->{job_limit}) {
                     my ($priority, $queue_id, $payload) = $heap->{queue}->dequeue_next();
                     if (defined $priority) {
-                        my ($instance, $type, $input, $sc) = @$payload;
+#                        my ($instance, $type, $input, $sc) = @$payload;
 
                         my $lsf_job_id;
-                        if ($sc) {
+                        if ($payload->{shortcut_flag}) {
                             if ($heap->{fork_count} >= $heap->{fork_limit}) {
                                 push @requeue, $payload;
                                 next;
                             }
                             
-                            $lsf_job_id = $kernel->call($_[SESSION],'fork_worker',$type->command_class_name);
+                            $lsf_job_id = $kernel->call($_[SESSION],'fork_worker',
+                                $payload->{operation_type}->command_class_name
+                            );
                             $heap->{fork_count}++;
                             $heap->{job_count}++;
                         } else {
-                            $lsf_job_id = $kernel->call($_[SESSION],'lsf_bsub',$type->lsf_queue,$type->lsf_resource,$type->command_class_name,$instance->name);
+                            $lsf_job_id = $kernel->call($_[SESSION],'lsf_bsub',
+                                $payload->{operation_type}->lsf_queue,
+                                $payload->{operation_type}->lsf_resource,
+                                $payload->{operation_type}->command_class_name,
+                                $payload->{out_log},
+                                $payload->{err_log},
+                                $payload->{instance}->name
+                            );
                             $heap->{job_count}++;
                         }
 
                         $heap->{dispatched}->{$lsf_job_id} = $payload;
 
-                        $kernel->post('IKC','post','poe://UR/workflow/schedule_instance',[$instance->id,$lsf_job_id]);
+                        $kernel->post('IKC','post','poe://UR/workflow/schedule_instance',[$payload->{instance}->id,$lsf_job_id]);
 
-                        evTRACE and print "dispatch start_jobs submitted $lsf_job_id $sc\n";
+                        evTRACE and print "dispatch start_jobs submitted $lsf_job_id " . $payload->{shortcut_flag} . "\n";
                     } else {
                         last;
                     }
@@ -351,8 +364,8 @@ sub setup {
                 }
             },
             lsf_bsub => sub {
-                my ($kernel, $queue, $rusage, $command_class, $name) = @_[KERNEL, ARG0, ARG1, ARG2, ARG3];
-                evTRACE and print "dispatch lsf_cmd\n";
+                my ($kernel, $queue, $rusage, $command_class, $stdout_file, $stderr_file, $name) = @_[KERNEL, ARG0, ARG1, ARG2, ARG3, ARG4, ARG5];
+                evTRACE and print "dispatch lsf_cmd $queue $rusage $stdout_file $stderr_file $name\n";
 
                 $queue ||= 'long';
                 $rusage ||= 'rusage[tmp=100]';
@@ -365,6 +378,12 @@ sub setup {
                     $lsf_opts = $rusage;
                 } else {
                     $lsf_opts = '-R "' . $rusage . '"';
+                    if ($stdout_file) {
+                        $lsf_opts .= ' -o ' . $stdout_file;
+                    }
+                    if ($stderr_file) {
+                        $lsf_opts .= ' -e ' . $stderr_file;
+                    }
                 }
 
                 my $hostname = hostname;
@@ -423,7 +442,8 @@ sub setup {
                     
                     if ($restart) {
                         my $payload = delete $heap->{dispatched}->{$lsf_job_id};
-                        my ($instance, $type, $input) = @$payload;
+#                        my ($instance, $type, $input) = @$payload;
+                        my $instance = $payload->{instance};
 
                         evTRACE and print 'dispatch check_jobs ' . $instance->id . ' ' . $instance->name . " vanished\n";
                         $heap->{job_count}--;

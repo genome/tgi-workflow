@@ -13,6 +13,7 @@ class Workflow::Operation {
         is_valid => { is => 'Boolean', default_value=>0, doc => 'Flag set when validate has run' },
         executor => { is => 'Workflow::Executor', id_by => 'workflow_executor_id', is_optional => 1 },
         parallel_by => { is => 'String', is_optional=>1 },
+        log_dir => { is => 'String', is_optional =>1 },
         filename => { is => 'String', is_optional => 1 }
     ]
 };
@@ -71,6 +72,18 @@ sub create_from_xml_simple_structure {
         $self = Workflow::Model->create_from_xml_simple_structure($struct,%params);
     } else {
         $params{parallel_by} = $struct->{parallelBy} if $struct->{parallelBy};
+        $params{log_dir} = $struct->{logDir} if $struct->{logDir};
+
+        if (exists $params{log_dir} && defined $params{log_dir}) {
+            if ($params{log_dir}) {
+                if ($params{log_dir} !~ /^\/gsc/) {
+                    die "log diretory not on a valid network volume for lsf: $params{log_dir}\n";
+                }
+            } else {
+                die "log directory does not exist: $params{log_dir}\n";
+            }
+        }
+        
 
         my $optype = Workflow::OperationType->create_from_xml_simple_structure($struct->{operationtype});
         $self = $class->create(
@@ -91,6 +104,7 @@ sub as_xml_simple_structure {
         operationtype => $self->operation_type->as_xml_simple_structure
     };
 
+    $struct->{logDir} = $self->log_dir if ($self->log_dir);
     $struct->{parallelBy} = $self->parallel_by if ($self->parallel_by);
 
     if (!$self->workflow_model) {
