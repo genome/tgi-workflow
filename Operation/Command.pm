@@ -134,9 +134,11 @@ sub execute {
         %stuff
     );
 
+    my $result_output_returned = 0;
     if (defined $result) {
         while (my ($k,$v) = each(%$result)) {
             $self->$k($v);
+            $result_output_returned = 1 if $k eq 'result';
         }
     } else {
         foreach my $error (@Workflow::Simple::ERROR) {
@@ -145,7 +147,9 @@ sub execute {
         die 'Errors occured while executing "' . $self->_operation->name . "\"\n";
     }
     
-    return $self->post_execute;
+    my $v = $self->post_execute;
+
+    return $result_output_returned ? $v : 1;
 }
 
 1;

@@ -63,11 +63,11 @@ sub pre_execute {
     if ($error_count) {
         # Shouldnt really hit this error... we should only be missing params if the user failed to provide them if they didnt provide data directory
         if ($self->data_directory) {
-            $self->("$error_count params were not successfully set by pre-execute using data directory " . $self->data_directory);
+            $self->error_message("$error_count params were not successfully set by pre-execute using data directory " . $self->data_directory);
         } else {
-            $self->("$error_count params were not provided. All params must be specified by hand if no data directory is specified for auto generation");
+            $self->error_message("$error_count params were not provided. All params must be specified by hand if no data directory is specified for auto generation");
         }
-        return 0;
+        exit;
     }
 
     return 1;
