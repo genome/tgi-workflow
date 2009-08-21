@@ -97,7 +97,7 @@ sub filenames_to_generate {
 __DATA__
 <?xml version='1.0' standalone='yes'?>
 
-<workflow name="Somatic Pipeline">
+<workflow name="Somatic Pipeline" logDir="/gsc/var/log/genome/somatic_pipeline">
 
   <link fromOperation="input connector" fromProperty="normal_model_id" toOperation="Somatic Sniper" toProperty="normal_model_id" />
   <link fromOperation="input connector" fromProperty="tumor_model_id" toOperation="Somatic Sniper" toProperty="tumor_model_id" />
