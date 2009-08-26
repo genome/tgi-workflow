@@ -38,7 +38,8 @@ sub create_from_xml_simple_structure {
 
     my $self;
     my $class = delete $struct->{typeClass};
-    if (defined $class && $my_class ne $class && $class->can('create_from_xml_simple_structure')) {
+    
+    if (defined $class && $class->class && $my_class ne $class && $class->can('create_from_xml_simple_structure')) {
 
         $self = $class->create_from_xml_simple_structure($struct);
 
