@@ -29,24 +29,41 @@ class Workflow::Command::RunGraph {
             is_optional => 1,
             doc => 'GraphViz output file to save to',
         },
+        deps => {
+            is => 'Boolean',
+            is_optional => 1,
+            default_value => 0,
+            doc => 'Show all dependancies for waiting nodes',
+        },
+#        all_deps => {
+#            is => 'Boolean',
+#            is_optional => 1,
+#            default_value => 0,
+#            doc => 'Show all dependancies for all nodes',
+#        },
+
     ]
 };
 
 sub sub_command_sort_position { 10 }
 
 sub help_brief {
-    "Show";
+"Generate a graph of a running workflow.";
 }
 
 sub help_synopsis {
     return <<"EOS"
-    workflow graph --xml example.xml --png output.png 
+    workflow run-graph --png example.png --instance-id 1234
+
+    workflow run-graph --deps --svg example.svg --instance-id 5678
+    By default, waiting nodes' dependancies are only shown if the depending
+    node is crashed.  --deps shows all dependancies for waiting nodes.
 EOS
 }
 
 sub help_detail {
     return <<"EOS"
-This command is used for diagnostic purposes.
+Generate a graph of a running workflow.  
 EOS
 }
 
@@ -86,7 +103,7 @@ $DB::single=1;
         
     my $done_text = '';
     if (@{$nodes_status{'done'}} || @{$nodes_status{'crashed'}}) {
-        $done_text = "    subgraph cluster_done {\n        label=Done;\n        ";
+#        $done_text = "    subgraph cluster_done {\n        label=Done;\n        ";  # Don't draw a box around done anymore...
         my $first_time = 1;
         foreach my $node ( ( @{$nodes_status{'done'}}, @{$nodes_status{'crashed'}} ) ) {
             if ($first_time) {
@@ -94,9 +111,9 @@ $DB::single=1;
                 $first_time = 0;
             }
                 
-            $done_text .= $node->id . "; ";
+#            $done_text .= $node->id . "; ";
         }
-        $done_text .= "\n    }\n";
+#        $done_text .= "\n    }\n";
     }
         
     my $running_text = '';
@@ -123,6 +140,28 @@ $DB::single=1;
                 $first_time = 0;
             }
             $waiting_text .= $node->id . "; ";
+
+            my @depended = $node->depended_on_by;
+            foreach my $d ( @depended ) {
+                my $color;
+                if ($d->status eq 'crashed') {
+                    $color = 'red';
+                } elsif ($d->status eq 'done') {
+                    next unless ($self->deps);
+                    $color = 'green';
+                } elsif ($d->status eq 'running') {
+                    next unless ($self->deps);
+                    $color = 'blue';
+                } elsif ($d->status eq 'new') { 
+                    next unless ($self->deps);
+                    $color = 'lightgray';
+                } else {
+                    next unless ($self->deps);
+                    $color = 'black';
+                }
+                $connections_text .= sprintf("%d -> %d [style=dashed,color=$color];\n",
+                                             $d->id, $node->id);  # If we draw it the other way, it sometimes segfaults :(
+            }
         }
         $waiting_text .= "\n    }\n";
     }
@@ -148,6 +187,9 @@ GRAPH
         open(my $gv, "| dot -Tpng -o $outfile") || Carp::croak("Can't start dot (graphviz): $!");
         $gv->print($output,"\n");
         $gv->close();
+        if ($?) {
+            $self->error_message("dot exited abnormally");
+        }
     }
     if (my $outfile = $self->svg) {
         open(my $gv, "| dot -Tsvg -o $outfile") || Carp::croak("Can't start dot (graphviz): $!");
