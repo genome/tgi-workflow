@@ -19,7 +19,12 @@ class Workflow::Command::RunGraph {
             is_optional => 1,
             doc => 'PNG output file to save to'
         },
-        gv => {
+        svg => {
+            is => 'String',
+            is_optional => 1,
+            doc => 'SVG output file to save to'
+        },
+       gv => {
             is => 'String',
             is_optional => 1,
             doc => 'GraphViz output file to save to',
@@ -45,7 +50,119 @@ This command is used for diagnostic purposes.
 EOS
 }
 
+
 sub execute {
+    my $self = shift;
+
+$DB::single=1;
+    my $master_node = Workflow::Store::Db::Operation::Instance->get($self->instance_id);
+    unless ($master_node) {
+        $self->error_message("Not a valid workflow instance ID");
+        return;
+    }
+
+    my %nodes_status = ( done => [], crashed => [], running => [], scheduled => [], 'new' => [] );
+
+    my $nodes_text = '    ' . $self->_get_node_text($master_node) . "\n";
+#    $nodes_text .= '{ rank=same; ' . $master_node->id . "; order_start;}\n";
+    my $connections_text = '';
+
+    my @still_to_process = ( $master_node );
+    while (@still_to_process) {
+        my $node = shift @still_to_process;
+
+        next unless ($node->can('sorted_child_instances'));
+
+        my @children = $node->sorted_child_instances();
+        # Make all the child nodes rank together
+        #$nodes_text .= '    { rank=same; ' . join('; ', map { $_->id } @children) . ";}\n";
+        foreach my $child ( @children ) {
+            $nodes_text .= $self->_get_node_text($child) . "\n";
+            $connections_text .= sprintf('    "%d" -> "%d";' . "\n", $node->id, $child->id);
+            push @{$nodes_status{$child->status}}, $child;
+        }
+        push @still_to_process, @children;
+    }
+        
+    my $done_text = '';
+    if (@{$nodes_status{'done'}} || @{$nodes_status{'crashed'}}) {
+        $done_text = "    subgraph cluster_done {\n        label=Done;\n        ";
+        my $first_time = 1;
+        foreach my $node ( ( @{$nodes_status{'done'}}, @{$nodes_status{'crashed'}} ) ) {
+            if ($first_time) {
+                $nodes_text .= '    {rank=same; "order_done"; ' . $node->id . "; }\n";
+                $first_time = 0;
+            }
+                
+            $done_text .= $node->id . "; ";
+        }
+        $done_text .= "\n    }\n";
+    }
+        
+    my $running_text = '';
+    if (@{$nodes_status{'running'}} || @{$nodes_status{'scheduled'}}) {
+        $running_text = "    subgraph cluster_now {\n        color=blue; label=Now;\n    ";
+        my $first_time = 1;
+        foreach my $node ( ( @{$nodes_status{'running'}}, @{$nodes_status{'scheduled'}} ) ) {
+            if ($first_time) {
+                $nodes_text .= '    {rank=same; "order_now"; ' . $node->id . "; }\n";
+                $first_time = 0;
+            }
+            $running_text .= $node->id . "; ";
+        }
+        $running_text .= "\n    }\n";
+    }
+
+    my $waiting_text = '';
+    if (@{$nodes_status{'new'}}) {
+        $waiting_text = "    subgraph cluster_waiting {\n    label=Waiting;\n    ";
+        my $first_time = 1;
+        foreach my $node ( @{$nodes_status{'new'}} ) {
+            if ($first_time) {
+                $nodes_text .= '    {rank=same; "order_waiting"; ' . $node->id . "; }\n";
+                $first_time = 0;
+            }
+            $waiting_text .= $node->id . "; ";
+        }
+        $waiting_text .= "\n    }\n";
+    }
+
+    my $graph_label = $master_node->name;
+    my $output = <<"GRAPH";
+digraph workflow {
+    label="$graph_label";
+    rankdir=LR;
+    "order_start" -> "order_done";
+    "order_done" -> "order_now" [minlen=3];
+    "order_now" -> "order_waiting" [minlen=3];
+    order_start [rank=min];
+    order_waiting [rank=max];
+$running_text
+$waiting_text
+$nodes_text
+$connections_text
+}
+GRAPH
+
+    if (my $outfile = $self->png) {
+        open(my $gv, "| dot -Tpng -o $outfile") || Carp::croak("Can't start dot (graphviz): $!");
+        $gv->print($output,"\n");
+        $gv->close();
+    }
+    if (my $outfile = $self->svg) {
+        open(my $gv, "| dot -Tsvg -o $outfile") || Carp::croak("Can't start dot (graphviz): $!");
+        $gv->print($output,"\n");
+        $gv->close();
+    }
+    if (my $outfile = $self->gv) {
+        open (my $f, ">$outfile");
+        $f->print($output,"\n");
+        $f->close();
+    }
+}
+
+        
+sub execute_old {
     my $self = shift;
     
 $DB::single=1;
@@ -61,16 +178,15 @@ $DB::single=1;
     
     my $edges_text = $self->_get_graph_edges($i,$done,$running,$new,$i);
 
-    # rankdir=LR
     my $nodes_text = "{ rank=min; " . $self->_get_node_text($i) . " }\n";
-
+  
     my $done_text = '';
     if (@$done) {
         $nodes_text .= "{ rank=source;\n";
         $done_text = "subgraph cluster_done {\n  label=Done;\n";
         foreach my $node ( @$done ) {
             $done_text .= $node->id . "; ";
-            $nodes_text .= "  " . $self->_get_node_text($node);
+            $nodes_text .= "  " . $self->_get_node_text($node) . "\n";
         }
         $done_text .= "\n}\n";
         $nodes_text .= "\n}\n";
@@ -80,7 +196,7 @@ $DB::single=1;
         $running_text = "subgraph cluster_now {\ncolor=lightblue;label=Now;\n";
         foreach my $node ( @$running ) {
             $running_text .= $node->id . "; ";
-            $nodes_text .= $self->_get_node_text($node);
+            $nodes_text .= $self->_get_node_text($node) . "\n"; 
         }
         $running_text .= "\n}\n";
     }
@@ -90,7 +206,7 @@ $DB::single=1;
         $new_text = "subgraph cluster_waiting {\nlabel=Waiting;rank=sink;\n";
         foreach my $node ( @$new ) {
             $new_text .= $node->id . "; ";
-            $nodes_text .= "  ".$self->_get_node_text($node);
+            $nodes_text .= "  ".$self->_get_node_text($node) . "\n";
         }
         $new_text .= "\n}\n";
         $nodes_text .= "\n}\n";
@@ -108,7 +224,7 @@ $DB::single=1;
         $gv->close();
     }
     if (my $outfile = $self->gv) {
-        open (my $f, ">/tmp/gv.graph");
+        open (my $f, ">$outfile");
         $f->print($output,"\n");
         $f->close();
     }
@@ -121,7 +237,7 @@ sub _get_node_text {
     if ( $node->status eq 'done' ) {
         $status_attribs = ',style=filled,color=green';
     } elsif ($node->status eq 'running') {
-        $status_attribs = ',color=blue';
+        $status_attribs = ',style=filled,color=lightblue';
     } elsif ($node->status eq 'scheduled') {
         $status_attribs = ',style=filled,color=lightgrey';
     } elsif ($node->status eq 'new') {
@@ -136,9 +252,11 @@ sub _get_node_text {
         $status_attribs .= ",shape=doublecircle";
     }
 
-    my $text = sprintf('"%d" [label="%s"%s];'."\n", $node->id, 
-                                                   $node->name,
-                                                   $status_attribs);
+    #my $text = sprintf('"%d" [label="%s",URL="http://www.google.com/"%s];',
+    my $text = sprintf('"%d" [label="%s"%s];',
+                       $node->id, 
+                       $node->name,
+                       $status_attribs);
     return $text;
 }
 
