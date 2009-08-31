@@ -33,14 +33,14 @@ class Workflow::Command::RunGraph {
             is => 'Boolean',
             is_optional => 1,
             default_value => 0,
-            doc => 'Show all dependancies for waiting nodes',
+            doc => 'Show all dependancies for waiting nodes, not just node waiting on crashed nodes',
         },
-#        all_deps => {
-#            is => 'Boolean',
-#            is_optional => 1,
-#            default_value => 0,
-#            doc => 'Show all dependancies for all nodes',
-#        },
+        all_deps => {
+            is => 'Boolean',
+            is_optional => 1,
+            default_value => 0,
+            doc => 'Show all dependancies for all nodes',
+        },
 
     ]
 };
@@ -76,6 +76,10 @@ $DB::single=1;
     unless ($master_node) {
         $self->error_message("Not a valid workflow instance ID");
         return;
+    }
+
+    if ($self->all_deps) {
+        $self->deps(1);
     }
 
     my %nodes_status = ( done => [], crashed => [], running => [], scheduled => [], 'new' => [] );
@@ -140,7 +144,15 @@ $DB::single=1;
                 $first_time = 0;
             }
             $waiting_text .= $node->id . "; ";
+        }
+        $waiting_text .= "\n    }\n";
+    }
 
+    my $dependancies_text = '';
+    foreach my $status ( qw(done crashed running scheduled new) ) {
+        next unless ($status eq 'new' || $self->all_deps);
+
+        foreach my $node ( @{$nodes_status{$status}} ) {
             my @depended = $node->depended_on_by;
             foreach my $d ( @depended ) {
                 my $color;
@@ -152,18 +164,17 @@ $DB::single=1;
                 } elsif ($d->status eq 'running') {
                     next unless ($self->deps);
                     $color = 'blue';
-                } elsif ($d->status eq 'new') { 
+                } elsif ($d->status eq 'new') {
                     next unless ($self->deps);
                     $color = 'lightgray';
                 } else {
                     next unless ($self->deps);
                     $color = 'black';
                 }
-                $connections_text .= sprintf("%d -> %d [style=dashed,constraint=false,color=$color];\n",
-                                             $node->id, $d->id); 
+                $dependancies_text .= sprintf("%d -> %d [style=dashed,constraint=false,color=$color];\n",
+                                              $node->id, $d->id);
             }
         }
-        $waiting_text .= "\n    }\n";
     }
 
     my $graph_label = $master_node->name;
@@ -176,10 +187,21 @@ digraph workflow {
     "order_now" -> "order_waiting" [minlen=3];
     order_start [rank=min];
     order_waiting [rank=max];
+
+  // Running subgraph
 $running_text
+
+  // Waiting subgraph
 $waiting_text
+
+  // All the nodes
 $nodes_text
+
+  // All the connections
 $connections_text
+
+  // All the dependancies
+$dependancies_text
 }
 GRAPH
 
