@@ -159,8 +159,8 @@ $DB::single=1;
                     next unless ($self->deps);
                     $color = 'black';
                 }
-                $connections_text .= sprintf("%d -> %d [style=dashed,color=$color];\n",
-                                             $d->id, $node->id);  # If we draw it the other way, it sometimes segfaults :(
+                $connections_text .= sprintf("%d -> %d [style=dashed,constraint=false,color=$color];\n",
+                                             $node->id, $d->id); 
             }
         }
         $waiting_text .= "\n    }\n";
