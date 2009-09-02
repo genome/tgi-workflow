@@ -110,12 +110,12 @@ __DATA__
 
 <workflow name="Somatic Pipeline" logDir="/gsc/var/log/genome/somatic_pipeline">
 
-  <link fromOperation="input connector" fromProperty="normal_model_id" toOperation="Somatic Sniper" toProperty="normal_model_id" />
-  <link fromOperation="input connector" fromProperty="tumor_model_id" toOperation="Somatic Sniper" toProperty="tumor_model_id" />
+  <link fromOperation="input connector" fromProperty="normal_bam_file" toOperation="Somatic Sniper" toProperty="normal_bam_file" />
+  <link fromOperation="input connector" fromProperty="tumor_bam_file" toOperation="Somatic Sniper" toProperty="tumor_bam_file" />
   <link fromOperation="input connector" fromProperty="sniper_snp_output" toOperation="Somatic Sniper" toProperty="output_snp_file" />
   <link fromOperation="input connector" fromProperty="sniper_indel_output" toOperation="Somatic Sniper" toProperty="output_indel_file" />
 
-  <link fromOperation="input connector" fromProperty="tumor_model_id" toOperation="Snp Filter" toProperty="tumor_model_id" />
+  <link fromOperation="input connector" fromProperty="tumor_snp_file" toOperation="Snp Filter" toProperty="tumor_snp_file" />
   <link fromOperation="input connector" fromProperty="snp_filter_output" toOperation="Snp Filter" toProperty="output_file" />
   <link fromOperation="Somatic Sniper" fromProperty="output_snp_file" toOperation="Snp Filter" toProperty="sniper_snp_file" />
 
@@ -146,13 +146,13 @@ __DATA__
   <link fromOperation="Somatic Sniper" fromProperty="output_snp_file" toOperation="Tier Variants Snp" toProperty="variant_file" />
   <link fromOperation="Annotate Transcript Variants Snp" fromProperty="output_file" toOperation="Tier Variants Snp" toProperty="transcript_annotation_file" />
 
-  <link fromOperation="input connector" fromProperty="tumor_model_id" toOperation="High Confidence Snp Tier 1" toProperty="tumor_model_id" />
+  <link fromOperation="input connector" fromProperty="tumor_bam_file" toOperation="High Confidence Snp Tier 1" toProperty="tumor_bam_file" />
   <link fromOperation="input connector" fromProperty="tier_1_snp_high_confidence_file" toOperation="High Confidence Snp Tier 1" toProperty="output_file" />
-  <link fromOperation="input connector" fromProperty="tumor_model_id" toOperation="High Confidence Snp Tier 2" toProperty="tumor_model_id" />
+  <link fromOperation="input connector" fromProperty="tumor_bam_file" toOperation="High Confidence Snp Tier 2" toProperty="tumor_bam_file" />
   <link fromOperation="input connector" fromProperty="tier_2_snp_high_confidence_file" toOperation="High Confidence Snp Tier 2" toProperty="output_file" />
-  <link fromOperation="input connector" fromProperty="tumor_model_id" toOperation="High Confidence Snp Tier 3" toProperty="tumor_model_id" />
+  <link fromOperation="input connector" fromProperty="tumor_bam_file" toOperation="High Confidence Snp Tier 3" toProperty="tumor_bam_file" />
   <link fromOperation="input connector" fromProperty="tier_3_snp_high_confidence_file" toOperation="High Confidence Snp Tier 3" toProperty="output_file" />
-  <link fromOperation="input connector" fromProperty="tumor_model_id" toOperation="High Confidence Snp Tier 4" toProperty="tumor_model_id" />
+  <link fromOperation="input connector" fromProperty="tumor_bam_file" toOperation="High Confidence Snp Tier 4" toProperty="tumor_bam_file" />
   <link fromOperation="input connector" fromProperty="tier_4_snp_high_confidence_file" toOperation="High Confidence Snp Tier 4" toProperty="output_file" />
   <link fromOperation="Tier Variants Snp" fromProperty="tier1_file" toOperation="High Confidence Snp Tier 1" toProperty="sniper_file" />
   <link fromOperation="Tier Variants Snp" fromProperty="tier2_file" toOperation="High Confidence Snp Tier 2" toProperty="sniper_file" />
@@ -184,7 +184,7 @@ __DATA__
   <link fromOperation="Annotate Transcript Variants Indel" fromProperty="output_file" toOperation="Tier Variants Indel" toProperty="transcript_annotation_file" />
 
   <link fromOperation="Tier Variants Indel" fromProperty="tier1_file" toOperation="High Confidence Indel Tier 1" toProperty="sniper_file" />
-  <link fromOperation="input connector" fromProperty="tumor_model_id" toOperation="High Confidence Indel Tier 1" toProperty="tumor_model_id" />
+  <link fromOperation="input connector" fromProperty="tumor_bam_file" toOperation="High Confidence Indel Tier 1" toProperty="tumor_bam_file" />
   <link fromOperation="input connector" fromProperty="tier_1_indel_high_confidence_file" toOperation="High Confidence Indel Tier 1" toProperty="output_file" />
 
   <link fromOperation="High Confidence Indel Tier 1" fromProperty="output_file" toOperation="output connector" toProperty="tier_1_indel_high_confidence" />
@@ -241,8 +241,9 @@ __DATA__
   </operation>
 
   <operationtype typeClass="Workflow::OperationType::Model">
-    <inputproperty>normal_model_id</inputproperty>
-    <inputproperty>tumor_model_id</inputproperty>
+    <inputproperty>normal_bam_file</inputproperty>
+    <inputproperty>tumor_bam_file</inputproperty>
+    <inputproperty>tumor_snp_file</inputproperty>
 
     <inputproperty isOptional="Y">only_tier_1</inputproperty>
     <inputproperty isOptional="Y">only_tier_1_indel</inputproperty>
