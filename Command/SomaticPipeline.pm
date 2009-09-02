@@ -50,6 +50,9 @@ sub pre_execute {
     unless ($self->only_tier_1) {
         $self->only_tier_1(0);
     }
+    unless ($self->only_tier_1_indel) {
+        $self->only_tier_1_indel(1);
+    }
 
     # Verify all of the params that should have been provided or generated
     my $error_count = 0;
@@ -85,13 +88,21 @@ sub filenames_to_generate {
             annotate_output_snp
             ucsc_output
             ucsc_unannotated_output
-            tier_output_snp
             indel_lib_filter_output
             adaptor_output_indel
             annotate_output_indel
-            tier_output_indel
-            );
-}
+            tier_1_snp_file
+            tier_2_snp_file
+            tier_3_snp_file
+            tier_4_snp_file
+            tier_1_indel_file
+            tier_1_snp_high_confidence_file
+            tier_2_snp_high_confidence_file
+            tier_3_snp_high_confidence_file
+            tier_4_snp_high_confidence_file
+            tier_1_indel_high_confidence_file
+            ) ;
+} 
 
 1;
 __DATA__
@@ -126,13 +137,35 @@ __DATA__
   <link fromOperation="input connector" fromProperty="ucsc_unannotated_output" toOperation="Annotate UCSC" toProperty="unannotated_file" /> 
   <link fromOperation="input connector" fromProperty="only_tier_1" toOperation="Annotate UCSC" toProperty="skip" /> 
     
-  <link fromOperation="input connector" fromProperty="tier_output_snp" toOperation="Tier Variants Snp" toProperty="output_file" />
+  <link fromOperation="input connector" fromProperty="tier_1_snp_file" toOperation="Tier Variants Snp" toProperty="tier1_file" />
+  <link fromOperation="input connector" fromProperty="tier_2_snp_file" toOperation="Tier Variants Snp" toProperty="tier2_file" />
+  <link fromOperation="input connector" fromProperty="tier_3_snp_file" toOperation="Tier Variants Snp" toProperty="tier3_file" />
+  <link fromOperation="input connector" fromProperty="tier_4_snp_file" toOperation="Tier Variants Snp" toProperty="tier4_file" />
   <link fromOperation="input connector" fromProperty="only_tier_1" toOperation="Tier Variants Snp" toProperty="only_tier_1" />
   <link fromOperation="Annotate UCSC" fromProperty="output_file" toOperation="Tier Variants Snp" toProperty="ucsc_file" />
   <link fromOperation="Somatic Sniper" fromProperty="output_snp_file" toOperation="Tier Variants Snp" toProperty="variant_file" />
   <link fromOperation="Annotate Transcript Variants Snp" fromProperty="output_file" toOperation="Tier Variants Snp" toProperty="transcript_annotation_file" />
 
-  <link fromOperation="Tier Variants Snp" fromProperty="output_file" toOperation="output connector" toProperty="tier_file_snp" />
+  <link fromOperation="input connector" fromProperty="tumor_model_id" toOperation="High Confidence Snp Tier 1" toProperty="tumor_model_id" />
+  <link fromOperation="input connector" fromProperty="tier_1_snp_high_confidence_file" toOperation="High Confidence Snp Tier 1" toProperty="output_file" />
+  <link fromOperation="input connector" fromProperty="tumor_model_id" toOperation="High Confidence Snp Tier 2" toProperty="tumor_model_id" />
+  <link fromOperation="input connector" fromProperty="tier_2_snp_high_confidence_file" toOperation="High Confidence Snp Tier 2" toProperty="output_file" />
+  <link fromOperation="input connector" fromProperty="tumor_model_id" toOperation="High Confidence Snp Tier 3" toProperty="tumor_model_id" />
+  <link fromOperation="input connector" fromProperty="tier_3_snp_high_confidence_file" toOperation="High Confidence Snp Tier 3" toProperty="output_file" />
+  <link fromOperation="input connector" fromProperty="tumor_model_id" toOperation="High Confidence Snp Tier 4" toProperty="tumor_model_id" />
+  <link fromOperation="input connector" fromProperty="tier_4_snp_high_confidence_file" toOperation="High Confidence Snp Tier 4" toProperty="output_file" />
+  <link fromOperation="Tier Variants Snp" fromProperty="tier1_file" toOperation="High Confidence Snp Tier 1" toProperty="sniper_file" />
+  <link fromOperation="Tier Variants Snp" fromProperty="tier2_file" toOperation="High Confidence Snp Tier 2" toProperty="sniper_file" />
+  <link fromOperation="Tier Variants Snp" fromProperty="tier3_file" toOperation="High Confidence Snp Tier 3" toProperty="sniper_file" />
+  <link fromOperation="Tier Variants Snp" fromProperty="tier4_file" toOperation="High Confidence Snp Tier 4" toProperty="sniper_file" />
+  <link fromOperation="input connector" fromProperty="only_tier_1" toOperation="High Confidence Snp Tier 2" toProperty="skip" /> 
+  <link fromOperation="input connector" fromProperty="only_tier_1" toOperation="High Confidence Snp Tier 3" toProperty="skip" /> 
+  <link fromOperation="input connector" fromProperty="only_tier_1" toOperation="High Confidence Snp Tier 4" toProperty="skip" /> 
+
+  <link fromOperation="High Confidence Snp Tier 1" fromProperty="output_file" toOperation="output connector" toProperty="tier_1_snp_high_confidence" />
+  <link fromOperation="High Confidence Snp Tier 2" fromProperty="output_file" toOperation="output connector" toProperty="tier_2_snp_high_confidence" />
+  <link fromOperation="High Confidence Snp Tier 3" fromProperty="output_file" toOperation="output connector" toProperty="tier_3_snp_high_confidence" />
+  <link fromOperation="High Confidence Snp Tier 4" fromProperty="output_file" toOperation="output connector" toProperty="tier_4_snp_high_confidence" />
 
   <link fromOperation="input connector" fromProperty="indel_lib_filter_output" toOperation="Library Support Filter" toProperty="output_file" />
   <link fromOperation="Somatic Sniper" fromProperty="output_indel_file" toOperation="Library Support Filter" toProperty="indel_file" />
@@ -145,12 +178,16 @@ __DATA__
   <link fromOperation="input connector" fromProperty="annotate_no_headers" toOperation="Annotate Transcript Variants Indel" toProperty="no_headers" />
   <link fromOperation="input connector" fromProperty="transcript_annotation_filter" toOperation="Annotate Transcript Variants Indel" toProperty="annotation_filter" />
 
-  <link fromOperation="input connector" fromProperty="tier_output_indel" toOperation="Tier Variants Indel" toProperty="output_file" />
-  <link fromOperation="input connector" fromProperty="only_tier_1" toOperation="Tier Variants Indel" toProperty="only_tier_1" />
+  <link fromOperation="input connector" fromProperty="tier_1_indel_file" toOperation="Tier Variants Indel" toProperty="tier1_file" />
+  <link fromOperation="input connector" fromProperty="only_tier_1_indel" toOperation="Tier Variants Indel" toProperty="only_tier_1" />
   <link fromOperation="Library Support Filter" fromProperty="output_file" toOperation="Tier Variants Indel" toProperty="variant_file" />
   <link fromOperation="Annotate Transcript Variants Indel" fromProperty="output_file" toOperation="Tier Variants Indel" toProperty="transcript_annotation_file" />
 
-  <link fromOperation="Tier Variants Indel" fromProperty="output_file" toOperation="output connector" toProperty="tier_file_indel" />
+  <link fromOperation="Tier Variants Indel" fromProperty="tier1_file" toOperation="High Confidence Indel Tier 1" toProperty="sniper_file" />
+  <link fromOperation="input connector" fromProperty="tumor_model_id" toOperation="High Confidence Indel Tier 1" toProperty="tumor_model_id" />
+  <link fromOperation="input connector" fromProperty="tier_1_indel_high_confidence_file" toOperation="High Confidence Indel Tier 1" toProperty="output_file" />
+
+  <link fromOperation="High Confidence Indel Tier 1" fromProperty="output_file" toOperation="output connector" toProperty="tier_1_indel_high_confidence" />
 
   <operation name="Somatic Sniper">
     <operationtype commandClass="Genome::Model::Tools::Somatic::Sniper" typeClass="Workflow::OperationType::Command" />
@@ -174,6 +211,18 @@ __DATA__
   <operation name="Tier Variants Snp">
     <operationtype commandClass="Genome::Model::Tools::Somatic::TierVariants" typeClass="Workflow::OperationType::Command" />
   </operation>
+  <operation name="High Confidence Snp Tier 1">
+    <operationtype commandClass="Genome::Model::Tools::Somatic::HighConfidence" typeClass="Workflow::OperationType::Command" />
+  </operation>
+  <operation name="High Confidence Snp Tier 2">
+    <operationtype commandClass="Genome::Model::Tools::Somatic::HighConfidence" typeClass="Workflow::OperationType::Command" />
+  </operation>
+  <operation name="High Confidence Snp Tier 3">
+    <operationtype commandClass="Genome::Model::Tools::Somatic::HighConfidence" typeClass="Workflow::OperationType::Command" />
+  </operation>
+  <operation name="High Confidence Snp Tier 4">
+    <operationtype commandClass="Genome::Model::Tools::Somatic::HighConfidence" typeClass="Workflow::OperationType::Command" />
+  </operation>
 
   <operation name="Library Support Filter">
     <operationtype commandClass="Genome::Model::Tools::Somatic::LibrarySupportFilter" typeClass="Workflow::OperationType::Command" />
@@ -187,12 +236,16 @@ __DATA__
   <operation name="Tier Variants Indel">
     <operationtype commandClass="Genome::Model::Tools::Somatic::TierVariants" typeClass="Workflow::OperationType::Command" />
   </operation>
+  <operation name="High Confidence Indel Tier 1">
+    <operationtype commandClass="Genome::Model::Tools::Somatic::HighConfidence" typeClass="Workflow::OperationType::Command" />
+  </operation>
 
   <operationtype typeClass="Workflow::OperationType::Model">
     <inputproperty>normal_model_id</inputproperty>
     <inputproperty>tumor_model_id</inputproperty>
 
     <inputproperty isOptional="Y">only_tier_1</inputproperty>
+    <inputproperty isOptional="Y">only_tier_1_indel</inputproperty>
 
     <inputproperty isOptional="Y">data_directory</inputproperty>
     <inputproperty isOptional="Y">ucsc_file</inputproperty>
@@ -214,18 +267,31 @@ __DATA__
     <inputproperty isOptional="Y">ucsc_output</inputproperty>
     <inputproperty isOptional="Y">ucsc_unannotated_output</inputproperty>
 
-    <inputproperty isOptional="Y">tier_output_snp</inputproperty>
+    <inputproperty isOptional="Y">tier_1_snp_file</inputproperty>
+    <inputproperty isOptional="Y">tier_2_snp_file</inputproperty>
+    <inputproperty isOptional="Y">tier_3_snp_file</inputproperty>
+    <inputproperty isOptional="Y">tier_4_snp_file</inputproperty>
 
-    <outputproperty>tier_file_snp</outputproperty>
+    <inputproperty isOptional="Y">tier_1_snp_high_confidence_file</inputproperty>
+    <inputproperty isOptional="Y">tier_2_snp_high_confidence_file</inputproperty>
+    <inputproperty isOptional="Y">tier_3_snp_high_confidence_file</inputproperty>
+    <inputproperty isOptional="Y">tier_4_snp_high_confidence_file</inputproperty>
     
+    <inputproperty isOptional="Y">tier_1_indel_file</inputproperty>
+    <inputproperty isOptional="Y">tier_1_indel_high_confidence_file</inputproperty>
+
+    <outputproperty>tier_1_snp_high_confidence</outputproperty>
+    <outputproperty>tier_2_snp_high_confidence</outputproperty>
+    <outputproperty>tier_3_snp_high_confidence</outputproperty>
+    <outputproperty>tier_4_snp_high_confidence</outputproperty>
 
     <inputproperty isOptional="Y">indel_lib_filter_output</inputproperty>
     <inputproperty isOptional="Y">adaptor_output_indel</inputproperty>
     <inputproperty isOptional="Y">annotate_output_indel</inputproperty>
-    <inputproperty isOptional="Y">tier_output_indel</inputproperty>
 
-    <outputproperty>tier_file_indel</outputproperty>
+    <outputproperty>tier_1_indel_high_confidence</outputproperty>
   </operationtype>
 
 </workflow>
+
 
