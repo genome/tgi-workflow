@@ -4,6 +4,8 @@ use warnings;
 
 use Workflow;
 use Carp;
+use XML::LibXML;
+use XML::LibXSLT;
 
 package Workflow::Command::RunGraph;
 
@@ -24,10 +26,15 @@ class Workflow::Command::RunGraph {
             is_optional => 1,
             doc => 'SVG output file to save to'
         },
-       gv => {
+        gv => {
             is => 'String',
             is_optional => 1,
             doc => 'GraphViz output file to save to',
+        },
+        xml => {
+            is => 'String',
+            is_optional => 1,
+            doc => 'XML output file to save to',
         },
         deps => {
             is => 'Boolean',
@@ -41,8 +48,20 @@ class Workflow::Command::RunGraph {
             default_value => 0,
             doc => 'Show all dependancies for all nodes',
         },
+        _doc => {
+                  is => 'XML::LibXML::Document',
+                  is_transient => 1,
+                  is_optional => 1,
+                  doc => "The XML tool used to create all nodes of the output XML tree.",
+        },
+        _graph => {
+                  is => 'XML::LibXML::Element',
+                  is_transient => 1,
+                  is_optional => 1,
+                  doc => "The XML tool used to create all nodes of the output XML tree.",
+        },
 
-    ]
+    ],
 };
 
 sub sub_command_sort_position { 10 }
@@ -67,10 +86,97 @@ Generate a graph of a running workflow.
 EOS
 }
 
+sub getDataNode {
+
+    my $self = shift;
+    my $key_name = shift;
+    my $value = shift;
+
+    my $doc = $self->_doc;
+    
+    my $data = $doc->createElement("data");
+    $data->addChild($doc->createAttribute("key",$key_name));
+    $data->addChild($doc->createTextNode($value));
+ 
+    return $data; 
+}
+
+sub addKey {
+    my $self = shift;
+    my $id = shift;
+    my $for = shift;
+    my $name = shift;
+    my $type = shift;
+    
+    my $doc = $self->_doc;
+    my $graph = $self->_graph;
+
+    my $key_el = $doc->createElement("key");
+    $key_el->addChild($doc->createAttribute("id",$id) );
+    $key_el->addChild($doc->createAttribute("for",$for) );
+    $key_el->addChild($doc->createAttribute("attr.name",$name) );
+    $key_el->addChild($doc->createAttribute("attr.type",$type) );
+
+    $graph->addChild($key_el);
+    return; 
+}
+
+sub addEdge {
+    my $self = shift;
+    my $source = shift;
+    my $target = shift;
+    
+    my $doc = $self->_doc;
+    my $graph = $self->_graph;
+
+    my $edge = $doc->createElement("edge");
+    $edge->addChild($doc->createAttribute("id",$source."_".$target) );
+    $edge->addChild($doc->createAttribute("source",$source) );
+    $edge->addChild($doc->createAttribute("target",$target) );
+
+    $graph->addChild($edge); 
+}
+
+sub addNode {
+    my $self = shift;
+    my $id   = shift;
+    my $name = shift;
+    my $status = shift;
+    my $type = shift;
+
+    my $doc = $self->_doc;
+    my $graph = $self->_graph;
+
+    my $node = $doc->createElement("node");
+    $node->addChild($doc->createAttribute("id",$id) );
+    $node->addChild($self->getDataNode("name",$name) );
+    $node->addChild($self->getDataNode("status",$status) );
+    $node->addChild($self->getDataNode("node_type",$type) );
+    $graph->addChild($node);
+
+    return;
+    #my $data = $doc->createElelemtn
+}
 
 sub execute {
     my $self = shift;
 
+    my $doc = XML::LibXML->createDocument();
+    $self->_doc($doc);
+    my $root_node = $doc->createElement("graphml");
+    $root_node->addChild($doc->createAttribute("xmlns", "http://graphml.graphdrawing.org/xmlns"));
+    
+    my $graph_node = $doc->createElement("graph");
+    $graph_node->addChild($doc->createAttribute("edgedefault","undirected"));
+
+    $self->_graph($graph_node);
+    $root_node->addChild($graph_node);
+    $doc->addChild($root_node);
+
+    $self->addKey("name","node","name","string");
+    $self->addKey("status","node","status","string");
+    $self->addKey("node_type","node","node_type","string");
+    
 $DB::single=1;
     my $master_node = Workflow::Store::Db::Operation::Instance->get($self->instance_id);
     unless ($master_node) {
@@ -100,6 +206,7 @@ $DB::single=1;
         foreach my $child ( @children ) {
             $nodes_text .= $self->_get_node_text($child) . "\n";
             $connections_text .= sprintf('    "%d" -> "%d";' . "\n", $node->id, $child->id);
+            $self->addEdge($node->id, $child->id);            
             push @{$nodes_status{$child->status}}, $child;
         }
         push @still_to_process, @children;
@@ -223,6 +330,11 @@ GRAPH
         $f->print($output,"\n");
         $f->close();
     }
+    if (my $outfile = $self->xml) {
+        open (my $f, ">$outfile");
+        $f->print($doc->toString(1),"\n");
+        $f->close();
+    } 
 }
 
         
@@ -292,6 +404,9 @@ $DB::single=1;
         $f->print($output,"\n");
         $f->close();
     }
+   
+    
+
 }
 
 sub _get_node_text {
@@ -312,8 +427,10 @@ sub _get_node_text {
         print STDERR "Node has unknown status: ".Data::Dumper::Dumper($node),"\n";
     }
 
+    my $node_type = "operation";
     if ($node->isa('Workflow::Store::Db::Model::Instance')) {
         $status_attribs .= ",shape=doublecircle";
+        $node_type = "instance";
     }
 
     #my $text = sprintf('"%d" [label="%s",URL="http://www.google.com/"%s];',
@@ -321,6 +438,9 @@ sub _get_node_text {
                        $node->id, 
                        $node->name,
                        $status_attribs);
+
+    $self->addNode($node->id,$node->name,$node->status,$node_type);
+    
     return $text;
 }
 
@@ -342,6 +462,8 @@ sub _get_graph_edges {
     if ($node->can('sorted_child_instances')) {
         foreach my $child ( $node->sorted_child_instances ) {
             $text .= sprintf('"%d" -> "%d";' . "\n", $node->id, $child->id);
+        
+
             $text .= $self->_get_graph_edges($child, $done, $running, $new, $workflow_master);
         }
     }
