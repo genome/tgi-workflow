@@ -172,6 +172,7 @@ sub _start_servers {
     my $ur_port_used;
     if ($start_servers) {
         my @libs = UR::Util::used_libs();
+
         my $libstring = '';
         foreach my $lib (@libs) {
             $libstring .= 'use lib "' . $lib . '"; ';
@@ -196,10 +197,31 @@ sub _start_servers {
         Workflow::Server->lock('UR');
 
         $h = IPC::Run::start(\@hubcmd);
-        Workflow::Server->wait_for_lock('Hub');
+        eval {
+            Workflow::Server->wait_for_lock('Hub',$h);
+        };
+        if ($@) {
+            # clean up any lock we made
+
+            Workflow::Server->unlock('Hub');
+            Workflow::Server->unlock('UR');
+            Workflow::Server->unlock('Simple');
+            $h->kill_kill;
+            $h->finish;
+            die ($@);
+        }
 
         $u = IPC::Run::start(\@urcmd);
-        Workflow::Server->wait_for_lock('UR');
+        eval {
+            Workflow::Server->wait_for_lock('UR',$u);
+        };
+        if ($@) {
+            Workflow::Server->unlock('UR');
+            Workflow::Server->unlock('Simple');
+            $u->kill_kill;
+            $u->finish;
+            die ($@);
+        }
 
         $ur_port_used = $ur_port;
 

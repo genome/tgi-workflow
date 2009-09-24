@@ -86,7 +86,7 @@ sub unlock {
 }
 
 sub wait_for_lock {
-    my ($class,$service) = @_;
+    my ($class,$service,$handle) = @_;
     
     my $lockname = $class->lockname($service);
 
@@ -94,6 +94,7 @@ sub wait_for_lock {
     while (-e $lockname) {
         die 'exceeded lock time' if ($waited > 300);
         sleep 5;
+        $handle->pump_nb if (defined $handle);
         $waited += 5;
 #        print "$service wait: $waited\n";
     }
