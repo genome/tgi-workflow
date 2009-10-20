@@ -3,12 +3,28 @@ package Workflow::Server::Hub;
 
 use strict;
 use base 'Workflow::Server';
-use POE qw(Component::IKC::Server);
+use POE qw(Component::IKC::Server Wheel::FollowTail);
 
 our $port_number = 13424;
 
 use Workflow ();
 use Sys::Hostname;
+use Text::CSV;
+
+my %JOB_STAT = (
+    NULL => 0x00,
+    PEND => 0x01,
+    PSUSP => 0x02,
+    RUN => 0x04,
+    SSUSP => 0x08,
+    USUSP => 0x10,
+    EXIT => 0x20,
+    DONE => 0x40,
+    PDONE => 0x80,
+    PERR => 0x100,
+    WAIT => 0x200,
+    UNKWN => 0x10000
+);
 
 BEGIN {
     if (defined $ENV{WF_TRACE_HUB}) {
@@ -112,6 +128,97 @@ sub setup {
             }
         }
     );
+
+    our $lsftail = POE::Session->create(
+        inline_states => {
+            _start => sub {
+                my ($kernel, $heap) = @_[KERNEL, HEAP];
+
+                $kernel->alias_set("lsftail");
+                $kernel->call('IKC','publish','lsftail',[qw(add_watcher delete_watcher quit)]);
+
+                $heap->{monitor} = POE::Wheel::FollowTail->new(
+                    Filename => "/usr/local/lsf/work/gsccluster1/logdir/lsb.acct",
+                    InputEvent => 'handle_input',
+                    ResetEvent => 'handle_reset',
+                    ErrorEvent => 'handle_error'
+                );
+                $heap->{csv} = Text::CSV->new({
+                    sep_char => ' ',
+                });
+                
+                $heap->{watchers} = {};
+            },
+            add_watcher => sub {
+                my ($heap,$params) = @_[HEAP,ARG0];
+                my ($job_id,$action) = ($params->{job_id},$params->{action});
+                
+                $heap->{watchers}{$job_id} = $action;
+            },
+            delete_watcher => sub {
+                my ($heap,$params) = @_[HEAP,ARG0];
+                my $job_id = $params->{job_id};
+            
+                delete $heap->{watchers}{$job_id};
+            },
+            quit => sub {
+                my ($heap) = $_[HEAP];
+                
+                delete $heap->{monitor};
+            },
+            handle_input => sub {
+                my ($kernel, $heap, $line) = @_[KERNEL,HEAP,ARG0];
+#                print "Log: $line\n";
+
+                $heap->{csv}->parse($line);
+                my @fields = $heap->{csv}->fields();
+
+                $kernel->yield('event_' . $fields[0], $line, \@fields);
+            },
+            handle_reset => sub {
+                print "Log rolled over.\n";
+            },
+            handle_error => sub {
+                my ($heap, $operation, $errnum, $errstr, $wheel_id) = @_[HEAP, ARG0..ARG3];
+                warn "Wheel $wheel_id: $operation error $errnum: $errstr\n";
+                delete $heap->{monitor};
+            },
+            event_JOB_FINISH => sub {
+                my ($kernel,$heap, $line,$fields) = @_[KERNEL,HEAP, ARG0,ARG1];
+
+                my $job_id = $fields->[3];
+
+                if (exists $heap->{watchers}{$job_id}) {
+
+                    my $offset = $fields->[22];
+                    $offset += $fields->[$offset+23];
+                    my $job_stat_code = $fields->[$offset + 24];
+
+                    my $job_status;
+                    while (my ($k,$v) = each(%JOB_STAT)) {
+                        if ($job_stat_code & $v) {
+                            if (!defined $job_status ||
+                                $JOB_STAT{$job_status} < $v) {
+                                $job_status = $k;
+                            }
+                        }
+                    }
+
+#                    print sprintf("%10s %5s %5s ",$job_id, $job_status, $job_stat_code) . 
+#                        join(',',@{ $fields }[$offset+28,$offset+29,$offset+54,$offset+55]) . "\n";
+                    
+                    
+                    $heap->{watchers}{$job_id}->(
+                        $job_id, $job_status, $job_stat_code,
+                        $offset+28,$offset+29,$offset+54,$offset+55
+                    );
+                    
+                    $kernel->yield('delete_watcher',{job_id => $job_id});
+                }
+
+            },
+        }
+    );
     
     our $dispatch = POE::Session->create(
         heap => {
@@ -176,6 +283,7 @@ sub setup {
                 my ($kernel) = @_[KERNEL];
                 evTRACE and print "dispatch quit\n";
 
+                $kernel->post('lsftail','quit');
                 $kernel->yield('quit_stage_2');
 
                 return 1; # must return something here so IKC forwards the reply
@@ -276,9 +384,24 @@ sub setup {
 
                 $kernel->post('IKC','post','poe://UR/workflow/end_instance',[ $id, $status, $output, $error_string ])
                     unless $was_shortcutting;
+                    
+                $kernel->yield('finalize_work',[$id]) unless $remote_kernel;
+            },
+            finalize_work => sub {
+                my ($kernel,$create_arg,$called_arg) = @_[KERNEL,ARG0,ARG1];
+                my ($id) = @$create_arg;
+                evTRACE and print "dispatch finalize_work $id\n";
+
+                if ($called_arg) {
+                    my ($user_sec,$sys_sec,$mem,$swap) = @{ $called_arg }[3,4,5,6];
+                    
+                    $kernel->post('IKC','post','poe://UR/workflow/finalize_instance',[ $id, ($user_sec+$sys_sec), $mem, $swap ]);
+                } else {
+                    $kernel->post('IKC','post','poe://UR/workflow/finalize_instance',[ $id ]);
+                }
             },
             start_jobs => sub {
-                my ($kernel, $heap) = @_[KERNEL, HEAP];
+                my ($kernel, $session, $heap) = @_[KERNEL, SESSION, HEAP];
                 evTRACE and print "dispatch start_jobs " . $heap->{job_count} . ' ' . $heap->{job_limit} . "\n";
                 
                 my @requeue = ();
@@ -309,6 +432,13 @@ sub setup {
                                 $payload->{instance}->name
                             );
                             $heap->{job_count}++;
+                            
+                            my $cb = $session->postback(
+                                'finalize_work', $payload->{instance}->id
+                            );
+
+                            $kernel->post('lsftail','add_watcher',{job_id => $lsf_job_id, action => $cb});                
+
                         }
 
                         $heap->{dispatched}->{$lsf_job_id} = $payload;
@@ -410,6 +540,7 @@ sub setup {
                 $bsub_output =~ /^Job <(\d+)> is submitted to queue <(\w+)>\./;
                 
                 my $lsf_job_id = $1;
+                
                 return $lsf_job_id;
             },
             periodic_check => sub {

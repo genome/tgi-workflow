@@ -62,7 +62,7 @@ evTRACE and print "workflow _start\n";
 
                 $kernel->alias_set("workflow");
                 $kernel->post('IKC','publish','workflow',
-                    [qw(simple_start simple_resume load execute resume begin_instance end_instance schedule_instance quit eval)]
+                    [qw(simple_start simple_resume load execute resume begin_instance end_instance finalize_instance schedule_instance quit eval)]
                 );
                 
                 $heap->{workflow_plans} = {};
@@ -295,6 +295,17 @@ evTRACE and print "workflow end_instance\n";
                         error => $error_string
                     );
                 }
+            },
+            finalize_instance => sub {
+                my ($kernel, $heap, $arg) = @_[KERNEL,HEAP,ARG0];
+                my ($id, $cpu_sec, $mem, $swap) = @$arg;
+evTRACE and print "workflow finalize_instance $id $cpu_sec $mem $swap\n";
+
+                my $instance = $store_db ? Workflow::Store::Db::Operation::Instance->get($id) : Workflow::Operation::Instance->get($id);
+
+                $instance->current->cpu_time($cpu_sec) if $cpu_sec;
+                $instance->current->max_memory($mem) if $mem;
+                $instance->current->max_swap($swap) if $swap;
 
                 $instance->completion;
             },

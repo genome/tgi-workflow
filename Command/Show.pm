@@ -48,7 +48,10 @@ sub execute {
     if ($self->debug) {
         $i->treeview_debug;
     } else {
-        print <<MARK;
+
+        {
+            no warnings;
+            print <<MARK;
 Id:          @{[$i->id]}
 Name:        @{[$i->name]}
 Status:      @{[$i->status]}
@@ -57,11 +60,15 @@ End Time:    @{[$i->current->end_time]}
 Dispatch Id: @{[$i->current->dispatch_identifier]}
 Stdout Log:  @{[$i->current->stdout]}
 Stderr Log:  @{[$i->current->stderr]}
+CPU Time:    @{[$i->current->cpu_time]}
+Max Memory:  @{[$i->current->max_memory]}
+Max Swap:    @{[$i->current->max_swap]}
 Input:
 @{[ YAML::Dump($i->input) ]}
 Output:
 @{[ YAML::Dump($i->output) ]} 
 MARK
+        }
 
         if ($i->can('sorted_child_instances')) {
             print sprintf("%9s %-60s %9s\n%80s\n",qw/id name status/,('-'x 80));
