@@ -313,7 +313,13 @@ $dependancies_text
 GRAPH
 
     if (my $outfile = $self->png) {
-        open(my $gv, "| dot -Tpng -o $outfile") || Carp::croak("Can't start dot (graphviz): $!");
+        my $cmdline;
+        if ($outfile eq '-') {
+            $cmdline = 'dot -Tpng';
+        } else {
+            $cmdline = "dot -Tpng -o $outfile";
+        }
+        open(my $gv, "| $cmdline") || Carp::croak("Can't start dot (graphviz): $!");
         $gv->print($output,"\n");
         $gv->close();
         if ($?) {
@@ -321,7 +327,13 @@ GRAPH
         }
     }
     if (my $outfile = $self->svg) {
-        open(my $gv, "| dot -Tsvg -o $outfile") || Carp::croak("Can't start dot (graphviz): $!");
+        my $cmdline;
+        if ($outfile eq '-') {
+            $cmdline = 'dot -Tsvg';
+        } else {
+            $cmdline = "dot -Tsvg -o $outfile";
+        }
+        open(my $gv, "| $cmdline") || Carp::croak("Can't start dot (graphviz): $!");
         $gv->print($output,"\n");
         $gv->close();
     }
