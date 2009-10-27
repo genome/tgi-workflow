@@ -8,7 +8,7 @@ use XML::Simple;
 class Workflow::Operation {
     has => [
         name => { is => 'Text' },
-        workflow_model => { is => 'Workflow::Model', id_by => 'workflow_model_id', is_optional => 1 },
+        workflow_model => { is => 'Workflow::Operation', id_by => 'workflow_model_id', is_optional => 1 },
         operation_type => { is => 'Workflow::OperationType', id_by => 'workflow_operationtype_id' },
         is_valid => { is => 'Boolean', default_value=>0, doc => 'Flag set when validate has run' },
         executor => { is => 'Workflow::Executor', id_by => 'workflow_executor_id', is_optional => 1 },
