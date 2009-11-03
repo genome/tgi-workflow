@@ -359,6 +359,20 @@ sub validate {
     
     ## dangling links
     
+    foreach my $link ($self->links) {
+        my $left_output_properties = $link->left_operation->operation_type->output_properties;
+        my $right_input_properties = $link->right_operation->operation_type->input_properties;
+        
+        my $linkdesc = $link->left_operation->name . '->' . $link->left_property . ' to ' . $link->right_operation->name . '->' . $link->right_property;
+        
+        if (!grep { $link->left_property eq $_ } @{ $left_output_properties }) {
+            push @errors, 'Left property not found on link: ' . $linkdesc;
+        }
+
+        if (!grep { $link->right_property eq $_ } @{ $right_input_properties }) {
+            push @errors, 'Right property not found on link: ' . $linkdesc;
+        }
+    }
     
     if (@errors == 0) {
         $self->is_valid(1);
