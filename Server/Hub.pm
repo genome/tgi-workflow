@@ -210,7 +210,7 @@ sub setup {
                     
                     $heap->{watchers}{$job_id}->(
                         $job_id, $job_status, $job_stat_code,
-                        $offset+28,$offset+29,$offset+54,$offset+55
+                        @{ $fields }[$offset+28,$offset+29,$offset+54,$offset+55]
                     );
                     
                     $kernel->yield('delete_watcher',{job_id => $job_id});
