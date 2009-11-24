@@ -148,18 +148,23 @@ sub setup {
                 });
                 
                 $heap->{watchers} = {};
+                $heap->{alarms} = {};
             },
             add_watcher => sub {
-                my ($heap,$params) = @_[HEAP,ARG0];
+                my ($heap,$kernel,$params) = @_[HEAP,KERNEL,ARG0];
                 my ($job_id,$action) = ($params->{job_id},$params->{action});
                 
+                my $id = $kernel->delay_set('skip_it',180,$job_id);
+
                 $heap->{watchers}{$job_id} = $action;
+                $heap->{alarms}{$job_id} = $id;
             },
             delete_watcher => sub {
                 my ($heap,$params) = @_[HEAP,ARG0];
                 my $job_id = $params->{job_id};
             
                 delete $heap->{watchers}{$job_id};
+                delete $heap->{alarms}{$job_id};
             },
             quit => sub {
                 my ($heap) = $_[HEAP];
@@ -182,6 +187,15 @@ sub setup {
                 my ($heap, $operation, $errnum, $errstr, $wheel_id) = @_[HEAP, ARG0..ARG3];
                 warn "Wheel $wheel_id: $operation error $errnum: $errstr\n";
                 delete $heap->{monitor};
+            },
+            skip_it => sub {
+                my ($kernel, $heap, $job_id) = @_[KERNEL,HEAP,ARG1];
+                
+                return unless exists $heap->{watchers}{$job_id};
+                
+                $heap->{watchers}{$job_id}->();
+                
+                $kernel->call('delete_watcher',{job_id => $job_id});
             },
             event_JOB_FINISH => sub {
                 my ($kernel,$heap, $line,$fields) = @_[KERNEL,HEAP, ARG0,ARG1];
@@ -392,7 +406,7 @@ sub setup {
                 my ($id) = @$create_arg;
                 evTRACE and print "dispatch finalize_work $id\n";
 
-                if ($called_arg) {
+                if (@{ $called_arg }) {
                     my ($user_sec,$sys_sec,$mem,$swap) = @{ $called_arg }[3,4,5,6];
                     
                     $kernel->post('IKC','post','poe://UR/workflow/finalize_instance',[ $id, ($user_sec+$sys_sec), $mem, $swap ]);
