@@ -7,7 +7,6 @@ use warnings;
 use Carp;
 use POE::Component::IKC::ClientLite;
 
-use lib '/gscuser/eclark/lib';
 use Guard;
 use IPC::Run;
 use Socket;
