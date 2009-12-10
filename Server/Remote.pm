@@ -84,12 +84,16 @@ sub launch {
         port => $ur_port
     );
 
-    if ($self) {
+    return unless $self;
+
+    if (wantarray) {
+        return $self, [$u_g, $h_g];
+    } else {
         $u_g->cancel;
         $h_g->cancel;
-    }
 
-    return $self;
+        return $self;
+    }
 }
 
 sub get {
@@ -128,9 +132,33 @@ sub create {
 sub add_plan {
     my ( $self, $plan ) = @_;
 
-    croak 'add_plan: not yet implemented';
+    croak 'must supply a plan'
+      unless defined $plan;
 
-    #return $plan_id;
+    my $xml;
+    if ( ref($plan) ) {
+        if ( ref($plan) eq 'GLOB' ) {
+
+            # FILEHANDLE (i hope)
+            $xml = '';
+            while ( my $line = <$xml> ) {
+                $xml .= $line;
+            }
+        } elsif ( UNIVERSAL::isa( $plan, 'Workflow::Operation' ) ) {
+
+            # OBJECT
+            $xml = $plan->save_to_xml;
+        } else {
+            croak 'plan was not filehandle, object or xml string';
+        }
+    } else {
+        $xml = $plan;
+    }
+
+    my $plan_id = $self->_client->call( 'workflow/load', [$xml] )
+      or croak $self->_client->error;
+
+    return $plan_id;
 }
 
 sub start {
@@ -149,6 +177,7 @@ sub resume {
 sub stop {
     my ( $self, $instance_id ) = @_;
 
+    
 }
 
 sub quit {
@@ -164,29 +193,31 @@ sub loaded_instances {
 
     my @ids = $self->_seval(
         q{
-                my @instance = Workflow::Operation::Instance->is_loaded(parent_instance_id => undef);
+            my @instance = Workflow::Operation::Instance->is_loaded(parent_instance_id => undef);
 
-                my @ids = ();
-                foreach my $i (@instance) {
-                    if (defined $i->peer_instance_id && $i->peer_instance_id ne $i->id) {
-                        next;
-                    }
-
-                    push @ids, $i->id;
+            my @ids = ();
+            foreach my $i (@instance) {
+                if (defined $i->peer_instance_id && $i->peer_instance_id ne $i->id) {
+                    next;
                 }
-                return @ids;
+
+                push @ids, $i->id;
             }
+            return @ids;
+        }
     );
 
     return @ids;
 }
 
 sub _seval {
-    my ( $self, $code ) = @_;
+    my $self = shift;
+    my $code = shift;
+    my @args = @_;
 
     my $wantlist = wantarray ? 1 : 0;
 
-    my $result = $self->_client->call( "workflow/eval", [ $code, $wantlist ] );
+    my $result = $self->_client->call( "workflow/eval", [ $code, $wantlist, \@args ] );
 
     unless ($result) {
         confess 'internal error: ' . $self->_client->error;
@@ -198,8 +229,6 @@ sub _seval {
     }
 
     unless ( $result->[0] ) {
-
-        # exception was thrown on the server
 
         confess 'server threw exception: ' . $result->[1];
     }
