@@ -5,7 +5,7 @@ use warnings;
 
 use Test::More qw(no_plan);
 use IO::Dir;
-use Workflow;
+use above 'Workflow';
 
 my $dir = -d 't/xml.d' ? 't/xml.d' : 'xml.d';
 

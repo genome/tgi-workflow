@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Test::More tests => 11;
-use Workflow;
+use above 'Workflow';
 
 require_ok('Workflow::Operation');
 

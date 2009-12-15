@@ -7,7 +7,7 @@ use Test::More;
 
 my $static_test_count = 19;
 
-use Workflow;
+use above 'Workflow';
 my @subcommands = Workflow::Test::Command->sub_command_classes;
 
 plan tests => $static_test_count + scalar(@subcommands);

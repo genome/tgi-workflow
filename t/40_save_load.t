@@ -10,7 +10,7 @@ use warnings;
 use UR;
 use Test::More tests => 10;
 use Devel::Size qw(size total_size);
-use Workflow;
+use above 'Workflow';
 
 #my $dir = -d 't/xml.d' ? 't/xml.d' : 'xml.d';
 

@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Test::More tests => 6;
-use Workflow;
+use above 'Workflow';
 
 my $dir = -d 't/xml.d' ? 't/xml.d' : 'xml.d';
 

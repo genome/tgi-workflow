@@ -6,6 +6,8 @@ use warnings;
 use Test::More tests => 27;
 use Switch;
 
+use above 'Workflow';
+
 my @operationtypes = qw{
     Block Command Converge Dummy
     Mail Model ModelInput ModelOutput

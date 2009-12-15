@@ -384,7 +384,7 @@ sub unfinished_inputs {
                             push @unfinished_inputs, $input_name;
                             last VALCHECK;
                         } else {
-                            unless ($v->operation_instance->is_done && defined $self->input_value($input_name)) {
+                            unless ($v->operation_instance->is_done && (defined $self->input_value($input_name) || $optional{$input_name})) {
                                 push @unfinished_inputs, $input_name;
                                 last VALCHECK;
                             }

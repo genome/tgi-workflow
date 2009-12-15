@@ -160,11 +160,15 @@ sub setup {
                 $heap->{alarms}{$job_id} = $id;
             },
             delete_watcher => sub {
-                my ($heap,$params) = @_[HEAP,ARG0];
+                my ($kernel, $heap,$params) = @_[KERNEL,HEAP,ARG0];
                 my $job_id = $params->{job_id};
             
                 delete $heap->{watchers}{$job_id};
-                delete $heap->{alarms}{$job_id};
+                my $aid = delete $heap->{alarms}{$job_id};
+                
+                if ($aid) {
+                    $kernel->alarm_remove($aid);
+                }
             },
             quit => sub {
                 my ($heap) = $_[HEAP];
