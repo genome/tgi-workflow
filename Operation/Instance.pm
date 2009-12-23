@@ -541,7 +541,9 @@ sub execute_single {
 sub orphan {
     my $self = shift;
     my %outputs = @_;
-    
+   
+    confess 'orphaning is disabled at this time due to performance issues';
+ 
     my @deps = $self->dependent_operations;    
     foreach my $dep (@deps) {
         if (defined $dep->input) {
@@ -563,6 +565,8 @@ sub orphan {
 
 sub is_orphan {
     my $self = shift;
+
+    return 0;
 
     my $broken = 1;
 
