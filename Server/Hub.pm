@@ -524,6 +524,12 @@ sub setup {
                 $rusage =~ s/^\s+//;
                 if ($rusage =~ /^-/) {
                     $lsf_opts = $rusage;
+                    if ($lsf_opts !~ /-o/i) {
+                        $lsf_opts .= ' -o ' . $stdout_file;
+                    }
+                    if ($lsf_opts !~ /-e/i) {
+                        $lsf_opts .= ' -e ' . $stderr_file;
+                    }
                 } else {
                     $lsf_opts = '-R "' . $rusage . '"';
                     if ($stdout_file) {
