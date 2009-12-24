@@ -542,7 +542,7 @@ sub orphan {
     my $self = shift;
     my %outputs = @_;
    
-    confess 'orphaning is disabled at this time due to performance issues';
+    Carp::confess 'orphaning is disabled at this time due to performance issues';
  
     my @deps = $self->dependent_operations;    
     foreach my $dep (@deps) {
