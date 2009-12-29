@@ -133,7 +133,7 @@ evTRACE and print "workflow quit_stage_2\n";
             },
             commit => sub {
                 my ($kernel) = @_[KERNEL];
-evTRACE and print "workflow commit\n";
+#evTRACE and print "workflow commit\n";
 
                 if ($store_db) { 
                     UR::Context->commit();
