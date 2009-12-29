@@ -136,8 +136,27 @@ sub run_workflow_lsf {
     if ($start_servers) {
         $poe->post('workflow/quit',1);
 
-        $u->finish; # if $start_ur_server && $fork_ur_server;
-        $h->finish; # if $start_hub_server;
+
+        my $t = IPC::Run::Timer->new( 300 );
+        eval {
+            $t->start;
+            $u->finish;
+        };
+        if ($@) {
+            print "Killing UR sub process because it didnt exit within 300 seconds\n";
+            $u->kill_kill;
+        }
+        
+        $t->reset;
+        $t->interval(5);
+        eval {
+            $t->start;
+            $h->finish;
+        };
+        if ($@) {
+            print "Killing Hub subprocess because it didnt exit within 5 seconds\n";
+            $h->kill_kill;
+        }
 
         unlink ($server_location_file);
     }
