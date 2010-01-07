@@ -43,7 +43,7 @@ sub __build {
             _start => sub { 
                 my ($kernel, $heap) = @_[KERNEL, HEAP];
                 $kernel->alias_set("worker");
-                $kernel->call('IKC','publish','worker',[qw(execute)]);
+                $kernel->call('IKC','publish','worker',[qw(execute disconnect)]);
 
                 $kernel->yield('get_work');
             },

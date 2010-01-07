@@ -133,6 +133,7 @@ sub setup {
         inline_states => {
             _start => sub {
                 my ($kernel, $heap) = @_[KERNEL, HEAP];
+                evTRACE and print "lsftail _start\n";
 
                 $kernel->alias_set("lsftail");
                 $kernel->call('IKC','publish','lsftail',[qw(add_watcher delete_watcher quit)]);
@@ -153,15 +154,14 @@ sub setup {
             add_watcher => sub {
                 my ($heap,$kernel,$params) = @_[HEAP,KERNEL,ARG0];
                 my ($job_id,$action) = ($params->{job_id},$params->{action});
+                evTRACE and print "lsftail add_watcher $job_id\n";
                 
-                my $id = $kernel->delay_set('skip_it',180,$job_id);
-
                 $heap->{watchers}{$job_id} = $action;
-                $heap->{alarms}{$job_id} = $id;
             },
             delete_watcher => sub {
                 my ($kernel, $heap,$params) = @_[KERNEL,HEAP,ARG0];
                 my $job_id = $params->{job_id};
+                evTRACE and print "lsftail delete_watcher $job_id\n";
             
                 delete $heap->{watchers}{$job_id};
                 my $aid = delete $heap->{alarms}{$job_id};
@@ -170,8 +170,20 @@ sub setup {
                     $kernel->alarm_remove($aid);
                 }
             },
+            skip_watcher => sub {
+                my ($kernel, $heap, $params) = @_[KERNEL,HEAP,ARG0];
+                my $job_id = $params->{job_id};
+                my $seconds = $params->{seconds};
+                evTRACE and print "lsftail skip_watcher $job_id $seconds\n";
+            
+                if (exists $heap->{watchers}{$job_id}) {
+                    my $id = $kernel->delay_set('skip_it',$seconds,$job_id);
+                    $heap->{alarms}{$job_id} = $id;
+                }
+            },
             quit => sub {
                 my ($heap) = $_[HEAP];
+                evTRACE and print "watchdog quit\n";
                 
                 delete $heap->{monitor};
             },
@@ -185,7 +197,7 @@ sub setup {
                 $kernel->yield('event_' . $fields[0], $line, \@fields);
             },
             handle_reset => sub {
-                print "Log rolled over.\n";
+#                print "Log rolled over.\n";
             },
             handle_error => sub {
                 my ($heap, $operation, $errnum, $errstr, $wheel_id) = @_[HEAP, ARG0..ARG3];
@@ -193,7 +205,8 @@ sub setup {
                 delete $heap->{monitor};
             },
             skip_it => sub {
-                my ($kernel, $heap, $job_id) = @_[KERNEL,HEAP,ARG1];
+                my ($kernel, $heap, $job_id) = @_[KERNEL,HEAP,ARG0];
+                evTRACE and print "watchdog skip_it $job_id\n";
                 
                 return unless exists $heap->{watchers}{$job_id};
                 
@@ -203,10 +216,11 @@ sub setup {
             },
             event_JOB_FINISH => sub {
                 my ($kernel,$heap, $line,$fields) = @_[KERNEL,HEAP, ARG0,ARG1];
-
                 my $job_id = $fields->[3];
 
                 if (exists $heap->{watchers}{$job_id}) {
+
+                evTRACE and print "watchdog event_JOB_FINISH $job_id\n";
 
                     my $offset = $fields->[22];
                     $offset += $fields->[$offset+23];
@@ -249,6 +263,7 @@ sub setup {
             claimed             => {}, # keyed on remote kernel name
             failed              => {}, # keyed on instance id
             cleaning_up         => {}, # keyed on remote kernel name
+            finalizable         => {}, # keyed on instance id
             queue               => POE::Queue::Array->new()
         },
         inline_states => {
@@ -374,6 +389,7 @@ sub setup {
                     $kernel->post('IKC','post',$where,[$instance, $type, $input, $sc]);
                 } else {
                     warn "dispatch get_work: unknown id $dispatch_id\n";
+                    $kernel->post('IKC','post',"poe://$remote_kernel/worker/disconnect");
                 }
             },
             end_work => sub {
@@ -402,15 +418,22 @@ sub setup {
 
                 $kernel->post('IKC','post','poe://UR/workflow/end_instance',[ $id, $status, $output, $error_string ])
                     unless $was_shortcutting;
-                    
-                $kernel->yield('finalize_work',[$id]) unless $remote_kernel;
+
+                $heap->{finalizable}{$id} = $dispatch_id;
+
+                if ($remote_kernel) {
+                    $kernel->post('lsftail','skip_watcher',{job_id => $dispatch_id, seconds => 60});
+                } else {
+                    $kernel->yield('finalize_work',[$id]) unless $remote_kernel;
+                }
             },
             finalize_work => sub {
-                my ($kernel,$create_arg,$called_arg) = @_[KERNEL,ARG0,ARG1];
+                my ($kernel,$heap,$create_arg,$called_arg) = @_[KERNEL,HEAP,ARG0,ARG1];
                 my ($id) = @$create_arg;
+                return unless exists $heap->{finalizable}{$id};
                 evTRACE and print "dispatch finalize_work $id\n";
 
-                if (@{ $called_arg }) {
+                if (@{ $called_arg } && $called_arg->[0] eq $heap->{finalizable}{$id}) {
                     my ($user_sec,$sys_sec,$mem,$swap) = @{ $called_arg }[3,4,5,6];
                     
                     $kernel->post('IKC','post','poe://UR/workflow/finalize_instance',[ $id, ($user_sec+$sys_sec), $mem, $swap ]);
@@ -585,13 +608,14 @@ sub setup {
                 foreach my $lsf_job_id (keys %{ $heap->{dispatched} }) {
                     next if ($lsf_job_id =~ /^P/);
                     my $restart = 0;
-                
-                    if (my ($info,$events) = lsf_state($lsf_job_id)) {
+               
+                    my $info = lsf_state($lsf_job_id); 
+                    if (ref($info) eq 'HASH') {
                         $restart = 1 if ($info->{'Status'} eq 'EXIT');
                         
                         evTRACE and print "dispatch check_jobs <$lsf_job_id> suspended by user\n" 
                             if ($info->{'Status'} eq 'PSUSP');
-                    } else {
+                    } elsif ($info == 0) {
                         $restart = 1;
                     }
                     
@@ -599,6 +623,8 @@ sub setup {
                         my $payload = delete $heap->{dispatched}->{$lsf_job_id};
 #                        my ($instance, $type, $input) = @$payload;
                         my $instance = $payload->{instance};
+
+                        $kernel->post('lsftail','delete_watcher',{job_id => $lsf_job_id});
 
                         evTRACE and print 'dispatch check_jobs ' . $instance->id . ' ' . $instance->name . " vanished\n";
                         $heap->{job_count}--;
@@ -626,7 +652,7 @@ sub lsf_state {
     my ($lsf_job_id) = @_;
 
     my $spool = `bjobs -l $lsf_job_id 2>&1`;
-    return if ($spool =~ /Job <$lsf_job_id> is not found/);
+    return 0 if ($spool =~ /Job <$lsf_job_id> is not found/);
 
     # this regex nukes the indentation and line feed
     $spool =~ s/\s{22}//gm; 
@@ -645,32 +671,7 @@ sub lsf_state {
         $jobinfo{$1} = $2;
     }
 
-    my @events = ();
-    foreach my $el (@eventlines) {
-        $el =~ s/(?<!\s{1})</ </g;
-
-        my $time = substr($el,0,21,'');
-        substr($time,-2,2,'');
-
-        # see if we really got the time string
-        if ($time !~ /\w{3}\s+\w{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}/) {
-            # there's stuff we dont care about at the bottom, just skip it
-            next;
-        }
-
-        my @entry = (
-            $time,
-            {}
-        );
-
-        while ($el =~ /(?:^|(?<=,\s{1}))(.+?)(?:\s+<(.*?)>)?(?=(?:$|;|,))/g) {
-            $entry[1]->{$1} = $2;
-        }
-        push @events, \@entry;
-    }
-
-
-    return (\%jobinfo, \@events);
+    return \%jobinfo;
 }
 
 1;
