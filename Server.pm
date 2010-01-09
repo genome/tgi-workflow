@@ -13,6 +13,10 @@ sub setup {
 sub start {
     my $class = shift;
     
+    #perlio is frustrating
+    select STDERR; $| = 1;
+    select STDOUT; $| = 1;
+
     $class->setup(@_);
     POE::Kernel->run();
 }
