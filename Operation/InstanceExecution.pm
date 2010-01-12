@@ -22,6 +22,7 @@ class Workflow::Operation::InstanceExecution {
         max_swap      => { is => 'NUMBER', len => 6, is_optional => 1 },
         max_processes => { is => 'NUMBER', len => 4, is_optional => 1 },
         max_memory    => { is => 'NUMBER', len => 6, is_optional => 1 },
+        user_name     => { is => 'String', len => 20, is_optional => 1 },
         debug_mode => { is => 'Boolean', default_value => 0, is_transient => 1, is_optional => 1 },
         errors => { 
             is => 'Workflow::Operation::InstanceExecution::Error', 
@@ -65,6 +66,8 @@ sub create {
     if (my $err = $self->operation_instance->err_log_file) {
         $self->stderr($err);
     }
+
+    $self->user_name(scalar getpwuid $<);
 
     return $self;
 }

@@ -58,6 +58,7 @@ Status:      @{[$i->status]}
 Start Time:  @{[$i->current->start_time]}
 End Time:    @{[$i->current->end_time]}
 Dispatch Id: @{[$i->current->dispatch_identifier]}
+Username:    @{[$i->current->user_name]}
 Stdout Log:  @{[$i->current->stdout]}
 Stderr Log:  @{[$i->current->stderr]}
 CPU Time:    @{[$i->current->cpu_time]}
