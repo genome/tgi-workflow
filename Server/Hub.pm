@@ -151,6 +151,9 @@ sub setup {
                 $heap->{watchers} = {};
                 $heap->{alarms} = {};
             },
+            _stop => sub {
+                evTRACE and print "lsftail _stop\n";
+            },
             add_watcher => sub {
                 my ($heap,$kernel,$params) = @_[HEAP,KERNEL,ARG0];
                 my ($job_id,$action) = ($params->{job_id},$params->{action});
@@ -183,7 +186,7 @@ sub setup {
             },
             quit => sub {
                 my ($heap) = $_[HEAP];
-                evTRACE and print "watchdog quit\n";
+                evTRACE and print "lsftail quit\n";
                 
                 delete $heap->{monitor};
             },
@@ -206,7 +209,7 @@ sub setup {
             },
             skip_it => sub {
                 my ($kernel, $heap, $job_id) = @_[KERNEL,HEAP,ARG0];
-                evTRACE and print "watchdog skip_it $job_id\n";
+                evTRACE and print "lsftail skip_it $job_id\n";
                 
                 return unless exists $heap->{watchers}{$job_id};
                 
@@ -220,7 +223,7 @@ sub setup {
 
                 if (exists $heap->{watchers}{$job_id}) {
 
-                evTRACE and print "watchdog event_JOB_FINISH $job_id\n";
+                evTRACE and print "lsftail event_JOB_FINISH $job_id\n";
 
                     my $offset = $fields->[22];
                     $offset += $fields->[$offset+23];
