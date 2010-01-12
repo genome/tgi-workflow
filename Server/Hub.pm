@@ -473,7 +473,8 @@ sub setup {
                                 $payload->{operation_type}->command_class_name,
                                 $payload->{out_log},
                                 $payload->{err_log},
-                                $payload->{instance}->name
+                                $payload->{instance}->name,
+                                $payload->{instance}->parallel_index
                             );
                             $heap->{job_count}++;
                             
@@ -538,12 +539,16 @@ sub setup {
                 }
             },
             lsf_bsub => sub {
-                my ($kernel, $queue, $rusage, $command_class, $stdout_file, $stderr_file, $name) = @_[KERNEL, ARG0, ARG1, ARG2, ARG3, ARG4, ARG5];
+                my ($kernel, $queue, $rusage, $command_class, $stdout_file, $stderr_file, $name, $pindex) = @_[KERNEL, ARG0, ARG1, ARG2, ARG3, ARG4, ARG5, ARG6];
                 evTRACE and print "dispatch lsf_cmd $queue $rusage $stdout_file $stderr_file $name\n";
 
                 $queue ||= 'long';
                 $rusage ||= 'rusage[tmp=100]';
                 $name ||= 'worker';
+
+                if (defined $pindex) {
+                    $name .= '{' . $pindex . '}';
+                }
 
                 my $lsf_opts;
 
