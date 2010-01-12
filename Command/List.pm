@@ -8,7 +8,7 @@ use Command;
 
 class Workflow::Store::Db::Operation::RootInstance {
     table_name => "
-        (SELECT wi.workflow_instance_id, wi.name, wie.status, wie.start_time 
+        (SELECT wi.workflow_instance_id, wi.name, wie.status, wie.user_name, wie.start_time 
            FROM workflow.workflow_instance wi
            JOIN workflow.workflow_instance_execution wie ON (wi.current_execution_id = wie.workflow_execution_id)
           WHERE wi.parent_instance_id IS NULL 
@@ -18,6 +18,7 @@ class Workflow::Store::Db::Operation::RootInstance {
         workflow_instance_id => { is => 'Number' },
         name => { is => 'Varchar2' },
         status => { is => 'Varchar2' },
+        user_name => { is => 'Varchar2' },
         start_time => { is => 'TIMESTAMP' } 
     ],
     data_source => 'Workflow::DataSource::InstanceSchema'
@@ -34,7 +35,7 @@ class Workflow::Command::List {
     ],
     has => [
         show => {
-            default_value => 'workflow_instance_id,name,status,start_time'
+            default_value => 'workflow_instance_id,name,status,user_name,start_time'
         }
     ]
 };
