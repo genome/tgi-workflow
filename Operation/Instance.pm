@@ -820,6 +820,7 @@ sub create_peers {
         $peer->current->status($self->status);
         $peer->current->start_time(UR::Time->now);
         
+        $peer->current->fix_logs;
         $peer->fix_parallel_input_links;
         
         foreach my $dep (@deps) {

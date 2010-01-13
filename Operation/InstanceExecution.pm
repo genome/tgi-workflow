@@ -60,16 +60,21 @@ sub create {
     my $class = shift;
     my $self = $class->SUPER::create(@_);
 
+    $self->fix_logs;
+    $self->user_name(scalar getpwuid $<);
+
+    return $self;
+}
+
+sub fix_logs {
+    my $self = shift;
+
     if (my $out = $self->operation_instance->out_log_file) {
         $self->stdout($out);
     }
     if (my $err = $self->operation_instance->err_log_file) {
         $self->stderr($err);
     }
-
-    $self->user_name(scalar getpwuid $<);
-
-    return $self;
 }
 
 1;
