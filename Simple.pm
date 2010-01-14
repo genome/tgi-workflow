@@ -164,7 +164,7 @@ sub run_workflow_lsf {
     $poe->disconnect;
 
     unless (defined $response) {
-        die 'unexpected response';
+        die 'client error (unserializable input passed?): ' . $poe->error;
     }
 
     if (scalar @$response == 3) {
