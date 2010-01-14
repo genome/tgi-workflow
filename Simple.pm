@@ -24,6 +24,7 @@ use Workflow ();
 use IPC::Run;
 use UR::Util;
 use Sys::Hostname;
+use Time::HiRes qw( usleep );
 
 use Workflow::Server;
 use POE::Component::IKC::ClientLite;
@@ -129,42 +130,47 @@ sub run_workflow_lsf {
 
     @ERROR = ();
 
-    my ($u,$h,$poe) = _start_servers();
+    my %exited = 
 
-    my $response = $poe->post_respond('workflow/simple_start',[$xml,\%inputs]);
-
-    if ($start_servers) {
-        $poe->post('workflow/quit',1);
-
-
-        my $t = IPC::Run::Timer->new( 300 );
-        eval {
-            $t->start;
-            $u->finish;
-        };
-        if ($@) {
-            print "Killing UR sub process because it didnt exit within 300 seconds\n";
-            $u->kill_kill;
-        }
-        
-        $t->reset;
-        $t->interval(5);
-        eval {
-            $t->start;
-            $h->finish;
-        };
-        if ($@) {
-            print "Killing Hub subprocess because it didnt exit within 5 seconds\n";
-            $h->kill_kill;
-        }
-
-        unlink ($server_location_file);
+    my ($r, $guards) = Workflow::Server::Remote->launch;
+    
+    if (defined $server_location_file) {
+        open FH, ('>' . $server_location_file);
+        print FH $r->host . ':' . $r->port . "\n";
+        close FH;
     }
 
-    $poe->disconnect;
+    my $response = $r->simple_start($xml,\%inputs);
 
-    unless (defined $response) {
-        die 'client error (unserializable input passed?): ' . $poe->error;
+    $r->quit;
+
+    my $t = 0;
+    while (1) {
+        my $done = 0;
+        foreach my $i (0,2) {
+            if ($guards->[$i]->_running_kids) {
+                $guards->[$i]->reap_nb;
+            } else {
+                $guards->[$i]->finish;
+                $DB::single=1;
+                eval { $guards->[$i+1]->cancel };
+                $done++;
+            }
+        }
+
+        if ($done == 2) {
+            last;
+        }
+
+        if ($t > 50) {
+            foreach my $i (1,3) {
+                undef $guards->[$i];
+            }
+        
+            last;
+        }
+        $t++;
+        usleep 100000;
     }
 
     if (scalar @$response == 3) {

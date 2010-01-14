@@ -68,6 +68,8 @@ evTRACE and print "workflow _start\n";
                 $heap->{workflow_plans} = {};
                 $heap->{workflow_executions} = {};
 
+                $kernel->sig('HUP','sig_HUP');
+
                 $kernel->post('IKC','monitor','*'=>{register=>'conn',unregister=>'disc'});
 
                 $heap->{record} = Workflow::Service->create();
@@ -82,6 +84,13 @@ evTRACE and print "workflow _stop\n";
                 
                 $heap->{record}->delete();
                 UR::Context->commit();
+            },
+            sig_HUP => sub {
+                my ($heap) = @_[HEAP];
+                
+                $heap->{record}->delete();
+                UR::Context->commit();
+                ## not calling sig_handled so this is still terminal
             },
             unlock_me => sub {
                 Workflow::Server->unlock('UR');

@@ -10,6 +10,7 @@ use POE::Component::IKC::ClientLite;
 use Guard;
 use IPC::Run;
 use Socket;
+use Sys::Hostname;
 use Workflow::Server::UR;
 use Workflow::Server::Hub;
 
@@ -29,10 +30,26 @@ class Workflow::Server::Remote {
     ]
 };
 
+### setting these signals to exit makes the guards run
+
+$SIG{'HUP'} = sub {
+    exit;
+};
+
+$SIG{'INT'} = sub {
+    exit;
+};
+
+$SIG{'TERM'} = sub {
+    exit;
+};
+
 sub launch {
     my $class = shift;
 
     croak 'exec is not an instance method' if ref($class);
+
+    $class->set_signals;
 
     my $sl_g = $class->guard_lock('Simple');
 
@@ -45,8 +62,7 @@ sub launch {
         $hub_port += 2;
     }
 
-    local $ENV{'PERL5LIB'} =
-      join( ':', UR::Util::used_libs() ) . ':' . $ENV{'PERL5LIB'};
+    local $ENV{'PERL5LIB'} = UR::Util::used_libs_perl5lib_prefix() . $ENV{'PERL5LIB'};
 
     my $hl_g = $class->guard_lock('Hub');
     my $ul_g = $class->guard_lock('UR');
@@ -58,7 +74,7 @@ sub launch {
             "--ur-port=$ur_port"
         ]
     );
-    my $h_g = guard { $h->kill_kill; $h->finish; };
+    my $h_g = guard { print "hg\n"; $h->kill_kill; $h->finish; };
 
     Workflow::Server->wait_for_lock( 'Hub', $h );
     $hl_g->cancel;
@@ -70,7 +86,7 @@ sub launch {
             "--ur-port=$ur_port"
         ]
     );
-    my $u_g = guard { $u->kill_kill; $u->finish; };
+    my $u_g = guard { print "ug\n"; $u->kill_kill; $u->finish; };
 
     Workflow::Server->wait_for_lock( 'UR', $u );
     $ul_g->cancel;
@@ -78,21 +94,42 @@ sub launch {
     Workflow::Server->unlock('Simple');
     $sl_g->cancel;
 
+    ## servers use prctl PR_SET_PDEATHSIG SIGHUP, they dont need guards to die
+    $class->restore_signals;
+
     my $self = $class->get(
-        host => 'localhost',
+        host => hostname(),
         port => $ur_port
     );
 
     return unless $self;
 
     if (wantarray) {
-        return $self, [$u_g, $h_g];
+        return $self, [$u => $u_g, $h => $h_g];
     } else {
         $u_g->cancel;
         $h_g->cancel;
 
         return $self;
     }
+}
+
+our %OLD_SIGNALS = ();
+sub set_signals {
+    @OLD_SIGNALS{'HUP','INT','TERM'} = @SIG{'HUP','INT','TERM'};
+    my $cb = sub {
+        warn 'signalled exit';
+        exit;
+    };
+    
+    @SIG{'HUP','INT','TERM'} = ($cb,$cb,$cb);
+}
+
+sub restore_signals {
+    foreach my $sig (keys %OLD_SIGNALS) {
+        $SIG{$sig} = delete $OLD_SIGNALS{$sig};
+    }
+    return 1;
 }
 
 sub get {
@@ -160,10 +197,17 @@ sub add_plan {
     return $plan_id;
 }
 
+sub simple_start {
+    my ($self, $xml, $input ) = @_;
+    
+    my $response = $self->_client->post_respond('workflow/simple_start',[$xml,$input])
+        or croak 'client error (unserializable input passed?): ' . $self->_client->error;
+    
+    return $response;
+}
+
 sub start {
     my ( $self, $plan_id, $input ) = @_;
-
-    croak 'start: not yet implemented';
 
     #return $instance_id;
 }
@@ -176,7 +220,6 @@ sub resume {
 sub stop {
     my ( $self, $instance_id ) = @_;
 
-    
 }
 
 sub quit {

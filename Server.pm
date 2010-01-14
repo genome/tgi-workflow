@@ -17,6 +17,9 @@ sub start {
     select STDERR; $| = 1;
     select STDOUT; $| = 1;
 
+    ## non-portable, causes linux kernel to send HUP if our parent process ends.
+    syscall 172, 1, 1;
+
     $class->setup(@_);
     POE::Kernel->run();
 }
