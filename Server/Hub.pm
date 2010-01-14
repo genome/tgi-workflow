@@ -282,13 +282,26 @@ sub setup {
                 $kernel->sig('USR1','sig_USR1');
                 $kernel->sig('USR2','sig_USR2');
                 $kernel->sig('CHLD','sig_CHLD');
-                
+                $kernel->sig('HUP','sig_HUP_INT_TERM');
+                $kernel->sig('INT','sig_HUP_INT_TERM');
+                $kernel->sig('TERM','sig_HUP_INT_TERM');
                 $kernel->yield('unlock_me');
                 
                 $kernel->delay('periodic_check', $heap->{periodic_check_time});
             },
             _stop => sub {
                 evTRACE and print "dispatch _stop\n";
+
+                ## breaking down.
+            },
+            sig_HUP_INT_TERM => sub {
+                my ($kernel) = @_[KERNEL];
+                evTRACE and print "dispatch sig_HUP_INT_TERM\n";
+
+                $kernel->call($_[SESSION],'close_out');
+
+                exit;
+                $kernel->sig_handled();
             },
             sig_USR1 => sub {
                 my ($kernel) = @_[KERNEL];
@@ -311,6 +324,30 @@ sub setup {
                 $heap->{fork_count}--;
 
                 evTRACE and print "dispatch sig_CHLD $pid $child_error\n";
+            },
+            close_out => sub {
+                my ($kernel, $heap) = @_[KERNEL, HEAP];
+                evTRACE and print "dispatch close_out\n";
+
+                ### clear queue
+                evTRACE and print "dispatch close_out clear queue\n";
+                $heap->{queue}->remove_items(sub { 1; });
+
+                ### clear pending jobs               
+                evTRACE and print "dispatch close_out bkill pending\n";
+                foreach my $id (keys %{ $heap->{'dispatched'} }) {
+                    delete $heap->{'dispatched'}->{$id};
+
+                    system("bkill $id");
+                }
+
+                ### clear running jbos
+                evTRACE and print "dispatch close_out bkill running\n";
+                foreach my $remote_kernel (keys %{ $heap->{claimed} }) {
+                    my $payload = delete $heap->{claimed}->{$remote_kernel};
+
+                    system('bkill ' . $payload->{dispatch_id});
+                }
             },
             unlock_me => sub {
                 Workflow::Server->unlock('Hub');
@@ -352,7 +389,7 @@ sub setup {
                     my $instance = $payload->{instance};
                     my $sc = $payload->{shortcut_flag};
                     
-                    warn 'Blade failed on ' . $instance->id . ' ' . $instance->name . "\n";
+                    warn 'Blade failed on ' . $payload->{dispatch_id} . ' ' . $instance->id . ' ' . $instance->name . "\n";
 
                     if ($sc) {
                         $payload->[3] = 0;
@@ -385,6 +422,7 @@ sub setup {
                 if ($heap->{dispatched}->{$dispatch_id}) {
                     my $payload = delete $heap->{dispatched}->{$dispatch_id};
                     my ($instance, $type, $input, $sc) = @{ $payload }{qw/instance operation_type input shortcut_flag/};
+                    $payload->{dispatch_id} = $dispatch_id;
 
                     $heap->{claimed}->{$remote_kernel} = $payload;
 

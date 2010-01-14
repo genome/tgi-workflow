@@ -75,7 +75,7 @@ sub launch {
             "--ur-port=$ur_port"
         ]
     );
-    my $h_g = guard { print "hg\n"; $h->kill_kill; $h->finish; };
+    my $h_g = guard { $h->kill_kill; $h->finish; };
 
     Workflow::Server->wait_for_lock( 'Hub', $h );
     $hl_g->cancel;
@@ -87,7 +87,7 @@ sub launch {
             "--ur-port=$ur_port"
         ]
     );
-    my $u_g = guard { print "ug\n"; $u->kill_kill; $u->finish; };
+    my $u_g = guard { $u->kill_kill; $u->finish; };
 
     Workflow::Server->wait_for_lock( 'UR', $u );
     $ul_g->cancel;
