@@ -58,7 +58,7 @@ sub load_operation {
         $self->operation($op) if $op;
 #        print "not yet\n" unless $op;
     } elsif ($self->cache_workflow  && !$self->workflow_operation_id) {
-        my $op = Workflow::Model->create_from_xml($self->cache_workflow->xml);
+        my $op = Workflow::Operation->create_from_xml($self->cache_workflow->xml);
 
         $self->operation($op);
     } 

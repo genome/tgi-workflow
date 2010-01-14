@@ -11,6 +11,7 @@ use Guard;
 use IPC::Run;
 use Socket;
 use Sys::Hostname;
+use Time::HiRes qw/usleep/;
 use Workflow::Server::UR;
 use Workflow::Server::Hub;
 
@@ -114,6 +115,42 @@ sub launch {
     }
 }
 
+sub end_child_servers {
+    my ($self, $guards) = @_;
+
+    $self->quit;
+
+    my $t = 0; 
+    while (1) {
+        my $done = 0;
+        foreach my $i (0,2) {
+            if ($guards->[$i]->_running_kids) {
+                $guards->[$i]->reap_nb;
+            } else {
+                $guards->[$i]->finish;
+                eval { $guards->[$i+1]->cancel };
+                $done++;
+            }
+        }
+
+        if ($done == 2) {
+            last;
+        }
+
+        if ($t > 50) {
+            foreach my $i (1,3) {
+                undef $guards->[$i];
+            }
+
+            last;
+        }
+        $t++;
+        usleep 100000;
+    }
+
+    return 1;
+}
+
 our %OLD_SIGNALS = ();
 sub set_signals {
     @OLD_SIGNALS{'HUP','INT','TERM'} = @SIG{'HUP','INT','TERM'};
@@ -150,7 +187,7 @@ sub create {
     my $poe = create_ikc_client(
         ip              => $params->{host},
         port            => $params->{port},
-        timeout         => 120,
+        timeout         => 1209600,
         connect_timeout => 5
     );
     if ( !$poe ) {
@@ -203,6 +240,15 @@ sub simple_start {
     my $response = $self->_client->post_respond('workflow/simple_start',[$xml,$input])
         or croak 'client error (unserializable input passed?): ' . $self->_client->error;
     
+    return $response;
+}
+
+sub simple_resume {
+    my ($self, $id) = @_;
+
+    my $response = $self->_client->post_respond('workflow/simple_resume',[$id])
+        or croak 'client error: ' . $self->_client->error;
+
     return $response;
 }
 

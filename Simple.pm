@@ -7,11 +7,8 @@ our @EXPORT = qw/run_workflow run_workflow_lsf resume_lsf/;
 our @EXPORT_OK = qw//;
 
 our @ERROR = ();
-our $start_servers = 1;
-our $connect_port = 13425;
 our $store_db = 1;
 our $override_lsf_use = 0;
-
 our $server_location_file;
 
 if (defined $ENV{NO_LSF} && $ENV{NO_LSF}) {
@@ -21,14 +18,10 @@ if (defined $ENV{NO_LSF} && $ENV{NO_LSF}) {
 use strict;
 
 use Workflow ();
-use IPC::Run;
-use UR::Util;
-use Sys::Hostname;
-use Time::HiRes qw( usleep );
-
+use Guard;
 use Workflow::Server;
-use POE::Component::IKC::ClientLite;
-use Socket;
+use Workflow::Server::Remote;
+use POSIX ":sys_wait_h";
 
 sub run_workflow {
     my $xml = shift;
@@ -73,31 +66,42 @@ sub run_workflow {
 use Workflow::Store::Db::Operation::Instance;
 use Workflow::Store::Db::Model::Instance;
 
+## nukes the guards if a child exits (killing others)
+sub handle_child_exit (&&) {
+    my $coderef = shift;
+    my $nukeref = shift;
+
+    my $old_chld = $SIG{CHLD};
+    my $reaper;
+    $reaper = sub {
+        my $child;
+        while (($child = waitpid(-1, WNOHANG)) > 0) {
+            $nukeref->();
+            die 'child exited early';
+        }
+        $SIG{CHLD} = $reaper;
+    };
+    $SIG{CHLD} = $reaper;
+
+    $coderef->();
+    $SIG{CHLD} = $old_chld;
+}
+
 sub resume_lsf {
     return resume(@_) if ($override_lsf_use);
     
     my $id = shift;
-    
     @ERROR = ();
 
-    my ($u,$h,$poe) = _start_servers();
+    my ($r, $guards) = Workflow::Server::Remote->launch;
+    my $g = _advertise($r);
 
-    my $response = $poe->post_respond('workflow/simple_resume',[$id]);
+    my $response;
+    handle_child_exit {
+        $response = $r->simple_resume($id);
+    } sub { undef $g; undef $guards; };
 
-    if ($start_servers) {
-        $poe->post('workflow/quit',1);
-
-        $h->finish; # if $start_ur_server && $fork_ur_server;
-        $u->finish; # if $start_hub_server;
-
-        unlink ($server_location_file);
-    }
-
-    $poe->disconnect;
-
-    unless (defined $response) {
-        die 'unexpected response';
-    }
+    $r->end_child_servers($guards);
 
     if (scalar @$response == 3) {
         return $response->[1]->output;
@@ -127,51 +131,16 @@ sub run_workflow_lsf {
             $xml = $xml->save_to_xml;
         }
     }
-
     @ERROR = ();
 
-    my %exited = 
-
     my ($r, $guards) = Workflow::Server::Remote->launch;
-    
-    if (defined $server_location_file) {
-        open FH, ('>' . $server_location_file);
-        print FH $r->host . ':' . $r->port . "\n";
-        close FH;
-    }
+    my $g = _advertise($r);    
 
-    my $response = $r->simple_start($xml,\%inputs);
-
-    $r->quit;
-
-    my $t = 0;
-    while (1) {
-        my $done = 0;
-        foreach my $i (0,2) {
-            if ($guards->[$i]->_running_kids) {
-                $guards->[$i]->reap_nb;
-            } else {
-                $guards->[$i]->finish;
-                $DB::single=1;
-                eval { $guards->[$i+1]->cancel };
-                $done++;
-            }
-        }
-
-        if ($done == 2) {
-            last;
-        }
-
-        if ($t > 50) {
-            foreach my $i (1,3) {
-                undef $guards->[$i];
-            }
-        
-            last;
-        }
-        $t++;
-        usleep 100000;
-    }
+    my $response;
+    handle_child_exit {
+        $response = $r->simple_start($xml,\%inputs);
+    } sub { undef $g; undef $guards };
+    $r->end_child_servers($guards);
 
     if (scalar @$response == 3) {
         return $response->[1]->output;
@@ -184,104 +153,16 @@ sub run_workflow_lsf {
     die 'confused';
 }
 
-sub _start_servers {
-    my @libs = UR::Util::used_libs();
-    my $libstring = '';
-    foreach my $lib (@libs) {
-        $libstring .= 'use lib "' . $lib . '"; ';
-    }
-    
-    my $u;
-    my $h;
-
-    my $ur_port_used;
-    if ($start_servers) {
-        my @libs = UR::Util::used_libs();
-
-        my $libstring = '';
-        foreach my $lib (@libs) {
-            $libstring .= 'use lib "' . $lib . '"; ';
-        }
-
-        Workflow::Server->lock('Simple');
-
-        my $ur_port = 13425;
-        while (!is_port_available($ur_port)) {
-            $ur_port+=2;
-        }
-
-        my $hub_port = 13424;
-        while (!is_port_available($hub_port)) {
-            $hub_port+=2;
-        }
-
-        my @hubcmd = ('perl','-e',$libstring . 'use Workflow::Server::Hub; $Workflow::Server::Hub::port_number=' . $hub_port . '; Workflow::Server::Hub->start;');
-        my @urcmd = ('perl','-e',$libstring . 'use Workflow::Server::UR; $Workflow::Server::Hub::port_number=' . $hub_port . '; $Workflow::Server::UR::port_number=' . $ur_port . '; $Workflow::Server::UR::store_db=' . $store_db . ';Workflow::Server::UR->start;');
-
-        Workflow::Server->lock('Hub');
-        Workflow::Server->lock('UR');
-
-        $h = IPC::Run::start(\@hubcmd);
-        eval {
-            Workflow::Server->wait_for_lock('Hub',$h);
-        };
-        if ($@) {
-            # clean up any lock we made
-
-            Workflow::Server->unlock('Hub');
-            Workflow::Server->unlock('UR');
-            Workflow::Server->unlock('Simple');
-            $h->kill_kill;
-            $h->finish;
-            die ($@);
-        }
-
-        $u = IPC::Run::start(\@urcmd);
-        eval {
-            Workflow::Server->wait_for_lock('UR',$u);
-        };
-        if ($@) {
-            Workflow::Server->unlock('UR');
-            Workflow::Server->unlock('Simple');
-            $u->kill_kill;
-            $u->finish;
-            die ($@);
-        }
-
-        $ur_port_used = $ur_port;
-
-        Workflow::Server->unlock('Simple');
-    } else {
-        $ur_port_used = $connect_port;
-    }
-
+sub _advertise {
+    my ($r) = @_;
+    my $g;
     if (defined $server_location_file) {
         open FH, ('>' . $server_location_file);
-        print FH Sys::Hostname::hostname . ':' . $ur_port_used . "\n";
+        print FH $r->host . ':' . $r->port . "\n";
         close FH;
+        $g = guard { unlink $server_location_file };
     }
-
-    my $poe = create_ikc_client(
-        port    => $ur_port_used,
-        timeout => 1209600 
-    );
-    
-    return ($u,$h,$poe);
-}
-
-sub is_port_available {
-    my $port = shift;
-    
-    socket(TESTSOCK,PF_INET,SOCK_STREAM,6);
-    setsockopt(TESTSOCK,SOL_SOCKET,SO_REUSEADDR,1);
-    
-    my $val = bind(TESTSOCK, sockaddr_in($port, INADDR_ANY));
-    
-    shutdown(TESTSOCK,2);
-    close(TESTSOCK);
-    
-    return 1 if $val;
-    return 0;
+    return $g;
 }
 
 1;
