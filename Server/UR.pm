@@ -53,7 +53,9 @@ sub __build {
 
     our $workflow = POE::Session->create(
         heap => {
-            channel => $channel_id
+            channel => $channel_id,
+            changes => 0,  ## this means possible changes, not that anything actually changed and needs to be synced.  For my purposes I don't care.
+            unchanged_commits => 0
         },
         inline_states => {
             _start => sub {
@@ -141,14 +143,27 @@ evTRACE and print "workflow quit_stage_2\n";
                 $kernel->post('IKC','shutdown');
             },
             commit => sub {
-                my ($kernel) = @_[KERNEL];
-#evTRACE and print "workflow commit\n";
+                my ($kernel, $heap) = @_[KERNEL,HEAP];
 
                 if ($store_db) { 
-                    UR::Context->commit();
-
-                    $kernel->delay('commit', 30);
+                    if ($heap->{changes} > 0) {
+                        evTRACE and print "workflow commit changes " . $heap->{changes} . "\n";
+                        UR::Context->commit();
+                        $heap->{changes} = 0;
+                        $heap->{unchanged_commits} = 0;
+                    } else {
+                        if (Workflow::DataSource::InstanceSchema->has_default_handle) {
+                            $heap->{unchanged_commits}++;
+                            if ($heap->{unchanged_commits} > 2) {
+                                evTRACE and print "workflow commit disconnecting " . $heap->{unchanged_commits} . "\n";
+                                ## its been 5 minutes and nothing has changed.  disconnect
+                                Workflow::DataSource::InstanceSchema->disconnect_default_dbh;
+                                $heap->{unchanged_commits} = 0;
+                            }
+                        }
+                    }
                 }
+                $kernel->delay('commit', 30);
             },
             conn => sub {
                 my ($name,$real) = @_[ARG1,ARG2];
@@ -176,7 +191,9 @@ evTRACE and print "workflow load\n";
                 my ($kernel, $session, $heap, $arg) = @_[KERNEL,SESSION,HEAP,ARG0];
                 my ($id,$input,$output_dest,$error_dest) = @$arg;
 evTRACE and print "workflow execute\n";
-                
+               
+                $heap->{changes}++;
+ 
                 my $workflow = $heap->{workflow_plans}->{$id};
 
                 my $executor = Workflow::Executor::Server->get;
@@ -209,6 +226,8 @@ evTRACE and print "workflow execute\n";
                 my ($kernel, $heap, $session, $arg) = @_[KERNEL,HEAP,SESSION,ARG0];
                 my ($id, $output_dest, $error_dest) = @$arg;
 evTRACE and print "workflow resume\n";
+
+                $heap->{changes}++;
                 
                 if ($store_db) {
                     my @tree = Workflow::Store::Db::Operation::Instance->get(
@@ -282,6 +301,8 @@ evTRACE and print "workflow error_relay\n";
                 my ($id,$dispatch_id) = @$arg;
 evTRACE and print "workflow begin_instance\n";
 
+                $heap->{changes}++;
+
                 my $instance = $store_db ? Workflow::Store::Db::Operation::Instance->get($id) : Workflow::Operation::Instance->get($id);
 
                 $instance->status('running');
@@ -292,6 +313,8 @@ evTRACE and print "workflow begin_instance\n";
                 my ($kernel, $heap, $arg) = @_[KERNEL,HEAP,ARG0];
                 my ($id,$status,$output,$error_string) = @$arg;
 evTRACE and print "workflow end_instance\n";
+
+                $heap->{changes}++;
 
                 my $instance = $store_db ? Workflow::Store::Db::Operation::Instance->get($id) : Workflow::Operation::Instance->get($id);
                 $instance->status($status);
@@ -310,6 +333,8 @@ evTRACE and print "workflow end_instance\n";
                 my ($id, $cpu_sec, $mem, $swap) = @$arg;
 evTRACE and print "workflow finalize_instance $id $cpu_sec $mem $swap\n";
 
+                $heap->{changes}++;
+
                 my $instance = $store_db ? Workflow::Store::Db::Operation::Instance->get($id) : Workflow::Operation::Instance->get($id);
 
                 $instance->current->cpu_time($cpu_sec) if $cpu_sec;
@@ -323,6 +348,8 @@ evTRACE and print "workflow finalize_instance $id $cpu_sec $mem $swap\n";
                 my ($id,$dispatch_id) = @$arg;
 evTRACE and print "workflow schedule_instance\n";
 
+                $heap->{changes}++;
+
                 my $instance = $store_db ? Workflow::Store::Db::Operation::Instance->get($id) : Workflow::Operation::Instance->get($id);
 
                 $instance->current->dispatch_identifier($dispatch_id);
@@ -331,7 +358,9 @@ evTRACE and print "workflow schedule_instance\n";
                 my ($kernel, $heap, $arg) = @_[KERNEL,HEAP,ARG0];
                 my ($string,$array_context,$passed_args) = @$arg;
 evTRACE and print "workflow eval\n";
-               
+              
+                $heap->{changes}++;
+ 
                 my $sub = eval('sub { ' . $string . '}; ');
                 if ($@) {
                     return [0,$@];

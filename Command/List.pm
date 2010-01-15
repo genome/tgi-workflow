@@ -26,6 +26,7 @@ class Workflow::Store::Db::Operation::RootInstance {
 
 package Workflow::Command::List;
 
+my $uname = getpwuid $<;
 class Workflow::Command::List {
     is => ['UR::Object::Command::List'],
     has_constant => [
@@ -36,6 +37,9 @@ class Workflow::Command::List {
     has => [
         show => {
             default_value => 'workflow_instance_id,name,status,user_name,start_time'
+        },
+        filter => {
+            default_value => 'user_name=' . $uname
         }
     ]
 };
