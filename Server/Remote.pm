@@ -357,6 +357,7 @@ sub print_STDERR {
 }
 
 sub _is_port_available {
+    my $class = shift;
     my $port = shift;
 
     socket( TESTSOCK, PF_INET, SOCK_STREAM, 6 );
