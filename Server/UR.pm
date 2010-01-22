@@ -7,7 +7,7 @@ use POE qw(Component::IKC::Server Component::IKC::Client);
 use Workflow::Server::Hub;
 
 our $store_db = 1;
-our $port_number = 13425;
+#our $port_number = 13425;
 
 use Workflow ();
 
@@ -21,35 +21,39 @@ BEGIN {
 
 sub setup {
     my $class = shift;
+    my %args = @_;
 
-    $class->setup_client(@_);
-    
+    $class->setup_client(%args);
+ 
+    print "ur server starting on port $args{ur_port}\n" if evTRACE;
     our $srv_session = POE::Component::IKC::Server->spawn(
-        port => $port_number, name => 'UR'
+        port => $args{ur_port}, name => 'UR'
     );
 
 }
 
 sub setup_client {
     my $class = shift;
-    my @connect_code = @_;
+    my %args = @_;
 
     $Storable::forgive_me = 1;
 
+    print "ur process connecting to hub $args{hub_port}\n" if evTRACE;
     our $session = POE::Component::IKC::Client->spawn( 
         ip         => 'localhost', 
-        port       => $Workflow::Server::Hub::port_number,
+        port       => $args{hub_port},
         name       => 'UR',
         on_connect => sub {
-            __build($poe_kernel->get_active_session()->ID,\@connect_code,\@_);
+            __build($poe_kernel->get_active_session()->ID, %args);
         } 
     );
 }
 
 sub __build {
     my $channel_id = shift;
-    my $codebits = shift;
-    my $args = shift;
+    my %args = @_;
+
+    my $port_number = $args{ur_port};
 
     our $workflow = POE::Session->create(
         heap => {
@@ -74,7 +78,7 @@ evTRACE and print "workflow _start\n";
 
                 $kernel->post('IKC','monitor','*'=>{register=>'conn',unregister=>'disc'});
 
-                $heap->{record} = Workflow::Service->create();
+                $heap->{record} = Workflow::Service->create(port => $port_number);
                 UR::Context->commit();
 
                 $kernel->delay('commit',30);
@@ -391,10 +395,6 @@ evTRACE and print "workflow eval\n";
             }
         }
     );
-
-    foreach my $code (@$codebits) {
-        $code->();
-    }
 }
 
 sub dispatch {

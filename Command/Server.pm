@@ -23,12 +23,12 @@ class Workflow::Command::Server {
 #        },
         ur_port => {
             is => 'Integer',
-#            default_value => $Workflow::Server::UR::port_number,
+            default_value => 14401,
             doc => 'UR server port number',
         },
         hub_port => {
             is => 'Integer',
-#            default_value => $Workflow::Server::Hub::port_number,
+            default_value => 14400,
             doc => 'Hub server port number'
         }
     ]
@@ -55,10 +55,10 @@ EOS
 sub execute {
     my $self = shift;
 
-    $Workflow::Server::UR::port_number = $self->ur_port
-        if $self->ur_port;
-    $Workflow::Server::Hub::port_number = $self->hub_port
-        if $self->hub_port;
+#    $Workflow::Server::UR::port_number = $self->ur_port
+#        if $self->ur_port;
+#    $Workflow::Server::Hub::port_number = $self->hub_port
+#        if $self->hub_port;
 
     my $type = lc($self->type);
 
@@ -70,11 +70,11 @@ sub execute {
         my $pid = fork;
         if ($pid) {
             print "Hub pid: $$\n";
-            Workflow::Server::Hub->start;
+            Workflow::Server::Hub->start(ur_port => $self->ur_port, hub_port => $self->hub_port);
         } elsif (defined $pid) {
             sleep 3;
             print "UR pid: $$\n";
-            Workflow::Server::UR->start;
+            Workflow::Server::UR->start(ur_port => $self->ur_port, hub_port => $self->hub_port);
         } else {
             die "no child?";
         }
@@ -82,7 +82,7 @@ sub execute {
 #        if (defined $self->hub_host) {
             # start a UR server and connect to hub_host for dispatch 
 
-            Workflow::Server::UR->start;
+            Workflow::Server::UR->start(ur_port => $self->ur_port, hub_port => $self->hub_port);
 
 #        } else {
 #            die 'must define a hub_host to start this server';
@@ -90,7 +90,7 @@ sub execute {
     } elsif ($type eq 'hub') {
         # start a hub server and connect 
 
-        Workflow::Server::Hub->start;
+        Workflow::Server::Hub->start(ur_port => $self->ur_port, hub_port => $self->hub_port);
     }
 
 }

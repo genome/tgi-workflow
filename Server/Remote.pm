@@ -54,11 +54,11 @@ sub launch {
 
     my $sl_g = $class->guard_lock('Simple');
 
-    my $ur_port = $Workflow::Server::UR::port_number;
+    my $ur_port = 17001;
     while ( !$class->_is_port_available($ur_port) ) {
         $ur_port += 2;
     }
-    my $hub_port = $Workflow::Server::Hub::port_number;
+    my $hub_port = 17000;
     while ( !$class->_is_port_available($hub_port) ) {
         $hub_port += 2;
     }

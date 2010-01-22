@@ -17,7 +17,7 @@ sub start {
     my $use_pid = shift;
     
     $host ||= 'localhost';
-    $port ||= $Workflow::Server::Hub::port_number;
+    $port ||= die 'no port number';
 
     if ($use_pid) {
         $job_id = 'P' . $$;

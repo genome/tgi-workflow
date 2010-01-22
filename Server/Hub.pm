@@ -5,7 +5,7 @@ use strict;
 use base 'Workflow::Server';
 use POE qw(Component::IKC::Server Wheel::FollowTail);
 
-our $port_number = 13424;
+#our $port_number = 13424;
 
 use Workflow ();
 use Sys::Hostname;
@@ -37,10 +37,13 @@ BEGIN {
 sub setup {
     my $class = shift;
     my %args = @_;
-    
+
+    print "hub server starting on port $args{hub_port}\n" if evTRACE; 
     our $server = POE::Component::IKC::Server->spawn(
-        port => $port_number, name => 'Hub'
+        port => $args{hub_port}, name => 'Hub'
     );
+
+    my $port_number = $args{hub_port};
 
     our $printer = POE::Session->create(
         inline_states => {
