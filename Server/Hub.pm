@@ -620,7 +620,7 @@ sub setup {
                     $libstring .= 'use lib "' . $lib . '"; ';
                 }
 
-                my $cmd = 'bsub -q ' . $queue . ' -m blades ' . $lsf_opts .
+                my $cmd = 'bsub -g /workflow-worker -q ' . $queue . ' -m blades ' . $lsf_opts .
                     ' -J "' . $name . '" perl -e \'' . $libstring . 'use ' . $namespace . '; use ' . $command_class . '; use Workflow::Server::Worker; Workflow::Server::Worker->start("' . $hostname . '",' . $port . ')\'';
 
                 evTRACE and print "dispatch lsf_cmd $cmd\n";
