@@ -329,8 +329,10 @@ sub setup {
                 return $kernel->yield('exception',$result) unless $ok;
                 return $kernel->yield('not_found','object') unless $result;
 
+                my $advanceduri = ($heap->{advanced} ? '?' . $heap->{advanced} : '');
+
                 $response->code('302');
-                $response->push_header('Location','http://' . $heap->{request}->uri->host  . ':8088/summary');
+                $response->push_header('Location','http://' . $heap->{request}->uri->host  . ':8088/summary' . $advanceduri);
 
                 $kernel->yield('finish_response');
             },
