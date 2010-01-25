@@ -161,7 +161,7 @@ evTRACE and print "workflow quit_stage_2\n";
                             if ($heap->{unchanged_commits} > 2) {
                                 evTRACE and print "workflow commit disconnecting " . $heap->{unchanged_commits} . "\n";
                                 ## its been 5 minutes and nothing has changed.  disconnect
-                                Workflow::DataSource::InstanceSchema->disconnect_default_dbh;
+#                                Workflow::DataSource::InstanceSchema->disconnect_default_dbh;
                                 $heap->{unchanged_commits} = 0;
                             }
                         }
