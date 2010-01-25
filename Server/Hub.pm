@@ -641,7 +641,7 @@ sub setup {
             },
             periodic_check => sub {
                 my ($kernel, $heap) = @_[KERNEL, HEAP];
-                evTRACE and print "dispatch periodic_check\n";
+#                evTRACE and print "dispatch periodic_check\n";
                 
                 if (scalar keys %{ $heap->{dispatched} } > 0) {
                     $kernel->yield('check_jobs');
@@ -651,7 +651,7 @@ sub setup {
             },
             check_jobs => sub {
                 my ($kernel, $heap) = @_[KERNEL, HEAP];
-                evTRACE and print "dispatch check_jobs\n";
+#                evTRACE and print "dispatch check_jobs\n";
                 
                 my $number_restarted = 0;
                 foreach my $lsf_job_id (keys %{ $heap->{dispatched} }) {
