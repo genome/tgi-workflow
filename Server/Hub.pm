@@ -596,10 +596,10 @@ sub setup {
                 $rusage =~ s/^\s+//;
                 if ($rusage =~ /^-/) {
                     $lsf_opts = $rusage;
-                    if ($lsf_opts !~ /-o/i) {
+                    if ($rusage !~ /-o/i) {
                         $lsf_opts .= ' -o ' . $stdout_file;
                     }
-                    if ($lsf_opts !~ /-e/i) {
+                    if ($rusage !~ /-e/i) {
                         $lsf_opts .= ' -e ' . $stderr_file;
                     }
                 } else {
