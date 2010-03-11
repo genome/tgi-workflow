@@ -283,7 +283,8 @@ evTRACE and print "workflow output_relay\n";
                 $kernel->refcount_decrement($session->ID,'anon_event');
                 $kernel->refcount_decrement($session->ID,'anon_event');
 
-                $kernel->post('IKC','post',$output_dest,[$instance->id,$instance,$instance->current]); 
+                # undef hole is where $instance->current was.  removing that from the return set.
+                $kernel->post('IKC','post',$output_dest,[$instance->id,$instance->output,undef]); 
             },
             error_relay => sub {
                 my ($kernel, $session, $heap, $xarg, $yarg) = @_[KERNEL,SESSION,HEAP,ARG0,ARG1];
@@ -298,7 +299,7 @@ evTRACE and print "workflow error_relay\n";
 
                 my @errors = _util_error_walker($instance);
                 
-                $kernel->post('IKC','post',$error_dest,[$instance->id,$instance,$instance->current,\@errors]);
+                $kernel->post('IKC','post',$error_dest,[$instance->id,$instance->output,undef,\@errors]);
             },
             begin_instance => sub {
                 my ($kernel, $heap, $arg) = @_[KERNEL,HEAP,ARG0];

@@ -104,7 +104,7 @@ sub resume_lsf {
     $r->end_child_servers($guards);
 
     if (scalar @$response == 3) {
-        return $response->[1]->output;
+        return $response->[1];
 
     } elsif (scalar @$response == 4) {
         @ERROR = @{ $response->[3] };
@@ -143,7 +143,7 @@ sub run_workflow_lsf {
     $r->end_child_servers($guards);
 
     if (scalar @$response == 3) {
-        return $response->[1]->output;
+        return $response->[1];
 
     } elsif (scalar @$response == 4) {
         @ERROR = @{ $response->[3] };
