@@ -5,7 +5,8 @@ package Workflow::Server::Remote;
 use strict;
 use warnings;
 use Carp;
-use POE::Component::IKC::ClientLite;
+# now loaded at run time
+#use POE::Component::IKC::ClientLite;
 
 use Guard;
 use IPC::Run;
@@ -45,11 +46,33 @@ $SIG{'TERM'} = sub {
     exit;
 };
 
+my $poe_loaded = 0;
+sub load_poe {
+    return if $poe_loaded;
+
+    if ($ENV{PERL5DB}) {
+        warn "Debugger detected.  The workflow engine may trigger runaway debugging in ptkdb...\n";
+        warn "Use console debugger or see eclark for assistance.\n";
+        for my $mod (qw/Workflow::Server::Remote/) {
+            warn "\t$mod...\n";
+            eval "use $mod";
+            die $@ if $@;
+        }
+        warn "Close any extra debug windows which may have been created by the POE engine.\n";
+
+    }
+
+    eval "use POE::Component::IKC::ClientLite";
+    die $@ if $@;
+    $poe_loaded=1;
+}
+
 sub launch {
     my $class = shift;
 
     croak 'exec is not an instance method' if ref($class);
 
+    $class->load_poe;
     $class->set_signals;
 
     my $sl_g = $class->guard_lock('Simple');
@@ -184,7 +207,9 @@ sub create {
         return undef;
     }
 
-    my $poe = create_ikc_client(
+    $class->load_poe;
+
+    my $poe = POE::Component::IKC::ClientLite::create_ikc_client(
         ip              => $params->{host},
         port            => $params->{port},
         timeout         => 1209600,
