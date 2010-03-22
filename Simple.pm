@@ -36,7 +36,7 @@ sub run_workflow {
     if (ref($xml) && UNIVERSAL::isa($xml,'Workflow::Operation')) {
         $w = $xml;
     } else {
-        $w = Workflow::Model->create_from_xml($xml);
+        $w = Workflow::Operation->create_from_xml($xml);
     }
     $w->execute(
         input => \%inputs,
