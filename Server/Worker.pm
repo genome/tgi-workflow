@@ -5,6 +5,7 @@ use strict;
 use POE;
 use POE::Component::IKC::Client;
 use Workflow::Server::Hub;
+use Error qw(:try);
 
 use Workflow ();
 
@@ -57,6 +58,12 @@ sub __build {
                 my $output;
                 my $error_string;
                 eval {
+                    local $SIG{__DIE__} = sub {
+                        my $m = Carp::longmess;
+                        $m =~ s/^.+?\n//s;
+                        die $_[0] . $m;
+                    };
+
                     if ($sc_flag) {
                         $output = $type->shortcut(%{ $instance->input }, %$input);
                     } else {
@@ -72,7 +79,7 @@ sub __build {
                         $error_string = "Command module returned undef";
                     }
                     $status = 'crashed';
-                }else{
+                } else {
                     UR::Context->commit();
                 }
 
