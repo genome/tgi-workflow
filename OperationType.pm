@@ -3,6 +3,7 @@ package Workflow::OperationType;
 
 use strict;
 use warnings;
+use Carp;
 
 class Workflow::OperationType {
     is_abstract => 1,
@@ -37,8 +38,11 @@ sub create_from_xml_simple_structure {
     # delegate to the right one
 
     my $self;
+    if (ref($struct) =~ /ARRAY/) {
+        Carp::confess 'xml for operationtype parsed into array. possible multiple operationtype elements in document'; 
+    }
+
     my $class = delete $struct->{typeClass};
-    
     if (defined $class && $class->class && $my_class ne $class && $class->can('create_from_xml_simple_structure')) {
 
         $self = $class->create_from_xml_simple_structure($struct);

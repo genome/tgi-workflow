@@ -28,15 +28,23 @@ ok(@files,'finding XX_yyyy.xml files');
 
 foreach my $file (sort @files) {
     ok(do {
+        my $tv = 0;
+        my $w;
         eval {
-            my $w = Workflow::Model->create_from_xml($dir . '/' . $file);
+            $w = Workflow::Model->create_from_xml($dir . '/' . $file);
+        };
+        if ($@) {
+            if ($file =~ /_invalid/) {
+                $tv = 1;
+            }
+        } else {
             $w->validate;
             if ($file =~ /_invalid/) {
-                die if $w->is_valid;
+                $tv = 1 unless $w->is_valid;
             } else {
-                die unless $w->is_valid;
+                $tv = 1 if $w->is_valid;
             }
-        };
-        $@ ? 0 : 1;
+        }
+        $tv
     },'load and validate ' . $file);
 }
