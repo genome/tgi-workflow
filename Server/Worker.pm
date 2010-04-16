@@ -2,7 +2,9 @@
 package Workflow::Server::Worker;
 
 use strict;
+use AnyEvent;
 use POE;
+
 use POE::Component::IKC::Client;
 use Workflow::Server::Hub;
 use Error qw(:try);
