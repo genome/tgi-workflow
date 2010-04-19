@@ -177,6 +177,11 @@ sub execute {
         }
     );
 
+    $command_name->dump_status_messages(1);
+    $command_name->dump_warning_messages(1);
+    $command_name->dump_error_messages(1);
+    $command_name->dump_debug_messages(0);
+
     my $command = $command_name->create(%properties);
 
     if ($Workflow::DEBUG_GLOBAL) {
@@ -192,6 +197,11 @@ sub execute {
     if (!defined $command) {
         die "Undefined value returned from $command_name->create\n" . join("\n", @errors) . "\n";
     }
+
+    $command_name->dump_status_messages(1);
+    $command_name->dump_warning_messages(1);
+    $command_name->dump_error_messages(1);
+    $command_name->dump_debug_messages(0);
 
     my $retvalue = $command->execute;
 

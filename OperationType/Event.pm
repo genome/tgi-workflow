@@ -3,6 +3,7 @@ package Workflow::OperationType::Event;
 
 use strict;
 use warnings;
+use Sys::Hostname;
 
 class Workflow::OperationType::Event {
     isa => 'Workflow::OperationType',
@@ -90,6 +91,12 @@ sub execute {
         return { result => 1 };
     }
 
+    my $command_name = ref($event);
+    $command_name->dump_status_messages(1);
+    $command_name->dump_warning_messages(1);
+    $command_name->dump_error_messages(1);
+    $command_name->dump_debug_messages(0);
+
     unless ($event->verify_prior_event) {
         my $prior_event =  $event->prior_event;
         $self->error_message('Prior event did not verify: '. $prior_event->genome_model_event_id .' '.
@@ -114,12 +121,10 @@ sub execute {
     $self->status_message('#################################################');
     $self->status_message('Date Scheduled:  '. $command_obj->date_scheduled);
     $self->status_message('LSF Job Id:  '. $command_obj->lsf_job_id);
-    $self->status_message('HOST:  '. $ENV{HOST});
+    $self->status_message('HOST:  '. hostname);
     $self->status_message('USER:  '. $command_obj->user_name);
 
-
     if ($Workflow::DEBUG_GLOBAL) {
-        my $command_name = ref($command_obj);
         if (UNIVERSAL::can('Devel::ptkdb','brkonsub')) {
             Devel::ptkdb::brkonsub($command_name . '::execute');
         } elsif (UNIVERSAL::can('DB','cmd_b_sub')) {
@@ -128,7 +133,6 @@ sub execute {
             $DB::single=2;
         }
     }
-
 
     my $rethrow;
 
