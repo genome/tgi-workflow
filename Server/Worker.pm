@@ -2,6 +2,8 @@
 package Workflow::Server::Worker;
 
 use strict;
+
+use AnyEvent::Impl::POE;
 use AnyEvent;
 use POE;
 
