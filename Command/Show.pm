@@ -53,6 +53,7 @@ sub execute {
             no warnings;
             print <<MARK;
 Id:          @{[$i->id]}
+Parent Id:   @{[$i->parent_instance_id]}
 Name:        @{[$i->name]}
 Status:      @{[$i->status]}
 Start Time:  @{[$i->current->start_time]}

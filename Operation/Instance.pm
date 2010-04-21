@@ -476,7 +476,9 @@ sub reset_current {
             is_running => 0
         );
 
-        $self->current($ie);    
+        $ie->debug_mode(1);
+
+        $self->current($ie);
     }
 }
 
