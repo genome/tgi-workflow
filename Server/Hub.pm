@@ -517,21 +517,28 @@ sub setup {
                                 $payload->{instance}->name,
                                 $payload->{instance}->parallel_index
                             );
-                            $heap->{job_count}++;
                             
-                            my $cb = $session->postback(
-                                'finalize_work', $payload->{instance}->id
-                            );
+                            if ($lsf_job_id) {
+                                $heap->{job_count}++;
+                            
+                                my $cb = $session->postback(
+                                    'finalize_work', $payload->{instance}->id
+                                );
 
-                            $kernel->post('lsftail','add_watcher',{job_id => $lsf_job_id, action => $cb});                
+                                $kernel->post('lsftail','add_watcher',{job_id => $lsf_job_id, action => $cb});
+                            }
 
                         }
 
-                        $heap->{dispatched}->{$lsf_job_id} = $payload;
+                        if ($lsf_job_id) {
+                            $heap->{dispatched}->{$lsf_job_id} = $payload;
 
-                        $kernel->post('IKC','post','poe://UR/workflow/schedule_instance',[$payload->{instance}->id,$lsf_job_id]);
+                            $kernel->post('IKC','post','poe://UR/workflow/schedule_instance',[$payload->{instance}->id,$lsf_job_id]);
 
-                        evTRACE and print "dispatch start_jobs submitted $lsf_job_id " . $payload->{shortcut_flag} . "\n";
+                            evTRACE and print "dispatch start_jobs submitted $lsf_job_id " . $payload->{shortcut_flag} . "\n";
+                        } else {
+                            evTRACE and print "dispatch failed to start job, will retry on next cycle\n";
+                        }
                     } else {
                         last;
                     }
@@ -633,11 +640,12 @@ sub setup {
                 evTRACE and print "dispatch lsf_cmd $bsub_output";
 
                 # Job <8833909> is submitted to queue <long>.
-                $bsub_output =~ /^Job <(\d+)> is submitted to queue <(\w+)>\./;
-                
-                my $lsf_job_id = $1;
-                
-                return $lsf_job_id;
+                if ($bsub_output =~ /^Job <(\d+)> is submitted to queue <(\w+)>\./) {
+                    my $lsf_job_id = $1;                
+                    return $lsf_job_id;
+                } else {
+                    return;
+                }
             },
             periodic_check => sub {
                 my ($kernel, $heap) = @_[KERNEL, HEAP];
