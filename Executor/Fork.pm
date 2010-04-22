@@ -1,4 +1,7 @@
 
+## This module may be broken
+
+=pod
 package Workflow::Executor::Fork;
 
 use strict;
@@ -72,5 +75,7 @@ sub wait {
     
     $self->threads([]);
 }
+=cut
+
 
 1;
