@@ -3,6 +3,10 @@ package Workflow::Store::Db::Model::Instance;
 
 use strict;
 use warnings;
+
+# these should not be necessary
+# remove when rt56577 is done
+use Workflow::Operation::Instance;
 use Workflow::Model::Instance;
 
 class Workflow::Store::Db::Model::Instance { 
