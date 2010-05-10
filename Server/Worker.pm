@@ -58,6 +58,8 @@ sub __build {
                 
                 $kernel->alarm_remove_all;
 
+                $ENV{'WORKFLOW_PARENT_EXECUTION'} = $instance->{current_execution_id};
+
                 my $status = 'done';
                 my $output;
                 my $error_string;

@@ -5,41 +5,30 @@ use strict;
 use warnings;
 use Storable qw(freeze thaw);
 
+#use Workflow;
 class Workflow::Store::Db::Operation::Instance {
-    sub_classification_method_name => '_resolve_subclass_name',
-    is => ['Workflow::Operation::Instance'],
+    is => [ 'Workflow::Operation::Instance' ],
     type_name => 'instance',
     table_name => 'WORKFLOW_INSTANCE',
+    sub_classification_method_name => '_resolve_subclass_name',
     id_by => [
-        instance_id => { is => 'INTEGER', column_name => 'workflow_instance_id' },
+        instance_id => { is => 'INTEGER', column_name => 'WORKFLOW_INSTANCE_ID' },
     ],
     has => [
-        cache_workflow       => { 
-            is => 'Workflow::Store::Db::Cache',
-            id_by => 'cache_workflow_id',
-            is_optional => 1 
-        },
-        cache_workflow_id    => { is => 'INTEGER', column_name => 'workflow_plan_id', is_optional => 1 },
-        current => { 
-            is => 'Workflow::Store::Db::Operation::InstanceExecution', 
-            id_by => 'current_execution_id', 
-            is_optional => 1
-        },
-        current_execution_id => { is => 'INTEGER', is_optional => 1 },
+        cache_workflow       => { is => 'Workflow::Store::Db::Cache', id_by => 'cache_workflow_id', is_optional => 1 },
+        cache_workflow_id    => { is => 'INTEGER', column_name => 'WORKFLOW_PLAN_ID', implied_by => 'cache_workflow', is_optional => 1 },
+        current              => { is => 'Workflow::Store::Db::Operation::InstanceExecution', id_by => 'current_execution_id', is_optional => 1 },
+        current_execution_id => { is => 'INTEGER', implied_by => 'current', is_optional => 1 },
         input_stored         => { is => 'BLOB', is_optional => 1 },
         name                 => { is => 'TEXT' },
         output_stored        => { is => 'BLOB', is_optional => 1 },
         parallel_index       => { is => 'INTEGER', is_optional => 1 },
-        parent_instance => {
-            is => 'Workflow::Store::Db::Model::Instance',
-            id_by => 'parent_instance_id'
-        },
-        parent_instance_id   => { is => 'INTEGER', is_optional => 1 },
-        peer_of => {
-            is => 'Workflow::Store::Db::Operation::Instance',
-            id_by => 'peer_instance_id'
-        },
-        peer_instance_id     => { is => 'INTEGER', is_optional => 1 },
+        parent_instance      => { is => 'Workflow::Store::Db::Model::Instance', id_by => 'parent_instance_id', is_optional => 1 },
+        parent_instance_id   => { is => 'INTEGER', implied_by => 'parent_instance', is_optional => 1 },
+        peer_of              => { is => 'Workflow::Store::Db::Operation::Instance', id_by => 'peer_instance_id', is_optional => 1 },
+        peer_instance_id     => { is => 'INTEGER', implied_by => 'peer_of', is_optional => 1 },
+        intention            => { is => 'VARCHAR2', len => 15, is_optional => 1 },
+        parent_execution_id  => { is => 'NUMBER', len => 11, is_optional => 1 },
     ],
     schema_name => 'InstanceSchema',
     data_source => 'Workflow::DataSource::InstanceSchema',

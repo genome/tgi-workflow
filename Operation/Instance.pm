@@ -22,6 +22,9 @@ class Workflow::Operation::Instance {
         name => {
             via => 'operation'
         },
+        parent_execution_id => {
+            is => 'Number'
+        },
         parent_instance => {
             is => 'Workflow::Model::Instance',
             id_by => 'parent_instance_id',
@@ -119,7 +122,17 @@ class Workflow::Operation::Instance {
                     }
                 }
 
-                return @spool;
+                my @newspool = map {
+                    my $orig = $_;
+
+                    my @uglymess = Workflow::Store::Db::Operation::Instance->get(
+                        parent_execution_id => $orig->current_execution_id
+                    );
+
+                    $orig, @uglymess;
+                } @spool;
+
+                return @newspool;
             }
         },
         ordered_child_instances => {
@@ -853,6 +866,7 @@ sub create_peers {
             peer_of => $self
         );
         $peer->parent_instance($self->parent_instance) if ($self->parent_instance);
+        $peer->parent_execution_id($self->parent_execution_id) if ($self->parent_execution_id);
         $peer->input($self->input);
         $peer->output({});
         

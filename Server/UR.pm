@@ -221,6 +221,10 @@ evTRACE and print "workflow execute\n";
 
                 my $instance = $workflow->execute(%opts);
 
+                if ($instance->can('parent_execution_id') && exists $ENV{'WORKFLOW_PARENT_EXECUTION'}) {
+                    $instance->parent_execution_id($ENV{'WORKFLOW_PARENT_EXECUTION'});
+                }
+
                 $workflow->wait;
 
                 $heap->{workflow_executions}->{$instance->id} = $instance;

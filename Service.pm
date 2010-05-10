@@ -17,10 +17,8 @@ class Workflow::Service {
         start_time => { is => 'TIMESTAMP', len => 20 },
     ],
     has_optional => [
-        cmd => { 
-            is => 'String',
-            calculate => q{
-                my $psline;
+        cmd => { is => 'String', calculate => q(
+                                 my $psline;
                 my $f = IO::File->new('ssh ' . $self->hostname . ' ps -o cmd ' . $self->process_id . ' 2>/dev/null |');
                 $f->getline;
                 $psline = $f->getline;
@@ -28,8 +26,7 @@ class Workflow::Service {
                 $f->close;
                 
                 return $psline;
-            }
-        }
+            ) },
     ],
     schema_name => 'InstanceSchema',
     data_source => 'Workflow::DataSource::InstanceSchema',
