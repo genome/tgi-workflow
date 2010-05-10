@@ -13,6 +13,11 @@ class Workflow::Store::Db::Model::Instance {
     isa => [ 'Workflow::Store::Db::Operation::Instance' ],
     has => [
         child_instances => { is => 'Workflow::Store::Db::Operation::Instance', is_many => 1, reverse_id_by => 'parent_instance' },
+        ordered_child_instances => { 
+            is => 'Workflow::Store::Db::Operation::Instance', 
+            is_many => 1,
+            calculate => q{ $self->sorted_child_instances } 
+        },
         input_connector => { is => 'Workflow::Store::Db::Operation::Instance', id_by => 'input_connector_id' },
         output_connector => { is => 'Workflow::Store::Db::Operation::Instance', id_by => 'output_connector_id' },
     ]

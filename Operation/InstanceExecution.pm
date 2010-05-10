@@ -11,6 +11,39 @@ class Workflow::Operation::InstanceExecution {
         status => { is_optional => 1 },
         start_time => { is_optional => 1 },
         end_time => { is_optional => 1 },
+        elapsed_time => { 
+            calculate_from => ['start_time','end_time'],
+            calculate => q{
+                return unless $start_time;
+                my $diff;
+                if ($end_time) {
+                    $diff = UR::Time->datetime_to_time($end_time) - UR::Time->datetime_to_time($start_time);
+                } else {
+                    $diff = time - UR::Time->datetime_to_time($start_time);
+                }
+
+                my $seconds = $diff;
+                my $days = int($seconds/(24*60*60));
+                $seconds -= $days*24*60*60;
+                my $hours = int($seconds/(60*60));
+                $seconds -= $hours*60*60;
+                my $minutes = int($seconds/60);
+                $seconds -= $minutes*60;
+
+                my $formatted_time;
+                if ($days) {
+                    $formatted_time = sprintf("%d:%02d:%02d:%02d",$days,$hours,$minutes,$seconds);
+                } elsif ($hours) {
+                    $formatted_time = sprintf("%02d:%02d:%02d",$hours,$minutes,$seconds);
+                } elsif ($minutes) {
+                    $formatted_time = sprintf("%02d:%02d",$minutes,$seconds);
+                } else {
+                    $formatted_time = sprintf("%02d:%02d",$minutes,$seconds);
+                }
+
+                return $formatted_time;
+            }
+        },
         exit_code => { is_optional => 1 },
         stdout => { is_optional => 1 },
         stderr => { is_optional => 1 },

@@ -84,6 +84,15 @@ class Workflow::Operation::Instance {
             via => 'current',
             is_mutable => 1
         },
+        start_time => {
+            via => 'current',
+        },
+        end_time => {
+            via => 'current',
+        },
+        elapsed_time => {
+            via => 'current',
+        },
         executor => { #TODO store executor upon creation
             is => 'Workflow::Executor',
             calculate => q{
@@ -94,7 +103,20 @@ class Workflow::Operation::Instance {
                 }
                 return $executor;
             },
-        }
+        },
+        ## this property does not belong here, it will be removed
+        ## when the inheritence structure is fixed
+        ordered_child_instances => {
+            is => 'Workflow::Store::Db::Operation::Instance',
+            is_many => 1,
+            calculate => q{ 
+                if ($self->can('sorted_child_instances')) {
+                    return $self->sorted_child_instances;
+                } else {
+                    return;
+                }
+            }
+        },
     ]
 };
 
