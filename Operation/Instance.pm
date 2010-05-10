@@ -106,6 +106,22 @@ class Workflow::Operation::Instance {
         },
         ## this property does not belong here, it will be removed
         ## when the inheritence structure is fixed
+        related_instances => {
+            is => 'Workflow::Operation::Instance',
+            is_many => 1,
+            calculate => q{
+                $DB::single=1;
+                my @spool = $self->ordered_child_instances; 
+
+                if (!$self->parent_instance_id && $self->is_parallel && $self->peer_of == $self) {
+                    foreach my $p ($self->peers) {
+                        push @spool, $p, $p->ordered_child_instances;
+                    }
+                }
+
+                return @spool;
+            }
+        },
         ordered_child_instances => {
             is => 'Workflow::Store::Db::Operation::Instance',
             is_many => 1,
@@ -900,13 +916,14 @@ sub peers {
     my $self = shift;
     
     return () unless $self->peer_of;
-    
-    return grep {
-        $_ != $self && defined $_->parallel_index
-    } Workflow::Operation::Instance->get(
-        operation => $self->operation,  #TODO shouldnt be needed, verify and remove
+
+    my $myclass = ref($self);
+
+    my @p = $myclass->get(
         peer_of => $self->peer_of
     );
+
+    return grep { $_ != $self } @p;
 }
 
 sub sorted_peers {
