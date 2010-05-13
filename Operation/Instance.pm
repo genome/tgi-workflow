@@ -120,15 +120,27 @@ class Workflow::Operation::Instance {
                         push @spool, $p, $p->ordered_child_instances;
                     }
                 }
+                my %ugly;
+                if (scalar @spool) {
+                    foreach my $op (Workflow::Store::Db::Operation::Instance->get(
+                        parent_execution_id => [map { $_->current_execution_id } @spool],
+                    )) {
+                        $ugly{$op->parent_execution_id} ||= [];
+                        push @{ $ugly{$op->parent_execution_id} }, $op;
+                    } 
+                }
 
                 my @newspool = map {
                     my $orig = $_;
 
-                    my @uglymess = Workflow::Store::Db::Operation::Instance->get(
-                        parent_execution_id => $orig->current_execution_id
-                    );
+                    my $mess;
+                    if (exists $ugly{$_->current_execution_id}) {
+                        $mess = @{ $ugly{$_->current_execution_id} }; 
+                    } else {
+                        $mess = [];
+                    }
 
-                    $orig, @uglymess;
+                    $orig, @$mess;
                 } @spool;
 
                 return @newspool;
