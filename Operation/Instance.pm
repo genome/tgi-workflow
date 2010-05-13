@@ -113,7 +113,6 @@ class Workflow::Operation::Instance {
             is => 'Workflow::Operation::Instance',
             is_many => 1,
             calculate => q{
-                $DB::single=1;
                 my @spool = $self->ordered_child_instances; 
 
                 if (!$self->parent_instance_id && $self->is_parallel && $self->peer_of == $self) {
