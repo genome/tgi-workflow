@@ -131,16 +131,7 @@ class Workflow::Operation::Instance {
                 }
 
                 my @newspool = map {
-                    my $orig = $_;
-
-                    my $mess;
-                    if (exists $ugly{$_->current_execution_id}) {
-                        $mess = @{ $ugly{$_->current_execution_id} }; 
-                    } else {
-                        $mess = [];
-                    }
-
-                    $orig, @$mess;
+                    $_, @{ exists $ugly{$_->current_execution_id} ? $ugly{$_->current_execution_id} : [] };
                 } @spool;
 
                 return @newspool;
