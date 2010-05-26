@@ -7,7 +7,6 @@ our @EXPORT = qw/run_workflow run_workflow_lsf resume_lsf/;
 our @EXPORT_OK = qw//;
 
 our @ERROR = ();
-our $store_db = 1;
 our $override_lsf_use = 0;
 our $server_location_file;
 
@@ -45,8 +44,7 @@ sub run_workflow {
         },
         error_cb => sub {
             $error = 1;
-        },
-        store => $store_db ? Workflow::Store::Db->get : Workflow::Store::None->get
+        }
     );
  
     $w->wait;
@@ -63,8 +61,8 @@ sub run_workflow {
     return $instance->output;
 }
 
-use Workflow::Store::Db::Operation::Instance;
-use Workflow::Store::Db::Model::Instance;
+use Workflow::Operation::Instance;
+use Workflow::Model::Instance;
 
 ## nukes the guards if a child exits (killing others)
 sub handle_child_exit (&&) {

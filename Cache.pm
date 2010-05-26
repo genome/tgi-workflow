@@ -1,10 +1,10 @@
-package Workflow::Store::Db::Cache;
+package Workflow::Cache;
 
 use strict;
 use warnings;
 
 use Workflow;
-class Workflow::Store::Db::Cache {
+class Workflow::Cache {
     type_name => 'workflow cache',
     table_name => 'WORKFLOW_PLAN',
     id_by => [

@@ -178,7 +178,7 @@ sub execute {
     $self->addKey("node_type","node","node_type","string");
     
 $DB::single=1;
-    my $master_node = Workflow::Store::Db::Operation::Instance->get($self->instance_id);
+    my $master_node = Workflow::Operation::Instance->get($self->instance_id);
     unless ($master_node) {
         $self->error_message("Not a valid workflow instance ID");
         return;
@@ -354,7 +354,7 @@ sub execute_old {
     my $self = shift;
     
 $DB::single=1;
-    my $i = Workflow::Store::Db::Operation::Instance->get($self->instance_id);
+    my $i = Workflow::Operation::Instance->get($self->instance_id);
     unless ($i) {
         $self->error_message("Not a valid workflow instance ID");
         return;
@@ -440,7 +440,7 @@ sub _get_node_text {
     }
 
     my $node_type = "operation";
-    if ($node->isa('Workflow::Store::Db::Model::Instance')) {
+    if ($node->isa('Workflow::Model::Instance')) {
         $status_attribs .= ",shape=doublecircle";
         $node_type = "instance";
     }

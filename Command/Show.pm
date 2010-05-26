@@ -43,7 +43,7 @@ EOS
 sub execute {
     my $self = shift;
     
-    my $i = Workflow::Store::Db::Operation::Instance->get($self->instance_id);
+    my $i = Workflow::Operation::Instance->get($self->instance_id);
 
     if ($self->debug) {
         $i->treeview_debug;

@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 12;
+use Test::More tests => 11;
 
 use above 'Workflow';
 
@@ -12,16 +12,6 @@ my ( $r, $g ) = Workflow::Server::Remote->launch();
 
 isa_ok( $r, 'Workflow::Server::Remote' );
 BAIL_OUT('cannot continue tests without connection') unless defined $r;
-
-ok(
-    $r->_seval(
-        q{
-    $Workflow::Server::UR::store_db = 0;
-    return 1;
-}
-    ),
-    'disable db store on server'
-);
 
 my $sleep_op = Workflow::Operation->create(
     name           => 'sleeper',
@@ -39,7 +29,6 @@ my $instance_id = $r->_seval(
     q{
         my ($plan_id,$seconds) = @_;
 
-        my $store = Workflow::Store::Db->get;
         my $op = Workflow::Operation->is_loaded($plan_id);
         my $exec = Workflow::Executor::Server->get;
 
@@ -48,8 +37,7 @@ my $instance_id = $r->_seval(
         my $i = $op->execute(
             input => {
                 seconds => $seconds
-            },
-            store => $store
+            }
         );
           
         return $i->id;
@@ -67,7 +55,7 @@ ok(
             $r->_seval(
                 q{
                     my $id = shift; 
-                    my @load = Workflow::Store::Db::Operation::Instance->get(
+                    my @load = Workflow::Operation::Instance->get(
                         id => $id,
                         -recurse => ['parent_instance_id','instance_id']
                     );

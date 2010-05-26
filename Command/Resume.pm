@@ -56,7 +56,7 @@ sub execute {
     eval "use " . $self->namespace if (defined $self->namespace);
     # i dont care what the result is, so we're not checking $@ 
     
-    my @i = Workflow::Store::Db::Operation::Instance->get(
+    my @i = Workflow::Operation::Instance->get(
         id => $self->instance_id,
         -recurse => ['parent_instance_id','instance_id']
     );

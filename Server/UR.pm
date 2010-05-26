@@ -6,7 +6,6 @@ use base 'Workflow::Server';
 use POE qw(Component::IKC::Server Component::IKC::Client);
 use Workflow::Server::Hub;
 
-our $store_db = 1;
 #our $port_number = 13425;
 
 use Workflow ();
@@ -149,7 +148,6 @@ evTRACE and print "workflow quit_stage_2\n";
             commit => sub {
                 my ($kernel, $heap) = @_[KERNEL,HEAP];
 
-                if ($store_db) { 
                     if ($heap->{changes} > 0) {
 #                        evTRACE and print "workflow commit changes " . $heap->{changes} . "\n";
                         UR::Context->commit();
@@ -166,7 +164,6 @@ evTRACE and print "workflow quit_stage_2\n";
                             }
                         }
                     }
-                }
                 $kernel->delay('commit', 30);
             },
             conn => sub {
@@ -203,11 +200,8 @@ evTRACE and print "workflow execute\n";
                 my $executor = Workflow::Executor::Server->get;
                 $workflow->set_all_executor($executor);
  
-                my $store = $store_db ? Workflow::Store::Db->get : Workflow::Store::None->get;
-
                 my %opts = (
-                    input => $input,
-                    store => $store
+                    input => $input
                 );
 
                 if ($output_dest) {
@@ -237,14 +231,12 @@ evTRACE and print "workflow resume\n";
 
                 $heap->{changes}++;
                 
-                if ($store_db) {
-                    my @tree = Workflow::Store::Db::Operation::Instance->get(
+                    my @tree = Workflow::Operation::Instance->get(
                         id => $id,
                         -recurse => ['parent_instance_id','instance_id']
                     );
-                }
                 
-                my $instance = $store_db ? Workflow::Store::Db::Operation::Instance->get($id) : Workflow::Operation::Instance->get($id);
+                my $instance = Workflow::Operation::Instance->get($id);
 
                 my $executor = Workflow::Executor::Server->get;
                 $instance->operation->set_all_executor($executor);                
@@ -312,7 +304,7 @@ evTRACE and print "workflow begin_instance\n";
 
                 $heap->{changes}++;
 
-                my $instance = $store_db ? Workflow::Store::Db::Operation::Instance->get($id) : Workflow::Operation::Instance->get($id);
+                my $instance = Workflow::Operation::Instance->get($id);
 
                 $instance->status('running');
                 $instance->current->start_time(UR::Time->now);
@@ -325,7 +317,7 @@ evTRACE and print "workflow end_instance\n";
 
                 $heap->{changes}++;
 
-                my $instance = $store_db ? Workflow::Store::Db::Operation::Instance->get($id) : Workflow::Operation::Instance->get($id);
+                my $instance = Workflow::Operation::Instance->get($id);
                 $instance->status($status);
                 $instance->current->end_time(UR::Time->now);
                 if ($status eq 'done') {
@@ -344,7 +336,7 @@ evTRACE and print "workflow finalize_instance $id $cpu_sec $mem $swap\n";
 
                 $heap->{changes}++;
 
-                my $instance = $store_db ? Workflow::Store::Db::Operation::Instance->get($id) : Workflow::Operation::Instance->get($id);
+                my $instance = Workflow::Operation::Instance->get($id);
 
                 $instance->current->cpu_time($cpu_sec) if $cpu_sec;
                 $instance->current->max_memory($mem) if $mem;
@@ -359,7 +351,7 @@ evTRACE and print "workflow schedule_instance\n";
 
                 $heap->{changes}++;
 
-                my $instance = $store_db ? Workflow::Store::Db::Operation::Instance->get($id) : Workflow::Operation::Instance->get($id);
+                my $instance = Workflow::Operation::Instance->get($id);
 
                 $instance->current->dispatch_identifier($dispatch_id);
             },

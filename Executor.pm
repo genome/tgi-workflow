@@ -12,7 +12,6 @@ class Workflow::Executor {
 sub exception {
     my ($self,$instance,$message) = @_;
     
-    $instance->sync;
     
     die ($message);
 }

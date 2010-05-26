@@ -1,4 +1,4 @@
-package Workflow::Store::Db::Operation::RootInstance;
+package Workflow::Operation::RootInstance;
 
 use strict;
 use warnings;
@@ -6,7 +6,7 @@ use warnings;
 use Workflow;
 use Command; 
 
-class Workflow::Store::Db::Operation::RootInstance {
+class Workflow::Operation::RootInstance {
     table_name => "
         (SELECT wi.workflow_instance_id, wi.name, wie.status, wie.user_name, wie.start_time 
            FROM workflow.workflow_instance wi
@@ -31,7 +31,7 @@ class Workflow::Command::List {
     is => ['UR::Object::Command::List'],
     has_constant => [
         subject_class_name => {
-            value => 'Workflow::Store::Db::Operation::RootInstance'
+            value => 'Workflow::Operation::RootInstance'
         },
     ],
     has => [

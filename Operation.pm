@@ -151,10 +151,6 @@ sub execute {
         }
     }
     
-    unless (exists $params{store} && $params{store} && $params{store}->can('sync')) {
-        $params{store} = Workflow::Store::None->get();
-    }
-
     {
         my %ikeys = map { $_ => 1 } keys %{ $params{input} };
         foreach my $k (@{ $self->operation_type->input_properties }) {
@@ -169,7 +165,6 @@ sub execute {
 
     my $operation_instance = Workflow::Operation::Instance->create(
         operation => $self,
-        store => $params{store},
         output_cb => $params{output_cb},
         error_cb => $params{error_cb}
     );
@@ -177,7 +172,6 @@ sub execute {
     $operation_instance->output({});
 
     $operation_instance->execute;
-    $operation_instance->sync;
 
     return $operation_instance;
 }

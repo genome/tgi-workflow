@@ -25,8 +25,6 @@ sub execute {
 sub exception {
     my ($self, $instance, $message) = @_;
     
-    $instance->sync;
-    
     # dont do anything here, should drop it out of the execution loop.
 }
 
