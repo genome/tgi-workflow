@@ -1,7 +1,7 @@
 
-package Workflow::Cache::View::Graph::Png;
+package Workflow::Cache::View::Plan::Xml;
 
-class Workflow::Cache::View::Graph::Png {
+class Workflow::Cache::View::Plan::Xml {
     is => 'UR::Object::View::Default::Text',
     has_constant => [
         perspective => {
@@ -16,9 +16,7 @@ class Workflow::Cache::View::Graph::Png {
 sub _generate_content {
     my $self = shift;
 
-    my $png = $self->subject->plan->as_png;
-
-    return $png;
+    return $self->subject->plan->save_to_xml;
 }
 
 1;
