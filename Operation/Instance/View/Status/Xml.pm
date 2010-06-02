@@ -15,7 +15,7 @@ class Workflow::Operation::Instance::View::Status::Xml {
     is  => 'Workflow::Operation::Instance::View::Default::Xml',
     has => [
         default_aspects =>
-          { value => [ @aspects, &related_instances(0) ] },
+          { value => [ 'cache_workflow_id', @aspects, &related_instances(0) ] },
     ]
 };
 

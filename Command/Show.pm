@@ -12,6 +12,7 @@ class Workflow::Command::Show {
     has => [
         instance_id => {
             is => 'Number',
+            shell_args_position => 1,
             doc => 'The unique ID of the Instance to show'
         },
         debug => {
@@ -59,6 +60,7 @@ Status:      @{[$i->status]}
 Start Time:  @{[$i->current->start_time]}
 End Time:    @{[$i->current->end_time]}
 Dispatch Id: @{[$i->current->dispatch_identifier]}
+Cache Id:    @{[$i->cache_workflow_id]}
 Username:    @{[$i->current->user_name]}
 Stdout Log:  @{[$i->current->stdout]}
 Stderr Log:  @{[$i->current->stderr]}
