@@ -66,9 +66,9 @@ class Workflow::Operation::InstanceExecution {
         },
         cpu_time      => { is => 'NUMBER',   len => 11, is_optional => 1 },
         max_threads   => { is => 'NUMBER',   len => 4,  is_optional => 1 },
-        max_swap      => { is => 'NUMBER',   len => 6,  is_optional => 1 },
+        max_swap      => { is => 'NUMBER',   len => 10,  is_optional => 1 },
         max_processes => { is => 'NUMBER',   len => 4,  is_optional => 1 },
-        max_memory    => { is => 'NUMBER',   len => 6,  is_optional => 1 },
+        max_memory    => { is => 'NUMBER',   len => 10,  is_optional => 1 },
         user_name     => { is => 'VARCHAR2', len => 20, is_optional => 1 },
         debug_mode    => {
             is            => 'Boolean',
