@@ -376,6 +376,28 @@ sub create {
     return $self;
 }
 
+## next two functions are here because UR refuses to send signals on transient properties.
+
+sub input {
+    my $self = shift;
+    my $r = $self->__input(@_);
+    if (@_ > 0) {
+        $self->serialize_input;
+    }
+
+    return $r;
+}
+
+sub output {
+    my $self = shift;
+    my $r = $self->__output(@_);
+    if (@_ > 0) {
+        $self->serialize_output;
+    }
+
+    return $r;
+}
+
 sub serialize_input {
     my ($self) = @_;
 
@@ -438,8 +460,6 @@ sub err_log_file {
 # this is only called during a model constructor, its _probably_ ok
 sub set_input_links {
     my $self = shift;
-
-    $DB::single=1;
 
     my @links = Workflow::Link->get( right_operation => $self->operation, );
 

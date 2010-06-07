@@ -9,7 +9,7 @@ use strict;
 use warnings;
 
 use UR;
-use Test::More tests => 10;
+use Test::More tests => 18;
 use Devel::Size qw(size total_size);
 use above 'Workflow';
 
@@ -37,6 +37,11 @@ can_ok('Workflow::Model',qw/create validate is_valid execute/);
 #        diag(ref($data) . ' ' . $data->id);
 
         $id = $data->id;
+
+        ok(defined $data->input,'input defined');
+        ok(ref($data->input) eq 'HASH','input is hash');
+        ok(defined $data->output,'output defined');
+        ok(ref($data->output) eq 'HASH','output is hash');
 
         # just let it leave scope
     };
@@ -87,6 +92,11 @@ my $normal = Workflow::Operation::Instance->get($id);
 
 ok($normal,'loaded instance');
 ok(my @array = $normal->child_instances,'has children');
+ok(defined $normal->input,'input defined');
+ok(ref($normal->input) eq 'HASH','input is hash');
+ok(defined $normal->output,'output defined');
+ok(ref($normal->output) eq 'HASH','output is hash');
+
 #$DB::single=1;
 #$normal->treeview_debug;
 
