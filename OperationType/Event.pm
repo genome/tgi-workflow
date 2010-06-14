@@ -64,6 +64,26 @@ sub as_xml_simple_structure {
     return $struct;
 }
 
+sub stdout_log {
+    my $self = shift;
+    if (my $res = $self->lsf_resource) {
+        if ($res =~ /-o (.+?) -e/) {
+            return $1;
+        }
+    }   
+    return;
+}
+
+sub stderr_log {
+    my $self = shift;
+    if (my $res = $self->lsf_resource) {
+        if ($res =~ /-e (.+?)$/) {
+            return $1;
+        }
+    }
+    return;
+}
+
 # delegate to wrapped command class
 sub execute {
     my $self = shift;

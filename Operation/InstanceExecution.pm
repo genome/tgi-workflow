@@ -110,6 +110,15 @@ sub fix_logs {
     if ( my $err = $self->operation_instance->err_log_file ) {
         $self->stderr($err);
     }
+
+    if (!$self->stdout && !$self->stderr) {
+        if ($self->operation_instance->operation_type->can('stdout_log')) {
+            $self->stdout($self->operation_instance->operation_type->stdout_log); 
+        }
+        if ($self->operation_instance->operation_type->can('stderr_log')) {
+            $self->stderr($self->operation_instance->operation_type->stderr_log);
+        }  
+    }
 }
 
 1;
