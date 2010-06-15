@@ -19,7 +19,7 @@ sub pre_execute {
     my $urrunner = $self->_operation->operations( name => 'runner' );
 
     $urrunner->operation_type->lsf_queue('short');
-    $urrunner->operation_type->lsf_resource('-R select[type=LINUX64] -W 10');
+    $urrunner->operation_type->lsf_resource("-R 'select[type==LINUX64 && model!=Opteron250 && tmp>1000 && mem>4000] rusage[tmp=1000, mem=4000]'");
 }
 
 sub post_execute {
@@ -28,6 +28,10 @@ sub post_execute {
     my %hash = map { $_ => $self->$_ } $self->output_property_names;
 
     print Dumper( \%hash );
+
+    my $failstring = join(' ', @{ $self->failures });
+
+    system('ur test run --lsf ' . $failstring);
 
     return $self->result;
 }
