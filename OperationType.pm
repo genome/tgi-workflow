@@ -18,7 +18,8 @@ class Workflow::OperationType {
         },
         input_properties => { 
             is => 'ARRAY', 
-            doc => 'list of all input properties' 
+            doc => 'list of all input properties',
+            value => []
         },
         optional_input_properties => {
             is => 'ARRAY',
@@ -27,7 +28,8 @@ class Workflow::OperationType {
         },
         output_properties => { 
             is => 'ARRAY', 
-            doc => 'list of output properties' 
+            doc => 'list of output properties',
+            value => [] 
         }
     ]
 };

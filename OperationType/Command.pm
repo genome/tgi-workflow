@@ -5,7 +5,7 @@ use strict;
 use warnings;
 
 class Workflow::OperationType::Command {
-    isa => 'Workflow::OperationType',
+    isa => [ 'UR::Value', 'Workflow::OperationType' ],
     is_transactional => 0,
     id_by => [ 'command_class_name' ],
     has => [
@@ -15,32 +15,33 @@ class Workflow::OperationType::Command {
     ],
 };
 
-sub get {
-    my $class = shift;
-    return $class->SUPER::get( @_ ) || $class->create ( @_ );
-}
+__PACKAGE__->add_observer(
+    aspect => 'load',
+    callback => sub {
+        my $self = shift;
+
+        $self->initialize;
+});
 
 sub create {
-    my $class = shift;
-    my $params = $class->preprocess_params(@_);
-    
-    die 'missing command class' unless $params->{command_class_name};
+    shift->get(@_)
+}
+
+sub initialize {
+    my $self = shift;
+    my $command = $self->command_class_name;
 
     # Old-style definations call a function after setting up the class
-    {
-        eval "use " . $params->{command_class_name};
-        if ($@) {
-            die $@;
-        }
+#    {
+#        eval "use " . $command;
+#        if ($@) {
+#            die $@;
+#        }
 
         # see if it got created
-        my $self = $class->SUPER::get($params->{command_class_name});
-        return $self if $self;
-    }
-    
-    my $self = $class->SUPER::create(@_);
-    my $command = $self->command_class_name;
-    
+#        my $self = $class->SUPER::get($command);
+#        return $self if $self;
+#    }
 
     my $class_meta = $command->get_class_object;
     die 'invalid command class' unless $class_meta;
