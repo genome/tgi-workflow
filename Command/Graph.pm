@@ -14,6 +14,9 @@ class Workflow::Command::Graph {
             doc         => 'XML file name to graph',
             is_optional => 1
         },
+        cache_id => {
+            is_optional => 1
+        },
         class_name => {
             is          => 'String',
             is_optional => 1
@@ -46,13 +49,20 @@ EOS
 sub execute {
     my $self = shift;
 
-    unless ( $self->class_name || $self->xml ) {
+    unless ( $self->class_name || $self->xml || $self->cache_id ) {
         $self->error_message("Must specify xml or class name to draw xml from");
         exit;
     }
     my $wf;
 
-    if ( !$self->class_name ) {
+    if ($self->cache_id) {
+        my $c = Workflow::Cache->get($self->cache_id);
+
+        die 'none found for cache_id: ' . $self->cache_id unless $c;
+
+        $wf = $c->plan;
+
+    } elsif ( !$self->class_name ) {
         unless ( -e $self->xml ) {
             $self->error_message( "Can't find xml file: " . $self->xml );
             exit;
