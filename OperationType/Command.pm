@@ -32,18 +32,20 @@ sub initialize {
     my $command = $self->command_class_name;
 
     # Old-style definations call a function after setting up the class
-#    {
-#        eval "use " . $command;
-#        if ($@) {
-#            die $@;
-#        }
+
+    my $namespace = (split(/::/,$command))[0];
+    if (defined $namespace && !exists $INC{"$namespace.pm"}){
+        eval "use " . $namespace;
+        if ($@) {
+            die $@;
+        }
 
         # see if it got created
 #        my $self = $class->SUPER::get($command);
 #        return $self if $self;
-#    }
+    }
 
-    my $class_meta = $command->get_class_object;
+    my $class_meta = $command->__meta__;
     die 'invalid command class' unless $class_meta;
 
     my @property_meta = $class_meta->all_property_metas();
