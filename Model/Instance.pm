@@ -141,6 +141,23 @@ sub execute_single {
     }
 }
 
+sub explain {
+    my $self = shift;
+
+    my $reason = '';
+    foreach my $child ( $self->child_instances ) {
+        $reason .=
+          $child->name . ' <' . $child->id . '> (' . $child->status . ")\n";
+        if ( $child->status eq 'new' ) {
+            foreach my $input ( $child->unfinished_inputs ) {
+                $reason .= '  ' . $input . "\n";
+            }
+        }
+    }
+
+    return $reason; 
+}
+
 sub completion {
     my $self = shift;
 
@@ -150,17 +167,7 @@ sub completion {
         # since we're throwing an error, lets generate something useful
 
         my $reason =
-"Execution halted due to unresolvable dependencies or crashed children.  Status and incomplete inputs:\n";
-
-        foreach my $child ( $self->child_instances ) {
-            $reason .=
-              $child->name . ' <' . $child->id . '> (' . $child->status . ")\n";
-            if ( $child->status eq 'new' ) {
-                foreach my $input ( $child->unfinished_inputs ) {
-                    $reason .= '  ' . $input . "\n";
-                }
-            }
-        }
+"Execution halted due to unresolvable dependencies or crashed children.  Status and incomplete inputs:\n" . $self->explain;
 
         Workflow::Operation::InstanceExecution::Error->create(
             execution => $self->current,

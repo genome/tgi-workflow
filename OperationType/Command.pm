@@ -63,7 +63,7 @@ sub initialize {
                 my @opt_input = map {
                     $_->property_name
                 } grep {
-                    $_->is_optional &&
+                    ($_->default_value || $_->is_optional) &&
                     defined $_->{'is_input'} && $_->{'is_input'}
                 } @property_meta;
 
