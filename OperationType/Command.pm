@@ -121,9 +121,11 @@ sub as_xml_simple_structure {
 }
 
 sub create_from_command {
-    my ($self, $command_class, $options) = @_;
+    my ($class, $command_class, $options) = @_;
 
-    unless ($command_class->get_class_object) {
+    my $self = $class->get($command_class);
+
+    unless ($self) {
         die 'invalid command class';
     }
 
@@ -139,13 +141,12 @@ sub create_from_command {
         $self->_validate_property( $command_class, output => $_ )
     } @{ $options->{output} }, 'result';
 
-    return $self->SUPER::create(
-        input_properties => \@valid_inputs,
-        output_properties => \@valid_outputs,
-        command_class_name => $command_class,
-        lsf_resource => $options->{lsf_resource},
-        lsf_queue => $options->{lsf_queue},
-    );
+    $self->input_properties(\@valid_inputs);
+    $self->output_properties(\@valid_outputs);
+    $self->lsf_resource($options->{lsf_resource});
+    $self->lsf_queue($options->{lsf_queue});
+
+    return $self;
 }
 
 sub _validate_property {
