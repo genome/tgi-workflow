@@ -559,7 +559,7 @@ sub setup {
 
                 my @libs = UR::Util::used_libs();
                 my $libstring = '';
-                foreach my $lib (@libs) {
+                foreach my $lib (reverse @libs) {
                     $libstring .= 'use lib "' . $lib . '"; ';
                 }
 
@@ -626,7 +626,7 @@ sub setup {
 
                 my @libs = UR::Util::used_libs();
                 my $libstring = '';
-                foreach my $lib (@libs) {
+                foreach my $lib (reverse @libs) {
                     $libstring .= 'use lib "' . $lib . '"; ';
                 }
 
