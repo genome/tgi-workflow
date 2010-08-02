@@ -18,6 +18,8 @@ class Workflow::Command::Ns::Internal::Run {
 sub execute {
     my $self = shift;
 
+    print $self->instance_id . "\n";
+
     # load operation
     # lock row
     # gather inputs from previous

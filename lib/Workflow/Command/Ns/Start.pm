@@ -92,7 +92,7 @@ sub execute {
 
     ## launch
 
-    my @job_id = $self->bsub_operation($wf_instance);
+    my $job_id = $self->bsub_operation($wf_instance);
 
     ## bsub exit handler
 
@@ -224,7 +224,7 @@ sub bsub_runner {
     my $dep_expr  = $self->dep_expr_arg(@dependency);
 
     my $cmd =
-      sprintf( "bsub -H -q %s %s %s %s -Q 88 workflow ns internal run %s",
+      sprintf( "bsub -H -u \"eclark\@genome.wustl.edu\" -q %s %s %s %s -Q 88 workflow ns internal run %s",
         $queue, $resource, $job_group, $dep_expr, $op->id );
 
     $self->status_message("lsf\$ $cmd\n");
