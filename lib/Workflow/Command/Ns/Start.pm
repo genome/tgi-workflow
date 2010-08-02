@@ -216,7 +216,7 @@ sub bsub_runner {
     {
 
         if ( $rr ne '' ) {
-            $resource = index( $rr, '-' ) == 0 ? $rr : '-R ' . $rr;
+            $resource = index( $rr, '-' ) == 0 ? $rr : '-R "' . $rr . '"';
         }
     }
 
