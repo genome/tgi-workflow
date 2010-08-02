@@ -1,0 +1,4 @@
+<?xml version='1.0' standalone='yes'?>
+  <operation name="echo">
+    <operationtype commandClass="Workflow::Test::Command::Echo" typeClass="Workflow::OperationType::Command" />
+  </operation>

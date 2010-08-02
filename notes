@@ -1,0 +1,42 @@
+workflow end handler is an operation that runs after the workflow even if it errors.
+
+it has one static input: workflow_operation_id
+
+operations are run like this:
+
+ bsub -H -Q # runner
+ bsub -w done(runner) -H -Q next runner 
+
+ bsub -w exit(job || job || job) exit handler
+ bsub -w done(exit handler) || done(job) && done(job) end handler
+
+btop the exit|done handlers
+
+components needed:
+
+Starter
+  workflow plan objects
+  workflow inputs
+  job_group
+
+Restarter
+  workflow operation id
+
+Stopper
+  bkill entire job group
+
+Operation runner:
+  input (top workflow_id, operation_id)
+  psuedo code:
+   change from scheduled->running
+   run stuff
+   change from running->done or crashed
+   if retrying
+    change from crashed->scheduled
+    exit with ## code
+
+exit handler code
+
+Example end handler
+
+
