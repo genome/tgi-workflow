@@ -706,6 +706,20 @@ sub execute_single {
         $self->output( $self->parent_instance->input );
     }
 
+    
+    my %current_inputs = $self->resolved_inputs();
+
+    my $executor = $self->executor;
+
+    $executor->execute(
+        operation_instance => $self,
+        edited_input       => \%current_inputs
+    );
+}
+
+sub resolved_inputs {
+    my $self = shift;
+
     my %current_inputs = ();
     foreach my $input_name ( keys %{ $self->input } ) {
         if (
@@ -726,12 +740,7 @@ sub execute_single {
         }
     }
 
-    my $executor = $self->executor;
-
-    $executor->execute(
-        operation_instance => $self,
-        edited_input       => \%current_inputs
-    );
+    return %current_inputs;
 }
 
 sub orphan {
