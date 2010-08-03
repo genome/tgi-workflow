@@ -151,12 +151,15 @@ sub bsub_operation {
             } keys %{ $deps{$k}->[1] };
 
             if ( @deps == 0 ) {
-                push @fjobs, $deps{$k}->[2]
-                  ;    ## i must be one of the first jobs, i have no deps
+                ## i must be one of the first jobs, i have no deps
+                push @fjobs, $deps{$k}->[2];
+
                 if ( @dependency > 0 ) {    ## use deps passed in from above
                     foreach my $me ( @{ $deps{$k}->[2]->[0] } ) {   ## see below
                         $self->bmod_deps( $me, @dependency );
                     }
+                } else {
+                    $deps{$k}->[0]->current->status('scheduled');
                 }
             } else {
                 ## the first jobs of this step are each dependent on every final job of the previous steps
@@ -235,6 +238,8 @@ sub bsub_runner {
 
     # Job <8833909> is submitted to queue <long>.
     if ( $bsub_output =~ /^Job <(\d+)> is submitted to queue <(\w+)>\./ ) {
+
+        $op->current->dispatch_identifier($1);
         return $1;
     } else {
         die 'cant launch!';
