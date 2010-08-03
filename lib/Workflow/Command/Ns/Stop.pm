@@ -26,7 +26,7 @@ sub execute {
     # set database status on each operation instance thats not new or successful
     # to Stopped
 
-    1;
+    return -88;
 }
 
 1;

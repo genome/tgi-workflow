@@ -3,6 +3,9 @@ package Workflow::Command::Ns::Internal::Run;
 use strict;
 use warnings;
 
+use IPC::Open2;
+use Storable qw/store_fd fd_retrieve/;
+
 use Workflow ();
 
 class Workflow::Command::Ns::Internal::Run {
@@ -22,13 +25,15 @@ class Workflow::Command::Ns::Internal::Run {
     ]
 };
 
+$Workflow::DEBUG_GLOBAL || 0;  ## suppress dumb warnings
+
 sub execute {
     my $self = shift;
 
     $self->status_message(
         sprintf( "Loading workflow instance: %s", $self->root_instance_id ) );
 
-    my $wfi = Workflow::Operation::Instance->get(
+    my @load = Workflow::Operation::Instance->get(
         id => $self->root_instance_id,
         -recurse => ['parent_instance_id','instance_id']
     );
@@ -55,43 +60,40 @@ sub execute {
     ## disconnect from workflow database
     Workflow::DataSource::InstanceSchema->disconnect_default_dbh;
 
-    my $outputs;
-    my $status;
-    eval {
-        local $Workflow::DEBUG_GLOBAL=1 if $self->debug
-        $outputs = $t->execute(%o_inputs, %r_inputs);
-        $status = 'done'; 
-    };
-    if ($@) {
-        $status = 'crashed';
+    my ($outputs, $exitcode, $ok) = $self->run_optype(
+        $t, { %o_inputs, %r_inputs }
+    );
 
-        $self->error_message($@);
-    }
+    my $status = $ok ? 'done' : 'crashed'; 
 
     $self->acquire_rowlock($opi->id);
     if ($status eq 'done') {
-        $opi->output({ %{ $opi->output }, %{ $outputs });
+        $opi->output({ %{ $opi->output }, %{ $outputs }});
     }
     $opi->current->status($status);
     $opi->current->end_time(UR::Time->now);
     UR::Context->commit();
 
-    if ($status eq 'crashed' && $self->try_count($opi) <= 3) {
-        $self->acquire_rowlock($opi->id);
-        my $did = $opi->current->dispatch_identifier;
-        $opi->reset_current();
-        $opi->current->dispatch_identifier($did);
-        $opi->current->status('scheduled');
-        UR::Context->commit();
+    if ($status eq 'crashed') {
 
-        return -88;
+        if ($self->try_count($opi) <= 3) {
+            $self->acquire_rowlock($opi->id);
+            my $did = $opi->current->dispatch_identifier;
+            $opi->reset_current();
+            $opi->current->dispatch_identifier($did);
+            $opi->current->status('scheduled');
+            UR::Context->commit();
+            return -88;
+        } else {
+            return 0;
+        }
     }
 
     if ($status eq 'done' && $opi->name eq 'output connector') {
         $self->acquire_rowlock($opi->parent_instance_id);
 
         $opi->parent_instance->current->status('done');
-        $opi->parent_instance->output(%{ $opi->input });
+        $opi->parent_instance->output({ %{ $opi->input } });
 
         UR::Context->commit();
     }
@@ -100,6 +102,38 @@ sub execute {
     # TODO this is pretty hard
 
     1;
+}
+
+sub run_optype {
+    my ($self, $optype, $inputs) = @_;
+
+    my ($rdr, $wtr);
+    my $pid = open2($rdr, $wtr, 'workflow ns internal exec 0 1');
+
+    $self->status_message("Launched runner: $pid");
+
+    my $run = {
+        type => $optype,
+        input => $inputs
+    };
+
+    store_fd($run, $wtr) or die "cant store to subprocess";
+    my $out = fd_retrieve($rdr) or die "cant retrieve from subprocess";
+
+    waitpid(-1,0);
+
+    if ($? == -1) {
+        $self->error_message("failed to execute $!");
+        return $out, $? >>8, 0;
+    } elsif ($? & 127) {
+        $self->error_message(sprintf("child died with signal %d, %s coredump",
+            ($? & 127), ($? & 128) ? 'with' : 'without'));
+        return $out, $? >>8, 0;
+    } else {
+        $self->status_message(sprintf("child exited with value %d", $? >>8));
+
+        return $out, $? >>8, $? >>8 == 0 ? 1 : 0;
+    }
 }
 
 sub acquire_rowlock {
@@ -116,9 +150,15 @@ sub try_count {
     my $self = shift;
     my $op = shift;
 
-    # TODO 
+    my $dbh = Workflow::DataSource::InstanceSchema->get_default_handle;
 
-    return 5;
+    my ($cnt) = $dbh->selectrow_array(<<"    SQL", {}, $op->id);
+        SELECT count(workflow_execution_id) FROM workflow.workflow_instance_execution WHERE workflow_instance_id = ?
+    SQL
+
+    $self->status_message("Tries so far: $cnt");
+
+    return $cnt;
 }
 
 1;

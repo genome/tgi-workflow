@@ -92,7 +92,7 @@ sub execute {
 
     ## launch
 
-    my $job_id = $self->bsub_operation($wf_instance);
+    my $job_id = $self->bsub_operation($wf_instance, $wf_instance);
 
     ## bsub exit handler
 
@@ -114,7 +114,7 @@ sub execute {
 }
 
 sub bsub_operation {
-    my ( $self, $op, @dependency ) = @_;
+    my ( $self, $top, $op, @dependency ) = @_;
 
     if ( $op->can("child_instances") ) {
         my %deps = map { $_->id => [ $_, {} ]; } $op->child_instances;
@@ -128,7 +128,7 @@ sub bsub_operation {
                 $deps{$k}->[1]->{ $d->id } = 1;
             }
 
-            my $r = $self->bsub_operation( $deps{$k}->[0] );
+            my $r = $self->bsub_operation( $top, $deps{$k}->[0] );
             $deps{$k}->[2] = $r;
         }
 
@@ -169,11 +169,15 @@ sub bsub_operation {
             }
         }
 
+        if (@fjobs == 0) {
+            $op->current->status('running');
+        }
+
         return [ \@fjobs, \@jobs, \@ljobs ];
     }
 
     ## bsub runner
-    my $job_id = $self->bsub_runner( $op, @dependency );
+    my $job_id = $self->bsub_runner( $top, $op, @dependency );
 
     return [ [$job_id], [$job_id], [$job_id] ];
 }
@@ -202,7 +206,7 @@ sub dep_expr_arg {
 }
 
 sub bsub_runner {
-    my ( $self, $op, @dependency ) = @_;
+    my ( $self, $top, $op, @dependency ) = @_;
 
     my $queue = 'long';
     if ( $op->operation_type->can('lsf_queue')
@@ -227,8 +231,8 @@ sub bsub_runner {
     my $dep_expr  = $self->dep_expr_arg(@dependency);
 
     my $cmd =
-      sprintf( "bsub -H -u \"eclark\@genome.wustl.edu\" -q %s %s %s %s -Q 88 workflow ns internal run %s",
-        $queue, $resource, $job_group, $dep_expr, $op->id );
+      sprintf( "bsub -H -u \"eclark\@genome.wustl.edu\" -q %s %s %s %s -Q 88 workflow ns internal run %s %s",
+        $queue, $resource, $job_group, $dep_expr, $top->id, $op->id );
 
     $self->status_message("lsf\$ $cmd\n");
 
