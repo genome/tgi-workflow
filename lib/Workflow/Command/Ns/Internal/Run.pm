@@ -3,9 +3,9 @@ package Workflow::Command::Ns::Internal::Run;
 use strict;
 use warnings;
 
-use IPC::Open2;
+use AnyEvent::Util;
+use IPC::Run qw(start);
 use Storable qw/store_fd fd_retrieve/;
-
 use Workflow ();
 
 class Workflow::Command::Ns::Internal::Run {
@@ -66,6 +66,8 @@ sub execute {
 
     my $status = $ok ? 'done' : 'crashed'; 
 
+    $self->status_message("Operation finished: $status");
+
     $self->acquire_rowlock($opi->id);
     if ($status eq 'done') {
         $opi->output({ %{ $opi->output }, %{ $outputs }});
@@ -75,8 +77,11 @@ sub execute {
     UR::Context->commit();
 
     if ($status eq 'crashed') {
+        my $cnt = $self->try_count($opi);
 
-        if ($self->try_count($opi) <= 3) {
+        if ($cnt <= 3) {
+            $self->status_message("Resetting for try " . $cnt + 1);
+
             $self->acquire_rowlock($opi->id);
             my $did = $opi->current->dispatch_identifier;
             $opi->reset_current();
@@ -85,8 +90,17 @@ sub execute {
             UR::Context->commit();
             return -88;
         } else {
+            $self->status_message("Aborting, too many tries: " . $cnt);
             return 0;
         }
+    }
+
+    ## fix stuff so this isnt necessary
+
+    if ($status eq 'done' && $opi->name eq 'input connector') {
+        $self->acquire_rowlock($opi->id);
+        $opi->output({ %{ $opi->parent_instance->input() } });
+        UR::Context->commit();
     }
 
     if ($status eq 'done' && $opi->name eq 'output connector') {
@@ -107,33 +121,47 @@ sub execute {
 sub run_optype {
     my ($self, $optype, $inputs) = @_;
 
-    my ($rdr, $wtr);
-    my $pid = open2($rdr, $wtr, 'workflow ns internal exec 0 1');
-
-    $self->status_message("Launched runner: $pid");
-
     my $run = {
         type => $optype,
         input => $inputs
     };
 
+    my $wtr = IO::Handle->new;
+    my $rdr = IO::Handle->new;
+    $wtr->autoflush(1);
+    $rdr->autoflush(1);
+
+    my @cmd = qw(workflow ns internal exec /dev/fd/3 /dev/fd/4);
+
+    my $h = start \@cmd,
+        '3<pipe' => $wtr,
+        '4>pipe' => $rdr;
+
     store_fd($run, $wtr) or die "cant store to subprocess";
-    my $out = fd_retrieve($rdr) or warn "cant retrieve from subprocess";
 
-    waitpid(-1,0);
+    $h->pump;
+    my $out = fd_retrieve($rdr) or die "cant retrieve from subprocess";
 
-    if ($? == -1) {
-        $self->error_message("failed to execute $!");
-        return $out, $? >>8, 0;
-    } elsif ($? & 127) {
-        $self->error_message(sprintf("child died with signal %d, %s coredump",
-            ($? & 127), ($? & 128) ? 'with' : 'without'));
-        return $out, $? >>8, 0;
-    } else {
-        $self->status_message(sprintf("child exited with value %d", $? >>8));
+    $h->pump;
 
-        return $out, $? >>8, $? >>8 == 0 ? 1 : 0;
+    unless ($h->finish) {
+        $? = $h->full_result;
+
+        if ($? == -1) {
+            $self->error_message("failed to execute $!");
+            return $out, $? >>8, 0;
+        } elsif ($? & 127) {
+            $self->error_message(sprintf("child died with signal %d, %s coredump",
+                ($? & 127), ($? & 128) ? 'with' : 'without'));
+            return $out, $? >>8, 0;
+        } else {
+            $self->status_message(sprintf("child exited with value %d", $? >>8));
+
+            return $out, $? >>8, 0;
+        }
     }
+
+    return $out, 0, 1;
 }
 
 sub acquire_rowlock {
@@ -155,8 +183,6 @@ sub try_count {
     my ($cnt) = $dbh->selectrow_array(<<"    SQL", {}, $op->id);
         SELECT count(workflow_execution_id) FROM workflow.workflow_instance_execution WHERE workflow_instance_id = ?
     SQL
-
-    $self->status_message("Tries so far: $cnt");
 
     return $cnt;
 }

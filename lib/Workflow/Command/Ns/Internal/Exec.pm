@@ -9,13 +9,13 @@ use Storable qw(store_fd fd_retrieve);
 class Workflow::Command::Ns::Internal::Exec {
     is  => ['Workflow::Command'],
     has => [
-        input_fd => {
+        input_file => {
             shell_args_position => 1,
-            doc                 => 'file descriptor number to read input from'
+            doc                 => 'file to read input from'
         },
-        output_fd => {
+        output_file => {
             shell_args_position => 2,
-            doc => 'file descriptor to send output to'
+            doc => 'file to send output to'
         }        
     ]
 };
@@ -24,10 +24,10 @@ sub execute {
     my $self = shift;
 
     # unserialize and retrieve input
-    my $fd = $self->input_fd;
-    open INS, "<&=$fd"
-        or die "cannot open $fd!"; 
-    my $run = fd_retrieve(*INS) or die "cannot retrieve from fd $fd";
+    my $f = $self->input_file;
+    open INS, "<$f"
+        or die "cannot open $f!"; 
+    my $run = fd_retrieve(*INS) or die "cannot retrieve from $f";
     close INS;
 
 
@@ -37,20 +37,23 @@ sub execute {
 
     my $outputs = $optype->execute(%$inputs);
 
-    my $success;
+    my $success = 1;
 
-    if (ref($outputs) =~ /HASH/ && exists $outputs->{result} && $outputs->{result}) {
-        $success = 1;
+    if (ref($outputs) =~ /HASH/ && exists $outputs->{result}) {
+        if (defined $outputs->{result} && $outputs->{result} > 0) {
+            $success = 1;
+        } else {
+            $success = 0;
+        }
     }
-#    my $outputs = { abc => 123 };
 
     ## serialize and send output
-    $fd = $self->output_fd;
-    open OUTS, ">&=$fd"
-        or die "cannot open $fd!";
+    $f = $self->output_file;
+    open OUTS, ">$f"
+        or die "cannot open $f!";
 
     store_fd($outputs, *OUTS)
-        or die "cannot store into fd $fd";
+        or die "cannot store into $f";
 
     close OUTS;
 
