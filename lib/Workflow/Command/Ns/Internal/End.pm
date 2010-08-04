@@ -1,11 +1,11 @@
-package Workflow::Command::Ns::Internal::Exit;
+package Workflow::Command::Ns::Internal::End;
 
 use strict;
 use warnings;
 
 use Workflow ();
 
-class Workflow::Command::Ns::Internal::Exit {
+class Workflow::Command::Ns::Internal::End {
     is  => ['Workflow::Command'],
     has => [
         instance_id => {
@@ -17,6 +17,8 @@ class Workflow::Command::Ns::Internal::Exit {
 
 sub execute {
     my $self = shift;
+
+    print "something exited\n";
 
     # load workflow
     # find running sub workflows with crashed events

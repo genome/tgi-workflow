@@ -118,17 +118,18 @@ sub execute {
         }
     }
 
-    my ($fj,$aj,$ej) = $self->bsub_operation($xauth, $wf_instance, $wf_instance);
+    my $r = $self->bsub_operation($xauth, $wf_instance, $wf_instance);
 
     if ($wf_instance->can("child_instances")) {
         $wf_instance->current->status('running');
     }
 
-    ## bsub exit handler
+    ## bsub ended handler
+
+    my $job_id = $self->bsub_end_handler($wf_instance->id, $r->[2], $r->[1]);
 
     ## bsub done handler
 
-    my $done_handler_job_id;
     if ($done_plan) {
         my $done_instance =
           Workflow::Operation::Instance->create( operation => $done_plan );
@@ -136,8 +137,9 @@ sub execute {
         $done_instance->input( { operation_id => $wf_instance->id } );
         $done_instance->output( {} );
 
-        my $done_job_id =
-          $self->bsub_operation( $xauth, $done_instance, $done_handler_job_id );
+        my $r =
+          $self->bsub_operation( $xauth, $done_instance, $done_instance, $job_id);
+
     }
 
     1;
@@ -169,7 +171,7 @@ sub bsub_operation {
         my @jobs  = ();
         foreach my $k ( keys %deps ) {
             if ( $deps{$k}->[0]->name eq 'output connector' ) {
-                push @ljobs, $deps{$k}->[2];
+                push @ljobs, @{ $deps{$k}->[2]->[2] };
             }
             push @jobs,
               @{ $deps{$k}->[2]->[1]
@@ -182,7 +184,7 @@ sub bsub_operation {
 
             if ( @deps == 0 ) {
                 ## i must be one of the first jobs, i have no deps
-                push @fjobs, $deps{$k}->[2];
+                push @fjobs, @{ $deps{$k}->[2]->[0] };
 
                 if ( @dependency > 0 ) {    ## use deps passed in from above
                     foreach my $me ( @{ $deps{$k}->[2]->[0] } ) {   ## see below
@@ -301,12 +303,34 @@ sub bmod_deps {
     return 1;
 }
 
-sub bsub_exit_handler {
+sub bsub_end_handler {
+    my ($self, $id, $done, $exit) = @_;
 
-}
+    my $job_group = $self->job_group_arg;
 
-sub bsub_done_handler {
+    my @d = map { "done($_)" } @$done;
+    my @e = map { "exit($_)" } @$exit;
 
+    ## either all of the final jobs in the WF are done (no errors)
+    #  or any of them exit.  run the ended handler
+    my $dep_expr = ' -w "(' .
+        join(' && ', @d) . ') || (' . 
+        join(' || ', @e) . ')"';
+
+    my $cmd = sprintf("bsub -H -u \"eclark\@genome.wustl.edu\" -q %s %s %s workflow ns internal end %s",
+        'long', $job_group, $dep_expr, $id);
+
+    $self->status_message("lsf\$ $cmd\n");
+    my $bsub_output = `$cmd`;
+
+    $self->status_message($bsub_output);
+
+    if ( $bsub_output =~ /^Job <(\d+)> is submitted to queue <(\w+)>\./ ) {
+
+        return $1;
+    } else {
+        die 'cant launch!';
+    }
 }
 
 sub validate_workflow {
