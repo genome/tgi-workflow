@@ -21,14 +21,24 @@ class Workflow::Command::Ns::Internal::Run {
         debug => {
             is => 'Boolean',
             is_optional => 1,
+            doc => ''
+        },
+        xauth => {
+            is_optional => 1,
+            doc => 'token to add to xauth to enable ptkdb'
         }
     ]
 };
 
-$Workflow::DEBUG_GLOBAL || 0;  ## suppress dumb warnings
-
 sub execute {
     my $self = shift;
+
+    my $xauth = $self->xauth;
+    if (defined $xauth) {
+        $self->status_message("Adding xauth token");
+
+        return unless ($self->_xauth("add", " . $xauth"));
+    }
 
     $self->status_message(
         sprintf( "Loading workflow instance: %s", $self->root_instance_id ) );
@@ -115,6 +125,14 @@ sub execute {
     ## set the next things to scheduled
     # TODO this is pretty hard
 
+    if (defined $xauth) {
+        $self->status_message("Removing xauth token");
+
+        unless ($self->_xauth("remove")) {
+            $self->warning_message("Failed to remove xauth token, proceeding anyway");
+        }
+    }
+
     1;
 }
 
@@ -132,6 +150,25 @@ sub run_optype {
     $rdr->autoflush(1);
 
     my @cmd = qw(workflow ns internal exec /dev/fd/3 /dev/fd/4);
+
+    if ($self->debug) { 
+        my $workflow_cmd = `which workflow`;
+
+        unless ($? == 0) {
+            $self->error_message("Failed command: `which workflow`");
+            return {},0,0;
+        }
+
+        chomp($workflow_cmd);
+
+        $cmd[0] = $workflow_cmd;
+       
+        splice(@cmd,4,0,'--debug');
+ 
+        unshift @cmd, 'perl', '-d:ptkdb';
+    }
+
+    $self->status_message("Executing: " . join(' ', @cmd));
 
     my $h = start \@cmd,
         '3<pipe' => $wtr,
@@ -185,6 +222,29 @@ sub try_count {
     SQL
 
     return $cnt;
+}
+
+sub _xauth {
+    my ($self, $cmd, $arg) = @_;
+
+    $arg ||= '';
+
+    $cmd = 'xauth -q ' . $cmd . ' $DISPLAY' . $arg;
+
+    system($cmd);
+    if ($? == -1) {
+        $self->error_message("Couldnt run xauth");
+        return;
+    } elsif ($? & 127) {
+        $self->error_message(sprintf("xauth died with signal %d, %s coredump",
+            ($? & 127), ($? & 128) ? 'with' : 'without'));
+        return;
+    } elsif ($? << 8) {
+        $self->error_message("Xauth exited with code: " . $? << 8);
+        return;
+    }
+
+    1;
 }
 
 1;

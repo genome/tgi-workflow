@@ -9,6 +9,11 @@ use Storable qw(store_fd fd_retrieve);
 class Workflow::Command::Ns::Internal::Exec {
     is  => ['Workflow::Command'],
     has => [
+        debug => {
+            is => 'Boolean',
+            default_value => 0,
+            doc => 'set breakpoint as close to user-module execution as possible'
+        },
         input_file => {
             shell_args_position => 1,
             doc                 => 'file to read input from'
@@ -20,8 +25,14 @@ class Workflow::Command::Ns::Internal::Exec {
     ]
 };
 
+$Workflow::DEBUG_GLOBAL || 0;  ## suppress dumb warnings
+
 sub execute {
     my $self = shift;
+
+    if ($self->debug) {
+        $Workflow::DEBUG_GLOBAL = 1;
+    }
 
     # unserialize and retrieve input
     my $f = $self->input_file;
