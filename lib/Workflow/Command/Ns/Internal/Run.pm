@@ -118,7 +118,7 @@ sub run_optype {
     };
 
     store_fd($run, $wtr) or die "cant store to subprocess";
-    my $out = fd_retrieve($rdr) or die "cant retrieve from subprocess";
+    my $out = fd_retrieve($rdr) or warn "cant retrieve from subprocess";
 
     waitpid(-1,0);
 

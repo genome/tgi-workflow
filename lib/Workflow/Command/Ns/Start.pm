@@ -92,7 +92,11 @@ sub execute {
 
     ## launch
 
-    my $job_id = $self->bsub_operation($wf_instance, $wf_instance);
+    my ($fj,$aj,$ej) = $self->bsub_operation($wf_instance, $wf_instance);
+
+    if ($wf_instance->can("child_instances")) {
+        $wf_instance->current->status('running');
+    }
 
     ## bsub exit handler
 
@@ -167,10 +171,6 @@ sub bsub_operation {
                     $self->bmod_deps( $me, @deps );
                 }
             }
-        }
-
-        if (@fjobs == 0) {
-            $op->current->status('running');
         }
 
         return [ \@fjobs, \@jobs, \@ljobs ];

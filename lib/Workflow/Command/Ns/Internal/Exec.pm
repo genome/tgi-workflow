@@ -35,9 +35,14 @@ sub execute {
     my $optype = $run->{type};
     my $inputs = $run->{input};
 
-#    my $outputs = $optype->execute(%$inputs);
+    my $outputs = $optype->execute(%$inputs);
 
-    my $outputs = { abc => 123 };
+    my $success;
+
+    if (ref($outputs) =~ /HASH/ && exists $outputs->{result} && $outputs->{result}) {
+        $success = 1;
+    }
+#    my $outputs = { abc => 123 };
 
     ## serialize and send output
     $fd = $self->output_fd;
@@ -49,7 +54,7 @@ sub execute {
 
     close OUTS;
 
-    -1;
+    return $success;
 }
 
 1;
