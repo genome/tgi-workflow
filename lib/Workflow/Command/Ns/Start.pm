@@ -17,6 +17,9 @@ class Workflow::Command::Ns::Start {
             is_many             => 1,
             doc                 => 'Inputs to the workflow as key=value pairs'
         },
+        debug => {
+            doc => 'workflow path string to debug point'
+        },
         done_command => {
             is_optional => 1,
             doc         => 'Command class to run on successful finish'
@@ -30,6 +33,11 @@ class Workflow::Command::Ns::Start {
 
 sub execute {
     my $self = shift;
+
+    my $xauth;
+    if ($self->debug) {
+        $xauth = $self->xauth_token();
+    }
 
     unless ( -f $self->plan_file and -r _ ) {
         $self->error_message("Plan file not readable");
@@ -92,7 +100,25 @@ sub execute {
 
     ## launch
 
-    my ($fj,$aj,$ej) = $self->bsub_operation($wf_instance, $wf_instance);
+    if ($self->debug) {
+        my $pathstr = $self->debug;
+        ## get_by_path is designed for id's or names. id's are useless here
+        #  since the objects just got created.  so we should add the * for
+        #  people automatically
+
+        if (index($pathstr,'*') != 0) {
+            $pathstr = '*' . $pathstr;
+        }
+        $pathstr =~ s/\/(?!\*)/\/\*/g;
+
+        my @all = $wf_instance->get_by_path($pathstr);
+
+        for (@all) {
+            $_->debug_mode(1);
+        }
+    }
+
+    my ($fj,$aj,$ej) = $self->bsub_operation($xauth, $wf_instance, $wf_instance);
 
     if ($wf_instance->can("child_instances")) {
         $wf_instance->current->status('running');
@@ -111,14 +137,14 @@ sub execute {
         $done_instance->output( {} );
 
         my $done_job_id =
-          $self->bsub_operation( $done_instance, $done_handler_job_id );
+          $self->bsub_operation( $xauth, $done_instance, $done_handler_job_id );
     }
 
     1;
 }
 
 sub bsub_operation {
-    my ( $self, $top, $op, @dependency ) = @_;
+    my ( $self, $xauth, $top, $op, @dependency ) = @_;
 
     if ( $op->can("child_instances") ) {
         my %deps = map { $_->id => [ $_, {} ]; } $op->child_instances;
@@ -132,7 +158,7 @@ sub bsub_operation {
                 $deps{$k}->[1]->{ $d->id } = 1;
             }
 
-            my $r = $self->bsub_operation( $top, $deps{$k}->[0] );
+            my $r = $self->bsub_operation( $xauth, $top, $deps{$k}->[0] );
             $deps{$k}->[2] = $r;
         }
 
@@ -177,7 +203,7 @@ sub bsub_operation {
     }
 
     ## bsub runner
-    my $job_id = $self->bsub_runner( $top, $op, @dependency );
+    my $job_id = $self->bsub_runner( $xauth, $top, $op, @dependency );
 
     return [ [$job_id], [$job_id], [$job_id] ];
 }
@@ -206,7 +232,7 @@ sub dep_expr_arg {
 }
 
 sub bsub_runner {
-    my ( $self, $top, $op, @dependency ) = @_;
+    my ( $self, $xauth, $top, $op, @dependency ) = @_;
 
     my $queue = 'long';
     if ( $op->operation_type->can('lsf_queue')
@@ -230,9 +256,17 @@ sub bsub_runner {
     my $job_group = $self->job_group_arg;
     my $dep_expr  = $self->dep_expr_arg(@dependency);
 
+    my $dstr = '';
+    if ($self->debug && $op->debug_mode) {
+        $dstr = ' --debug';
+        if ($xauth) {
+            $dstr .= ' --xauth=' . $xauth;
+        }
+    }
+
     my $cmd =
-      sprintf( "bsub -H -u \"eclark\@genome.wustl.edu\" -q %s %s %s %s -Q 88 workflow ns internal run %s %s",
-        $queue, $resource, $job_group, $dep_expr, $top->id, $op->id );
+      sprintf( "bsub -H -u \"eclark\@genome.wustl.edu\" -q %s %s %s %s -Q 88 workflow ns internal run%s %s %s",
+        $queue, $resource, $job_group, $dep_expr, $dstr, $top->id, $op->id );
 
     $self->status_message("lsf\$ $cmd\n");
 
@@ -286,6 +320,54 @@ sub validate_workflow {
         }
     }
     return 1;
+}
+
+my $xt_set = 0;
+my $xt;
+sub xauth_token {
+    return $xt if $xt_set;
+    my ($self) = shift;
+
+    my $token;
+
+    if ($ENV{DISPLAY} =~ /^([^:]*):(\d+)(\.\d+)*$/) {
+        my $host = $1;
+        my $num = $2;
+
+        if ($host eq '') {
+            $host = `uname -n`;
+            chomp $host;
+        }
+
+        my $re = "$host(/unix)*:$num";
+
+        open XA, 'xauth list |';
+        while (my $line = <XA>) {
+            chomp $line;
+            my @e = split(/\s+/, $line);
+
+            if ($e[0] =~ /$re/) {
+                $token = $e[2] if !$token || length($e[2]) < length($token);
+            }
+        }
+        close XA;
+
+        if ($token =~ /unix:/) {
+            $xt_set = 1;
+            $self->error_message("Unix sockets for X11 not supported for this debugging feature.");
+            $self->error_message("I know you're probably forwarding with ssh but there's no good way to handle that yet");
+            return;
+        }
+
+        $xt = $token;
+        $xt_set = 1;
+
+        return $token;
+    } else {
+        $self->error_message("cant parse DISPLAY env");
+        $xt_set = 1;
+        return;
+    }
 }
 
 1;

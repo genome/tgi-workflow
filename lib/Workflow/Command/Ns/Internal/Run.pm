@@ -90,7 +90,7 @@ sub execute {
         my $cnt = $self->try_count($opi);
 
         if ($cnt <= 3) {
-            $self->status_message("Resetting for try " . $cnt + 1);
+            $self->status_message("Resetting for try " . ($cnt + 1));
 
             $self->acquire_rowlock($opi->id);
             my $did = $opi->current->dispatch_identifier;
@@ -176,10 +176,18 @@ sub run_optype {
 
     store_fd($run, $wtr) or die "cant store to subprocess";
 
-    $h->pump;
-    my $out = fd_retrieve($rdr) or die "cant retrieve from subprocess";
+    my $out;
+    if ($h->pumpable) {
+        $h->pump;
+        eval {
+            $out = fd_retrieve($rdr) or die "fd_retrieve failed: $!";
+        };
+        if ($@) {
+            $self->error_message("Failed to retrieve output\n$@");
+        }
+    }
 
-    $h->pump;
+    $h->pump if $h->pumpable;
 
     unless ($h->finish) {
         $? = $h->full_result;
@@ -196,6 +204,11 @@ sub run_optype {
 
             return $out, $? >>8, 0;
         }
+    }
+
+    if (!defined $out) {
+        $self->warning_message("Command exited without errors, but output hash is indefined");
+        return $out, 0,0;
     }
 
     return $out, 0, 1;
