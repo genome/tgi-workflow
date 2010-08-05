@@ -31,13 +31,14 @@ sub execute {
     my $ebuf = '';
     my $obuf = '';
 
+    my $head_removed = 0;
+
   O: while ( my @ready = $s->can_read() ) {
         foreach my $fh (@ready) {
             if ( $fh == $err ) {
                 my $len = sysread $err, $ebuf, 4096, length($ebuf);
 
-                if ( $len == 0 ) {
-                    warn 'eof e';
+                if ( $len == 0 && length($ebuf) == 0) {
                     $s->remove($err);
                 } elsif ( $len == -1 ) {
                     die "read err: $!";
@@ -52,14 +53,16 @@ sub execute {
             } elsif ( $fh == $wtr ) {
                 my $len = sysread $wtr, $obuf, 4096, length($obuf);
 
-                if ( $len == 0 ) {
-                    warn 'eof o';
+                if ( $len == 0 && length($obuf) == 0 ) {
                     $s->remove($wtr);
                 } elsif ( $len == -1 ) {
                     die "read out: $!";
                 } elsif ( $len < 4096 ) {
                     if ( my $a = index( $obuf, "\n" ) ) {
-                        if ( my $b = index( $obuf, "\n", $a + 1 ) ) {
+                        if ( $head_removed == 0 ) {
+                            substr( $obuf, 0, $a + 1, '' );
+                            $head_removed = 1;
+                        } elsif ( my $b = index( $obuf, "\n", $a + 1 ) ) {
                             my $pendline = substr( $obuf,     0, $b + 1, '' );
                             my $jobline  = substr( $pendline, 0, $a + 1, '' );
 
