@@ -18,6 +18,7 @@ class Workflow::Command::Ns::Start {
             doc                 => 'Inputs to the workflow as key=value pairs'
         },
         debug => {
+            is_optional => 1,
             doc => 'workflow path string to debug point'
         },
         done_command => {

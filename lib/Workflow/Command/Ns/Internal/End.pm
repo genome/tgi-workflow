@@ -32,7 +32,33 @@ sub execute {
         $self->error_message("command must be run under lsf");
         return;
     }
-    if ( !-e "/gscuser/eclark/stop" ) {
+
+    $self->status_message(
+        sprintf( "Loading workflow instance: %s", $self->instance_id ) );
+
+    my @load = Workflow::Operation::Instance->get(
+        id => $self->instance_id,
+        -recurse => ['parent_instance_id','instance_id']
+    );
+
+    my @running = grep {
+        my $keep = 0;
+        if (!$keep && !$_->can('child_instances')) {
+            if($_->status() eq 'running') {
+                $keep = 1;
+            }
+        }
+        $keep;
+    } @load;
+    # if things claim to be running, compare bjobs -g
+    # to database list
+    # when bad status found
+    #  lock row, change status
+    #  repeat for parents
+
+    # if actually running
+    my $running = scalar @running > 0; #!-e "/gscuser/eclark/stop"; 
+    if ( $running ) {
 
         print "resched $jobid\n";
 
@@ -81,29 +107,13 @@ sub execute {
 
         exit -80;
     } else {
+        # kill pending jobs if possible
+        # exit successfully so user handler runs
+
         print "noresched $jobid\n";
     }
 
     print "done\n";
-
-    # load workflow
-    # find running sub workflows with crashed events
-    # if no other event running, set workflow crashed
-    # walk upward to parent
-
-    # if things claim to be running, compare bjobs -g
-    # to database list
-    # when bad status found
-    #  lock row, change status
-
-    # if actually running, sleep 30 seconds after all checks are done
-    # reload operations that were in running, scheduled or new
-
-    # when nothing else is running but us, kill pending jobs
-    # that will never have deps satisfied
-    # kill done handler
-
-    # exit successfully so user-defined handler runs
 
     1;
 }
