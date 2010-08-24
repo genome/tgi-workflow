@@ -3,6 +3,6 @@
 
 workflow ns start \
     test2.xml \
-    "test_input=abracadabra321" 
+    "test input=abracadabra321" 
 
 

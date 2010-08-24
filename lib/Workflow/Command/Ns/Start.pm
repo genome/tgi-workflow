@@ -76,6 +76,20 @@ sub execute {
         return 0;
     }
 
+    ## validate inputs against plan
+    
+    {
+        my %ikeys = map { $_ => 1 } keys %inputs;
+        foreach my $k (@{ $wf_plan->operation_type->input_properties }) {
+            delete $ikeys{$k} if exists $ikeys{$k};
+        }
+
+        if (scalar keys %ikeys) {
+            $self->error_message('execute: Extra inputs provided: ' . join (', ', keys %ikeys));
+            return 0;
+        }
+    }
+
     ## load and validate done plan
 
     my $done_plan;

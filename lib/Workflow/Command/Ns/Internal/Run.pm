@@ -56,9 +56,6 @@ sub execute {
     $self->status_message(
         sprintf( "Acquiring rowlock on instance: %s", $opi->id));
 
-    my %o_inputs = %{ $opi->input };
-    my %r_inputs = $opi->resolved_inputs;
-
     $self->acquire_rowlock($opi->id);
     $self->status_message("Set status = Running");
     $opi->current->status('running');
@@ -71,7 +68,7 @@ sub execute {
     Workflow::DataSource::InstanceSchema->disconnect_default_dbh;
 
     my ($outputs, $exitcode, $ok) = $self->run_optype(
-        $t, { %o_inputs, %r_inputs }
+        $t, $self->merged_input($opi) 
     );
 
     my $status = $ok ? 'done' : 'crashed'; 
@@ -109,7 +106,7 @@ sub execute {
 
     if ($status eq 'done' && $opi->name eq 'input connector') {
         $self->acquire_rowlock($opi->id);
-        $opi->output({ %{ $opi->parent_instance->input() } });
+        $opi->output($self->merged_input($opi->parent_instance));
         UR::Context->commit();
     }
 
@@ -117,7 +114,7 @@ sub execute {
         $self->acquire_rowlock($opi->parent_instance_id);
 
         $opi->parent_instance->current->status('done');
-        $opi->parent_instance->output({ %{ $opi->input } });
+        $opi->parent_instance->output($self->merged_input($opi));
 
         UR::Context->commit();
     }
@@ -134,6 +131,16 @@ sub execute {
     }
 
     1;
+}
+
+sub merged_input {
+    my $self = shift;
+    my $opi = shift;
+
+    my %o_inputs = %{ $opi->input };
+    my %r_inputs = $opi->resolved_inputs;
+
+    return { %o_inputs, %r_inputs }
 }
 
 sub run_optype {
