@@ -251,7 +251,7 @@ sub setup {
                         @{ $fields }[$offset+28,$offset+29,$offset+54,$offset+55]
                     );
                     
-                    $kernel->yield('delete_watcher',{job_id => $job_id});
+                    $kernel->call('delete_watcher',{job_id => $job_id});
                 }
 
             },
