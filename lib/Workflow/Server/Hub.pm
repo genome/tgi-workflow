@@ -141,8 +141,15 @@ sub setup {
                 $kernel->alias_set("lsftail");
                 $kernel->call('IKC','publish','lsftail',[qw(add_watcher delete_watcher quit)]);
 
+                my $filename = "/usr/local/lsf/work/gsccluster1/logdir/lsb.acct";
+                my $newfilename = "/usr/local/lsfmaster/work/gsccluster1/logdir/lsb.acct";
+
+                if (-e $newfilename && -r _) {
+                    $filename = $newfilename;
+                }
+
                 $heap->{monitor} = POE::Wheel::FollowTail->new(
-                    Filename => "/usr/local/lsf/work/gsccluster1/logdir/lsb.acct",
+                    Filename => $filename,
                     InputEvent => 'handle_input',
                     ResetEvent => 'handle_reset',
                     ErrorEvent => 'handle_error'
@@ -251,7 +258,7 @@ sub setup {
                         @{ $fields }[$offset+28,$offset+29,$offset+54,$offset+55]
                     );
                     
-                    $kernel->yield('delete_watcher',{job_id => $job_id});
+                    $kernel->call('delete_watcher',{job_id => $job_id});
                 }
 
             },
