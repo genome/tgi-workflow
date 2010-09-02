@@ -7,6 +7,20 @@ use above "Workflow::Command";
 
 Workflow::Command->execute_with_shell_params_and_exit();
 
+####################
+#     ATTENTION
+####################
+#
+# If you're seeing this message in the debugger, and 
+# you launched your workflow with:
+#
+#   workflow ns start --debug=foo
+#
+# Simply hit the "Run" button to continue on toward the 
+# top of your command class.  This breakpoint is set 
+# automatically.
+# 
+
 =pod
 
 =head1 NAME
