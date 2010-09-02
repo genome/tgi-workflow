@@ -18,13 +18,11 @@ class Workflow::Command::Ns::Stop {
 sub execute {
     my $self = shift;
 
-    # bkill the exit handler in the job group, dont care about it
-    # bkill all the other jobs
-
-    # wait for jobs to die
-
+    # TODO bkill anything running then
     # set database status on each operation instance thats not new or successful
     # to Stopped
+
+    # job group cleanup cron will catch anything not running
 
     return -88;
 }

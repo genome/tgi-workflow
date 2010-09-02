@@ -50,6 +50,8 @@ sub execute {
         }
         $keep;
     } @load;
+
+    # TODO
     # if things claim to be running, compare bjobs -g
     # to database list
     # when bad status found
@@ -107,6 +109,7 @@ sub execute {
 
         exit -80;
     } else {
+        # TODO normalize status
         # kill pending jobs if possible
         # exit successfully so user handler runs
 

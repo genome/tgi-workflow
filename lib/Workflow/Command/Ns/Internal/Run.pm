@@ -119,8 +119,9 @@ sub execute {
         UR::Context->commit();
     }
 
-    ## set the next things to scheduled
-    # TODO this is pretty hard
+    # TODO set the next things to scheduled
+
+    # TODO capture runtime stats from bjobs/rusage struct
 
     if (defined $xauth) {
         $self->status_message("Removing xauth token");
