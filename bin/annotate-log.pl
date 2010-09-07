@@ -6,7 +6,7 @@ use POSIX qw(strftime uname);
 use IPC::Open3 qw(open3);
 
 sub prefixlines {
-    my ($in, $out, $prefix) = @_;
+    my ($in, $out, $prefix, $chk) = @_;
 
     select $out;
     $| = 1;
@@ -14,7 +14,16 @@ sub prefixlines {
     while (my $line = <$in>) {
         print strftime('%Y-%m-%d %H:%M:%S%z', gmtime),
             ' ', $prefix, ' ', $line;
+        if ($chk && substr($line,0,6) eq 'open3:') {
+            return 127;
+        }
     }
+
+    return;
+}
+
+unless (@ARGV) {
+    exit 1;
 }
 
 my $hostname = (uname)[1];
@@ -32,13 +41,13 @@ my $child = fork;
 if ($child) {
     close OUT_R;
 
-    prefixlines(\*ERR_R,\*STDERR,$hostname);
+    my $fail = prefixlines(\*ERR_R,\*STDERR,$hostname, 1);
 
     waitpid($pid, 0);
     my $exit = $?;
     waitpid($child, 0);
 
-    exit $exit;
+    exit ($fail ? $fail : $exit);
 } elsif (defined $child) {
     close ERR_R;
 
