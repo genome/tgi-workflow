@@ -28,30 +28,18 @@ my $pid = open3('<&STDIN', '>&OUT_W', '>&ERR_W', @ARGV);
 close OUT_W;
 close ERR_W;
 
-my $child1 = fork;
-if ($child1) {
-    my $child2 = fork;
-    if ($child2) {
-        close OUT_R;
-        close ERR_R;
+my $child = fork;
+if ($child) {
+    close OUT_R;
 
-        waitpid($pid, 0);
-        my $exit = $?;
+    prefixlines(\*ERR_R,\*STDERR,$hostname);
 
-        waitpid($child2, 0);
-        waitpid($child1, 0);
+    waitpid($pid, 0);
+    my $exit = $?;
+    waitpid($child, 0);
 
-        exit $exit;
-    } elsif (defined $child2) {
-        close OUT_R;
-
-        prefixlines(\*ERR_R,\*STDERR,$hostname);
-
-        exit;
-    } else {
-        die "can't fork: $!";
-    }
-} elsif (defined $child1) {
+    exit $exit;
+} elsif (defined $child) {
     close ERR_R;
 
     prefixlines(\*OUT_R,\*STDOUT,$hostname);
