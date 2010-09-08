@@ -82,6 +82,8 @@ sub execute {
 #        if (defined $self->hub_host) {
             # start a UR server and connect to hub_host for dispatch 
 
+            $0 = 'workflow urd ' . $self->ur_port;
+
             Workflow::Server::UR->start(ur_port => $self->ur_port, hub_port => $self->hub_port);
 
 #        } else {
@@ -89,6 +91,8 @@ sub execute {
 #        }
     } elsif ($type eq 'hub') {
         # start a hub server and connect 
+
+        $0 = 'workflow hubd ' . $self->hub_port; 
 
         Workflow::Server::Hub->start(ur_port => $self->ur_port, hub_port => $self->hub_port);
     }

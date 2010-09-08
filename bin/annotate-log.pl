@@ -5,6 +5,8 @@ use warnings;
 use POSIX qw(strftime uname);
 use IPC::Open3 qw(open3);
 
+$0 = 'annotate-log err';
+
 sub prefixlines {
     my ($in, $out, $prefix, $chk) = @_;
 
@@ -13,7 +15,7 @@ sub prefixlines {
 
     while (my $line = <$in>) {
         print strftime('%Y-%m-%d %H:%M:%S%z', gmtime),
-            ' ', $prefix, ' ', $line;
+            ' ', $prefix, ': ', $line;
         if ($chk && substr($line,0,6) eq 'open3:') {
             return 127;
         }
@@ -50,6 +52,7 @@ if ($child) {
     exit ($fail ? $fail : $exit);
 } elsif (defined $child) {
     close ERR_R;
+    $0 = 'annotate-log out';
 
     prefixlines(\*OUT_R,\*STDOUT,$hostname);
 

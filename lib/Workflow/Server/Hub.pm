@@ -520,7 +520,7 @@ sub setup {
                             }
                             
                             $lsf_job_id = $kernel->call($_[SESSION],'fork_worker',
-                                $payload->{operation_type}->command_class_name
+                                $payload->{operation_type}->command_class_name, $payload->{out_log}, $payload->{err_log}
                             );
                             $heap->{fork_count}++;
                             $heap->{job_count}++;
@@ -566,10 +566,8 @@ sub setup {
                 }
             },
             fork_worker => sub {
-                my ($kernel, $command_class) = @_[KERNEL, ARG0];
-                evTRACE and print "dispatch fork_worker\n";
-
-                ## this should log things
+                my ($kernel, $command_class, $stdout_file, $stderr_file) = @_[KERNEL, ARG0, ARG1, ARG2];
+                evTRACE and print "dispatch fork_worker $command_class $stdout_file $stderr_file\n";
 
                 my $hostname = hostname;
                 my $port = $port_number;
@@ -598,6 +596,14 @@ sub setup {
                     } elsif (defined $pid) {
                         # child
                         evTRACE and print "dispatch fork_worker started $$\n";
+
+                        if ($stdout_file) {
+                            open STDOUT, '>>', $stdout_file;
+                        }
+
+                        if ($stderr_file) {
+                            open STDERR, '>>', $stderr_file;
+                        }
 
                         exec @cmd;
                     } else {
@@ -650,7 +656,7 @@ sub setup {
                 }
 
                 my $cmd = 'bsub -g /workflow-worker -q ' . $queue . ' -m blades ' . $lsf_opts .
-                    ' -J "' . $name . '" perl -e \'' . $libstring . 'use ' . $namespace . '; use ' . $command_class . '; use Workflow::Server::Worker; Workflow::Server::Worker->start("' . $hostname . '",' . $port . ')\'';
+                    ' -J "' . $name . '" annotate-log perl -e \'' . $libstring . 'use ' . $namespace . '; use ' . $command_class . '; use Workflow::Server::Worker; Workflow::Server::Worker->start("' . $hostname . '",' . $port . ')\'';
 
                 evTRACE and print "dispatch lsf_cmd $cmd\n";
 
