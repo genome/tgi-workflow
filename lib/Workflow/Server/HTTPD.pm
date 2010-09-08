@@ -573,7 +573,7 @@ MARK
                     "poe://UR/workflow/eval",
                     [
                         q{
-                            my @instance = Workflow::Operation::Instance->get();
+                            my @instance = Workflow::Operation::Instance->is_loaded();
                             
                             my %infos = ();
                             foreach my $i (@instance) {

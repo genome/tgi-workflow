@@ -270,7 +270,7 @@ sub setup {
             periodic_check_time => 300,
             job_limit           => 500,
             job_count           => 0,
-            fork_limit          => 5,
+            fork_limit          => 1,
             fork_count          => 0,
             dispatched          => {}, # keyed on lsf job id
             claimed             => {}, # keyed on remote kernel name
@@ -332,6 +332,16 @@ sub setup {
             sig_CHLD => sub {
                 my ($heap, $kernel, $pid, $child_error) = @_[HEAP, KERNEL, ARG1, ARG2];
                 $heap->{fork_count}--;
+                $kernel->delay('start_jobs',0);
+
+                if (exists $heap->{dispatched}->{'P' . $pid}) {
+                    $heap->{job_count}--;
+
+                    my $payload = delete $heap->{dispatched}->{'P' . $pid};
+                    $payload->{shortcut_flag} = 0;
+
+                    $kernel->yield('add_work', $payload);
+                }
 
                 evTRACE and print "dispatch sig_CHLD $pid $child_error\n";
             },
@@ -451,15 +461,15 @@ sub setup {
                 delete $heap->{failed}->{$id};
 
                 my $was_shortcutting = 0;
+                my $sc;
 
                 if ($remote_kernel) {
                     my $payload = delete $heap->{claimed}->{$remote_kernel};
                     if ($payload) {
-#                        my ($instance,$type,$input,$sc) = @$payload;
-                        my $sc = $payload->{shortcut_flag};
+                        $sc = $payload->{shortcut_flag};
                         if ($sc && !defined $output) {
                             $was_shortcutting = 1;
-                            $payload->{shortcut_flag} = 1;
+                            $payload->{shortcut_flag} = 0;
                             $kernel->yield('add_work',$payload);
                         }
                     }
@@ -472,10 +482,10 @@ sub setup {
 
                 $heap->{finalizable}{$id} = $dispatch_id;
 
-                if ($remote_kernel) {
+                if ($remote_kernel && !$sc) {
                     $kernel->post('lsftail','skip_watcher',{job_id => $dispatch_id, seconds => 60});
                 } else {
-                    $kernel->yield('finalize_work',[$id]) unless $remote_kernel;
+                    $kernel->yield('finalize_work',[$id], []) unless $was_shortcutting;
                 }
             },
             finalize_work => sub {
@@ -558,6 +568,8 @@ sub setup {
             fork_worker => sub {
                 my ($kernel, $command_class) = @_[KERNEL, ARG0];
                 evTRACE and print "dispatch fork_worker\n";
+
+                ## this should log things
 
                 my $hostname = hostname;
                 my $port = $port_number;

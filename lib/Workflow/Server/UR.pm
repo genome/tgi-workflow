@@ -353,6 +353,7 @@ evTRACE and print "workflow schedule_instance\n";
 
                 my $instance = Workflow::Operation::Instance->get($id);
 
+                $instance->current->status('scheduled');
                 $instance->current->dispatch_identifier($dispatch_id);
             },
             'eval' => sub {  ## this is somewhat dangerous to let people do

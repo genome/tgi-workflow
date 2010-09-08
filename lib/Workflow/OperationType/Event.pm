@@ -84,9 +84,24 @@ sub stderr_log {
     return;
 }
 
-# delegate to wrapped command class
+sub shortcut {
+    my $self = shift;
+    $self->call('shortcut', @_);
+}
+
 sub execute {
     my $self = shift;
+    $self->call('execute', @_);
+}
+
+# delegate to wrapped command class
+sub call {
+    my $self = shift;
+    my $type = shift;
+
+    unless ($type eq 'shortcut' || $type eq 'execute') {
+        die 'invalid type: ' . $type;
+    }
     my %properties = @_;
 
     require Genome;
@@ -112,6 +127,11 @@ sub execute {
     }
 
     my $command_name = ref($event);
+
+    if ($type eq 'shortcut' && !$command_name->can('shortcut')) {
+        return;
+    }
+
     $command_name->dump_status_messages(1);
     $command_name->dump_warning_messages(1);
     $command_name->dump_error_messages(1);
@@ -124,6 +144,8 @@ sub execute {
         $event->date_completed(undef);
         $event->event_status('Failed');
         $event->user_name($ENV{'USER'});
+        # should this return nothing?  in the shortcut case its just going
+        # to reschedule the process on lsf (and probably fail again)
         return;
     }
 
@@ -159,7 +181,16 @@ sub execute {
     my $rv;
     eval { 
         local $ENV{UR_STACK_DUMP_ON_DIE} = 1;
-        $rv = $command_obj->execute(); 
+
+        if ($type eq 'shortcut') {
+            unless ($command_obj->can('shortcut')) {
+                die ref($command_obj) . ' has no method shortcut; ' .
+                    'dying so execute can run on another host';
+            }
+            $rv = $command_obj->shortcut();
+        } elsif ($type eq 'execute') {
+            $rv = $command_obj->execute();
+        }
     };
 
     if ($@) {
