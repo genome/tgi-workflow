@@ -77,7 +77,7 @@ sub __build {
                     }
                 };
                 if ($@ || !defined($output) ) {
-                    print STDERR "Command module died or returned undef.\n";
+                    print STDERR "Command module died or returned undef.\n" unless ($sc_flag);
                     if ($@) {
                         print STDERR $@;
                         $error_string = "$@";

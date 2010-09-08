@@ -581,6 +581,7 @@ sub setup {
                 }
 
                 my @cmd = (
+                    'annotate-log',
                     'perl',
                     '-e',
                     $libstring . 'use ' . $namespace . '; use ' . $command_class . '; use Workflow::Server::Worker; Workflow::Server::Worker->start("' . $hostname . '",' . $port . ',1)'
