@@ -584,7 +584,7 @@ sub setup {
                     'annotate-log',
                     'perl',
                     '-e',
-                    $libstring . 'use ' . $namespace . '; use ' . $command_class . '; use Workflow::Server::Worker; Workflow::Server::Worker->start("' . $hostname . '",' . $port . ',1)'
+                    $libstring . 'use ' . $namespace . '; use ' . $command_class . '; use Workflow::Server::Worker; Workflow::Server::Worker->start("' . $hostname . '",' . $port . ',2)'
                 );
 
                 my $pid;

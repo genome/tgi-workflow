@@ -25,7 +25,14 @@ sub start {
     $port ||= die 'no port number';
 
     if ($use_pid) {
-        $job_id = 'P' . $$;
+        if ($use_pid == 2) {
+            # means use my parent's pid
+            # if this code is ever run in a thread, the next line
+            # breaks on linux.
+            $job_id = 'P' . getppid();
+        } else {
+            $job_id = 'P' . $$;
+        }
     } else {
         $job_id = $ENV{LSB_JOBID};
     }
