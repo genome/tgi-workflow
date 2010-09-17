@@ -14,7 +14,7 @@ sub prefixlines {
     $| = 1;
 
     while (my $line = <$in>) {
-        print strftime('%Y-%m-%d %H:%M:%S%z', gmtime),
+        print strftime('%Y-%m-%d %H:%M:%S%z', localtime),
             ' ', $prefix, ': ', $line;
         if ($chk && substr($line,0,6) eq 'open3:') {
             return 127;
