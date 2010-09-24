@@ -412,7 +412,7 @@ sub setup {
                     warn 'Blade failed on ' . $payload->{dispatch_id} . ' ' . $instance->id . ' ' . $instance->name . "\n";
 
                     if ($sc) {
-                        $payload->[3] = 0;
+                        $payload->{shortcut_flag} = 0;
                     } else {
                         $heap->{failed}->{$instance->id}++;
                     }
