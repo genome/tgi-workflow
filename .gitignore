@@ -1,1 +1,2 @@
-Meta.sqlite3
+lib/Workflow/DataSource/Meta.sqlite3
+lib/Workflow/DataSource/Local.sqlite3

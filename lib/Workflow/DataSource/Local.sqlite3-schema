@@ -1,0 +1,46 @@
+CREATE TABLE workflow_plan (
+    workflow_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    xml BLOB
+);
+
+CREATE TABLE workflow_instance (
+    workflow_instance_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    parent_instance_id INTEGER,
+    peer_instance_id INTEGER,
+    current_execution_id INTEGER,
+    workflow_plan_id INTEGER,
+    name TEXT NOT NULL,
+    input_stored BLOB,
+    output_stored BLOB,
+    parallel_index INTEGER,
+    parent_execution_id INTEGER,
+    INTENTION TEXT
+);
+
+CREATE TABLE workflow_instance_execution (
+    workflow_execution_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    workflow_instance_id INTEGER NOT NULL,
+    status TEXT NOT NULL,
+    start_time TEXT,
+    end_time TEXT,
+    exit_code INTEGER,
+    stdout TEXT,
+    stderr TEXT,
+    is_done INTEGER,
+    is_running INTEGER,
+    dispatch_id TEXT,
+    cpu_time NUMBER,
+    max_memory INTEGER,
+    max_swap INTEGER,
+    max_processes INTEGER,
+    max_threads INTEGER,
+    user_name TEXT
+);
+
+CREATE TABLE workflow_service (
+    hostname TEXT,
+    port INTEGER,
+    start_time TEXT,
+    process_id INTEGER,
+    username TEXT
+);
