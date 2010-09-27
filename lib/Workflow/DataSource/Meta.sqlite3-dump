@@ -51,6 +51,14 @@ INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::InstanceSche
 INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::InstanceSchema','WORKFLOW','WORKFLOW_SERVICE','PROCESS_ID',4);
 INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::InstanceSchema','WORKFLOW','WORKFLOW_SERVICE','START_TIME',3);
 INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::InstanceSchema','WORKFLOW','WORKFLOW_SERVICE','HOSTNAME',1);
+INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_INSTANCE_EXECUTION','workflow_execution_id',1);
+INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_INSTANCE','workflow_instance_id',1);
+INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_PLAN','workflow_plan_id',1);
+INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_SERVICE','start_time',3);
+INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_SERVICE','port',2);
+INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_SERVICE','hostname',1);
+INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_SERVICE','username',5);
+INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_SERVICE','process_id',4);
 CREATE TABLE dd_table (
      data_source varchar NOT NULL,
      owner varchar,
@@ -66,6 +74,10 @@ INSERT INTO "dd_table" VALUES('Workflow::DataSource::InstanceSchema','WORKFLOW',
 INSERT INTO "dd_table" VALUES('Workflow::DataSource::InstanceSchema','WORKFLOW','WORKFLOW_PLAN','TABLE','entity','2010-01-20 10:05:02','2009-02-03 15:32:01',NULL);
 INSERT INTO "dd_table" VALUES('Workflow::DataSource::InstanceSchema','WORKFLOW','WORKFLOW_INSTANCE_EXECUTION','TABLE','entity','2010-01-20 10:05:02','2010-01-12 16:16:22',NULL);
 INSERT INTO "dd_table" VALUES('Workflow::DataSource::InstanceSchema','WORKFLOW','WORKFLOW_SERVICE','TABLE','entity','2010-01-20 10:05:02','2009-02-23 14:46:28',NULL);
+INSERT INTO "dd_table" VALUES('Workflow::DataSource::Local','','WORKFLOW_INSTANCE','TABLE','entity',NULL,'2010-09-27 15:26:16',NULL);
+INSERT INTO "dd_table" VALUES('Workflow::DataSource::Local','','WORKFLOW_INSTANCE_EXECUTION','TABLE','entity',NULL,'2010-09-27 15:26:17',NULL);
+INSERT INTO "dd_table" VALUES('Workflow::DataSource::Local','','WORKFLOW_SERVICE','TABLE','entity',NULL,'2010-09-27 15:26:17',NULL);
+INSERT INTO "dd_table" VALUES('Workflow::DataSource::Local','','WORKFLOW_PLAN','TABLE','entity',NULL,'2010-09-27 15:26:17',NULL);
 CREATE TABLE dd_table_column (
     data_source varchar NOT NULL,
     owner varchar,
@@ -113,6 +125,41 @@ INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','WOR
 INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','WORKFLOW','WORKFLOW_INSTANCE_EXECUTION','USER_NAME','VARCHAR2','20','Y','2010-01-12 16:16:22',NULL);
 INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','WORKFLOW','WORKFLOW_INSTANCE','INTENTION','VARCHAR2','15','Y','2010-05-07 15:40:22',NULL);
 INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','WORKFLOW','WORKFLOW_INSTANCE','PARENT_EXECUTION_ID','NUMBER','11','Y','2010-05-07 15:40:22',NULL);
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_INSTANCE_EXECUTION','USER_NAME','TEXT',NULL,'Y','2010-09-27 15:26:17','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_INSTANCE','WORKFLOW_PLAN_ID','INTEGER',NULL,'Y','2010-09-27 15:26:16','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_INSTANCE_EXECUTION','WORKFLOW_INSTANCE_ID','INTEGER',NULL,'N','2010-09-27 15:26:17','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_INSTANCE','INTENTION','TEXT',NULL,'Y','2010-09-27 15:26:16','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_PLAN','WORKFLOW_PLAN_ID','INTEGER',NULL,'N','2010-09-27 15:26:17','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_INSTANCE','PARALLEL_INDEX','INTEGER',NULL,'Y','2010-09-27 15:26:16','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_INSTANCE_EXECUTION','START_TIME','TEXT',NULL,'Y','2010-09-27 15:26:17','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_INSTANCE_EXECUTION','DISPATCH_ID','TEXT',NULL,'Y','2010-09-27 15:26:17','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_SERVICE','PORT','INTEGER',NULL,'Y','2010-09-27 15:26:17','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_INSTANCE','PARENT_INSTANCE_ID','INTEGER',NULL,'Y','2010-09-27 15:26:16','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_INSTANCE','NAME','TEXT',NULL,'N','2010-09-27 15:26:16','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_INSTANCE_EXECUTION','MAX_THREADS','INTEGER',NULL,'Y','2010-09-27 15:26:17','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_SERVICE','START_TIME','TEXT',NULL,'Y','2010-09-27 15:26:17','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_INSTANCE_EXECUTION','WORKFLOW_EXECUTION_ID','INTEGER',NULL,'N','2010-09-27 15:26:17','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_INSTANCE_EXECUTION','IS_DONE','INTEGER',NULL,'Y','2010-09-27 15:26:17','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_INSTANCE','PEER_INSTANCE_ID','INTEGER',NULL,'Y','2010-09-27 15:26:16','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_INSTANCE','INPUT_STORED','BLOB',NULL,'Y','2010-09-27 15:26:16','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_INSTANCE','CURRENT_EXECUTION_ID','INTEGER',NULL,'Y','2010-09-27 15:26:16','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_INSTANCE_EXECUTION','STDERR','TEXT',NULL,'Y','2010-09-27 15:26:17','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_INSTANCE','WORKFLOW_INSTANCE_ID','INTEGER',NULL,'N','2010-09-27 15:26:16','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_INSTANCE_EXECUTION','END_TIME','TEXT',NULL,'Y','2010-09-27 15:26:17','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_PLAN','XML','BLOB',NULL,'Y','2010-09-27 15:26:17','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_INSTANCE_EXECUTION','MAX_MEMORY','INTEGER',NULL,'Y','2010-09-27 15:26:17','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_INSTANCE','PARENT_EXECUTION_ID','INTEGER',NULL,'Y','2010-09-27 15:26:16','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_INSTANCE_EXECUTION','STDOUT','TEXT',NULL,'Y','2010-09-27 15:26:17','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_INSTANCE_EXECUTION','EXIT_CODE','INTEGER',NULL,'Y','2010-09-27 15:26:17','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_SERVICE','USERNAME','TEXT',NULL,'Y','2010-09-27 15:26:17','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_INSTANCE_EXECUTION','CPU_TIME','NUMBER',NULL,'Y','2010-09-27 15:26:17','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_SERVICE','PROCESS_ID','INTEGER',NULL,'Y','2010-09-27 15:26:17','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_INSTANCE_EXECUTION','MAX_SWAP','INTEGER',NULL,'Y','2010-09-27 15:26:17','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_SERVICE','HOSTNAME','TEXT',NULL,'Y','2010-09-27 15:26:17','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_INSTANCE_EXECUTION','STATUS','TEXT',NULL,'N','2010-09-27 15:26:17','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_INSTANCE_EXECUTION','MAX_PROCESSES','INTEGER',NULL,'Y','2010-09-27 15:26:17','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_INSTANCE_EXECUTION','IS_RUNNING','INTEGER',NULL,'Y','2010-09-27 15:26:17','');
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::Local','','WORKFLOW_INSTANCE','OUTPUT_STORED','BLOB',NULL,'Y','2010-09-27 15:26:16','');
 CREATE TABLE dd_unique_constraint_column (
     data_source varchar NOT NULL,
     owner varchar,

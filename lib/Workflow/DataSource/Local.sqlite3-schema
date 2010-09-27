@@ -1,5 +1,5 @@
 CREATE TABLE workflow_plan (
-    workflow_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    workflow_plan_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     xml BLOB
 );
 
@@ -14,7 +14,7 @@ CREATE TABLE workflow_instance (
     output_stored BLOB,
     parallel_index INTEGER,
     parent_execution_id INTEGER,
-    INTENTION TEXT
+    intention TEXT
 );
 
 CREATE TABLE workflow_instance_execution (
@@ -42,5 +42,6 @@ CREATE TABLE workflow_service (
     port INTEGER,
     start_time TEXT,
     process_id INTEGER,
-    username TEXT
+    username TEXT,
+    PRIMARY KEY (hostname, port, start_time, process_id, username)
 );
