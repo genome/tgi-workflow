@@ -28,8 +28,8 @@ class Workflow::Service {
                 return $psline;
             ) },
     ],
-    schema_name => 'InstanceSchema',
-    data_source => 'Workflow::DataSource::InstanceSchema',
+    schema_name => $Workflow::Config::primary_schema_name,
+    data_source => $Workflow::Config::primary_data_source,
 };
 
 sub create {

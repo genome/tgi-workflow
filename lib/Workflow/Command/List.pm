@@ -21,7 +21,7 @@ class Workflow::Operation::RootInstance {
         user_name => { is => 'Varchar2' },
         start_time => { is => 'TIMESTAMP' } 
     ],
-    data_source => 'Workflow::DataSource::InstanceSchema'
+    data_source => $Workflow::Config::primary_data_source
 };
 
 package Workflow::Command::List;

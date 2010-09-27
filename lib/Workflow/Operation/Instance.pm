@@ -13,8 +13,8 @@ class Workflow::Operation::Instance {
           { is => 'INTEGER', column_name => 'WORKFLOW_INSTANCE_ID' }
     ],
     table_name => 'WORKFLOW_INSTANCE',
-    schema_name => 'InstanceSchema',
-    data_source => 'Workflow::DataSource::InstanceSchema',
+    schema_name => $Workflow::Config::primary_schema_name,
+    data_source => $Workflow::Config::primary_data_source,
     has         => [
         cache_workflow => {
             is          => 'Workflow::Cache',

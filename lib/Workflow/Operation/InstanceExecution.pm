@@ -10,8 +10,8 @@ class Workflow::Operation::InstanceExecution {
           { is => 'NUMBER', len => 11, column_name => 'WORKFLOW_EXECUTION_ID' },
     ],
     table_name  => 'WORKFLOW_INSTANCE_EXECUTION',
-    schema_name => 'InstanceSchema',
-    data_source => 'Workflow::DataSource::InstanceSchema',
+    schema_name => $Workflow::Config::primary_schema_name,
+    data_source => $Workflow::Config::primary_data_source,
     has         => [
         instance_id =>
           { is => 'NUMBER', len => 11, column_name => 'WORKFLOW_INSTANCE_ID' },

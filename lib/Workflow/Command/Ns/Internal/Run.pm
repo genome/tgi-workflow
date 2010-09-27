@@ -65,7 +65,7 @@ sub execute {
     my $t = $opi->operation->operation_type;
 
     ## disconnect from workflow database
-    Workflow::DataSource::InstanceSchema->disconnect_default_dbh;
+    $Workflow::Config::primary_data_source->disconnect_default_dbh;
 
     my ($outputs, $exitcode, $ok) = $self->run_optype(
         $t, $self->merged_input($opi) 
@@ -236,7 +236,7 @@ sub try_count {
     my $self = shift;
     my $op = shift;
 
-    my $dbh = Workflow::DataSource::InstanceSchema->get_default_handle;
+    my $dbh = $Workflow::Config::primary_data_source->get_default_handle;
 
     my ($cnt) = $dbh->selectrow_array(<<"    SQL", {}, $op->id);
         SELECT count(workflow_execution_id) FROM workflow.workflow_instance_execution WHERE workflow_instance_id = ?
