@@ -3,6 +3,8 @@ package Workflow;
 use warnings;
 use strict;
 
+our $VERSION = '0.00_01';
+
 use UR;
 use Workflow::Config ();
 
