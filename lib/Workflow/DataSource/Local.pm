@@ -9,6 +9,10 @@ class Workflow::DataSource::Local {
     is => [ 'UR::DataSource::SQLite', 'UR::Singleton' ],
 };
 
-sub server { '/gscuser/eclark/git/workflow/lib/Workflow/DataSource/Local.sqlite3' }
+sub server { 
+    my $file = __FILE__;
+    $file =~ s/.pm$/.sqlite3/;
+    return $file;
+}
 
 1;
