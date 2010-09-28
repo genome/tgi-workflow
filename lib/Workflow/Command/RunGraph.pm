@@ -4,10 +4,13 @@ use warnings;
 
 use Workflow;
 use Carp;
-use XML::LibXML;
-use XML::LibXSLT;
+#use XML::LibXML;
+#use XML::LibXSLT;
 
 package Workflow::Command::RunGraph;
+
+eval "use XML::LibXML; use XML::LibXSLT;";
+if (!$@) {
 
 class Workflow::Command::RunGraph {
     is => ['Workflow::Command'],
@@ -63,6 +66,7 @@ class Workflow::Command::RunGraph {
 
     ],
 };
+}
 
 sub sub_command_sort_position { 10 }
 
