@@ -225,7 +225,7 @@ sub setup {
                 
                 $heap->{watchers}{$job_id}->();
                 
-                $kernel->call('delete_watcher',{job_id => $job_id});
+                $kernel->call($_[SESSION], 'delete_watcher',{job_id => $job_id});
             },
             event_JOB_FINISH => sub {
                 my ($kernel,$heap, $line,$fields) = @_[KERNEL,HEAP, ARG0,ARG1];
@@ -258,7 +258,7 @@ sub setup {
                         @{ $fields }[$offset+28,$offset+29,$offset+54,$offset+55]
                     );
                     
-                    $kernel->call('delete_watcher',{job_id => $job_id});
+                    $kernel->call($_[SESSION], 'delete_watcher',{job_id => $job_id});
                 }
 
             },
