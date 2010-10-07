@@ -11,11 +11,13 @@ use warnings;
 use UR;
 use Test::More tests => 18;
 use Devel::Size qw(size total_size);
+use File::Basename;
+
 use above 'Workflow';
 
 #my $dir = -d 't/xml.d' ? 't/xml.d' : 'xml.d';
 
-my $dir = Workflow->get_base_directory_name . '/t/xml.d';
+my $dir = File::Basename::dirname(__FILE__). '/xml.d';
 
 my $id;
 
