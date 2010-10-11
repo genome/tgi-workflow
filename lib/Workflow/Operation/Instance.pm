@@ -59,7 +59,7 @@ class Workflow::Operation::Instance {
             is_transient => 1
         },
         root_id => {
-            implied_by => 'root_instance',
+            implied_by => 'root',
             is_transient => 1
         }, 
         output        => { is => 'HASH', is_transient => 1 },
@@ -277,6 +277,8 @@ our @observers = (
                 $parent = $self->parent_instance;
 
                 $self->root($parent->root);
+            } else {
+                $self->root($self);
             }
 
             if (
