@@ -67,10 +67,10 @@ sub initialize {
                     defined $_->{'is_input'} && $_->{'is_input'}
                 } @property_meta;
 
-                $self->optional_input_properties(\@opt_input);
+                $self->{optional_input_properties} = $self->{'db_committed'}{optional_input_properties} = \@opt_input;
             }
         
-            $self->$my_method(\@props);
+            $self->{$my_method} = $self->{'db_committed'}{$my_method} = \@props;
         }
     }
 
