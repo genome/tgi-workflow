@@ -24,7 +24,7 @@ sub get {
 
 sub create {
     my $class = shift;
-    my $params = $class->preprocess_params(@_);
+    my $params = { $class->define_boolexpr(@_)->normalize->params_list };
     
     die 'missing command class' unless $params->{event_id};
 

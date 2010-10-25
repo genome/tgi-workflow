@@ -200,7 +200,7 @@ sub get {
 
 sub create {
     my $class  = shift;
-    my $params = $class->preprocess_params(@_);
+    my $params = { $class->define_boolexpr(@_)->normalize->params_list };
 
     unless ( defined $params->{host} && defined $params->{port} ) {
         $class->error_message('host and port must be set');
