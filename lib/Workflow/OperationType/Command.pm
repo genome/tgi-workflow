@@ -213,7 +213,11 @@ sub execute {
 
     my %outputs = ();
     foreach my $output_property (@{ $self->output_properties }) {
-        $outputs{$output_property} = $command->$output_property;
+        if ($command->__meta__->property($output_property)->is_many) {
+            $outputs{$output_property} = [$command->$output_property];
+        } else {
+            $outputs{$output_property} = $command->$output_property;
+        }
     }
 
     return \%outputs;
