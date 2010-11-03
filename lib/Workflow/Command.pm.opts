@@ -78,6 +78,8 @@ $Workflow::Command::OPTS_SPEC = [
             'files',
             'show=s',
             'files',
+            'csv-delimiter=s',
+            undef,
             'noheaders!',
             undef,
             'style=s',
@@ -89,6 +91,8 @@ $Workflow::Command::OPTS_SPEC = [
           [
             'show=s',
             'files',
+            'csv-delimiter=s',
+            undef,
             'filter=s',
             undef,
             'noheaders!',
