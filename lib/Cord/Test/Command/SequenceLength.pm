@@ -3,8 +3,9 @@ package Cord::Test::Command::SequenceLength;
 use strict;
 use warnings;
 
-use Bio::Seq;
-use Bio::SeqIO;
+# dummy the return output so we dont have to depend on bioperl
+#use Bio::Seq;
+#use Bio::SeqIO;
 use Cord;
 
 class Cord::Test::Command::SequenceLength {
@@ -45,10 +46,10 @@ sub execute {
     
     my $file = $self->fasta_file;
 
-    my $seqio = Bio::SeqIO->new(-file => $file, -format => 'Fasta');
-    my $seq        = $seqio->next_seq();
+    #my $seqio = Bio::SeqIO->new(-file => $file, -format => 'Fasta');
+    #my $seq        = $seqio->next_seq();
 
-    $self->sequence_length($seq->length());
+    $self->sequence_length(1024*3); #$seq->length());
 
     return 1;
 }

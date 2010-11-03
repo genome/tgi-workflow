@@ -12,6 +12,8 @@ use Cord::Config ();
 use UR::ObjectV001removed;
 use Carp qw{carp};
 
+use Exporter 'import';
+
 our @EXPORT = qw/operation operation_type operation_io/;
 
 class Cord {

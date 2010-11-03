@@ -1,8 +1,8 @@
 use inc::Module::Install;
 
-name 'Workflow';
+name 'Cord';
 author 'Eric Clark <eclark@wustl.edu>';
-version_from 'lib/Workflow.pm';
+version_from 'lib/Cord.pm';
 license 'perl';
 
 build_requires 'Test::More';
