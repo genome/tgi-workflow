@@ -25,20 +25,20 @@ isa_ok($w,'Cord::Model');
 
 my $echo = $w->add_operation(
     name => 'echo',
-    operation_type => Cord::Test::Command::Echo->operation_type
+    operation_type => Cord::OperationType::Command->get('Cord::Test::Command::Echo')
 );
 ok($echo,'add echo operation');
 isa_ok($echo,'Cord::Operation');
 
 my $sleep = $w->add_operation(
     name => 'sleep',
-    operation_type => Cord::Test::Command::Sleep->operation_type
+    operation_type => Cord::OperationType::Command->get('Cord::Test::Command::Sleep')
 );
 ok($sleep,'add sleep operation');
 
 my $time = $w->add_operation(
     name => 'time',
-    operation_type => Cord::Test::Command::Time->operation_type
+    operation_type => Cord::OperationType::Command->get('Cord::Test::Command::Time')
 );
 ok($time,'add time operation');
  

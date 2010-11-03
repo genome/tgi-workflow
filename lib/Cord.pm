@@ -12,37 +12,9 @@ use Cord::Config ();
 use UR::ObjectV001removed;
 use Carp qw{carp};
 
-use Exporter 'import';
-
-our @EXPORT = qw/operation operation_type operation_io/;
-
 class Cord {
     is => ['UR::Namespace'],
     type_name => 'workflow',
 };
-
-sub operation_io {
-    my ($class,$data) = @_;
-
-    my $object;
-    if (defined $data) {
-        $object = Cord::OperationType::Command->create_from_command($class,$data);
-    } else {
-        ## i really hate doing this, but it supports old code
-        $object = Cord::OperationType::Command->get($class);
-    }
-
-    return $object;
-}
-
-## synonyms that should be removed
-
-sub operation {
-    operation_io(@_);
-}
-
-sub operation_type {
-    operation_io(@_);
-}
 
 1;

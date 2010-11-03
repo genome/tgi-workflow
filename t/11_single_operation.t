@@ -15,7 +15,7 @@ require_ok('Cord::Operation');
 
 my $w = Cord::Operation->create(
     name => 'echo',
-    operation_type => Cord::Test::Command::Echo->operation_type,
+    operation_type => Cord::OperationType::Command->get('Cord::Test::Command::Echo'),
     executor => Cord::Executor::SerialDeferred->get()
 );
 ok($w,'add echo operation');
