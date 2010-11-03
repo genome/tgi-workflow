@@ -7,7 +7,7 @@ use Cord;
 use Command; 
 
 class Cord::Test::Command::WidgetManyReader {
-    is => ['Workflow::Test::Command'],
+    is => ['Cord::Test::Command'],
     has_output => [
         size => { is_many => 1, is_optional => 1 },
         color => { is_many => 1, is_optional => 1 },

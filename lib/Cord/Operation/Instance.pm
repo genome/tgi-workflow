@@ -54,7 +54,7 @@ class Cord::Operation::Instance {
             is_optional => 1
         },
         root => {
-            is => 'Workflow::Operation::Instance',
+            is => 'Cord::Operation::Instance',
             id_by => 'root_id',
             is_transient => 1
         },

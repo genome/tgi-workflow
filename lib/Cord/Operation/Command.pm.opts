@@ -1,4 +1,4 @@
-$Workflow::Operation::Command::OPTS_SPEC = [
+$Cord::Operation::Command::OPTS_SPEC = [
           'help!',
           undef
         ];
