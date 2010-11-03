@@ -9,17 +9,17 @@ use strict;
 use warnings;
 
 use Test::More tests => 11;
-use above 'Workflow';
+use above 'Cord';
 
-require_ok('Workflow::Operation');
+require_ok('Cord::Operation');
 
-my $w = Workflow::Operation->create(
+my $w = Cord::Operation->create(
     name => 'echo',
-    operation_type => Workflow::Test::Command::Echo->operation_type,
-    executor => Workflow::Executor::SerialDeferred->get()
+    operation_type => Cord::Test::Command::Echo->operation_type,
+    executor => Cord::Executor::SerialDeferred->get()
 );
 ok($w,'add echo operation');
-isa_ok($w,'Workflow::Operation');
+isa_ok($w,'Cord::Operation');
 
 ok(do {
     $w->validate;

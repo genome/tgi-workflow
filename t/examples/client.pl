@@ -25,7 +25,7 @@ sub __build {
                 
                 $kernel->post(
                     'IKC','call',
-                    'poe://UR/workflow/load', ['/gscuser/eclark/svn/perl_modules/Workflow/t/xml.d/00_basic.xml'],
+                    'poe://UR/workflow/load', ['/gscuser/eclark/svn/perl_modules/Cord/t/xml.d/00_basic.xml'],
                     'poe:got_plan_id'
                 );
                 print "Sent Load\n";

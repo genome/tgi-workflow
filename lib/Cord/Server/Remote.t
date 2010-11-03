@@ -4,19 +4,19 @@ use strict;
 use warnings;
 use Test::More tests => 11;
 
-use above 'Workflow';
+use above 'Cord';
 
-use_ok('Workflow::Server::Remote');
+use_ok('Cord::Server::Remote');
 
-my ( $r, $g ) = Workflow::Server::Remote->launch();
+my ( $r, $g ) = Cord::Server::Remote->launch();
 
-isa_ok( $r, 'Workflow::Server::Remote' );
+isa_ok( $r, 'Cord::Server::Remote' );
 BAIL_OUT('cannot continue tests without connection') unless defined $r;
 
-my $sleep_op = Workflow::Operation->create(
+my $sleep_op = Cord::Operation->create(
     name           => 'sleeper',
     operation_type =>
-      Workflow::OperationType::Command->get('Workflow::Test::Command::Sleep')
+      Cord::OperationType::Command->get('Cord::Test::Command::Sleep')
 );
 
 my $plan_id = $r->add_plan($sleep_op);
@@ -29,8 +29,8 @@ my $instance_id = $r->_seval(
     q{
         my ($plan_id,$seconds) = @_;
 
-        my $op = Workflow::Operation->is_loaded($plan_id);
-        my $exec = Workflow::Executor::Server->get;
+        my $op = Cord::Operation->is_loaded($plan_id);
+        my $exec = Cord::Executor::Server->get;
 
         $op->set_all_executor($exec);
 
@@ -55,7 +55,7 @@ ok(
             $r->_seval(
                 q{
                     my $id = shift; 
-                    my @load = Workflow::Operation::Instance->get(
+                    my @load = Cord::Operation::Instance->get(
                         id => $id,
                         -recurse => ['parent_instance_id','instance_id']
                     );

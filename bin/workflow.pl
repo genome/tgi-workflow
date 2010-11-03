@@ -12,13 +12,13 @@ BEGIN {
     # tab-completion request and then exit before doing any real work.
     # The code is in an eval to prevent problems on systems which do no have Getopt::Complete 
     # installed.  The code is in a BEGIN block to ensure it still runs before anything else.
-    eval "use Getopt::Complete::Cache class => 'Workflow::Command', above => 1;";
+    eval "use Getopt::Complete::Cache class => 'Cord::Command', above => 1;";
 };
 
 
-use above "Workflow::Command";
+use above "Cord::Command";
 
-Workflow::Command->execute_with_shell_params_and_exit();
+Cord::Command->execute_with_shell_params_and_exit();
 
 ####################
 #     ATTENTION
@@ -58,7 +58,7 @@ These depend on the specific sub-command.
 
 =head1 DEVELOPER NOTE
 
-Running this WITHIN a source tree that contains a Workflow namespace will automatically "use lib" your tree.
+Running this WITHIN a source tree that contains a Cord namespace will automatically "use lib" your tree.
 
 =head1 BUGS
 

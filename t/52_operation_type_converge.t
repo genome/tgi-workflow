@@ -15,9 +15,9 @@ use warnings;
 
 use Test::More tests => 28;
 
-use_ok('Workflow');
+use_ok('Cord');
 
-my $w = Workflow::Model->create(
+my $w = Cord::Model->create(
     name => 'ctest',
     input_properties => [ qw/size1 size2 size3 color1 color2 color3 shape1 shape2 shape3/ ],
     output_properties => [ qw/size color shape result/ ]
@@ -26,25 +26,25 @@ ok($w, 'create workflow');
 
 my $wid1 = $w->add_operation(
     name => 'wid1',
-    operation_type => Workflow::OperationType::Command->get('Workflow::Test::Command::WidgetMaker')
+    operation_type => Cord::OperationType::Command->get('Cord::Test::Command::WidgetMaker')
 );
 ok($wid1,'add wid1');
 
 my $wid2 = $w->add_operation(
     name => 'wid2',
-    operation_type => Workflow::OperationType::Command->get('Workflow::Test::Command::WidgetMaker')
+    operation_type => Cord::OperationType::Command->get('Cord::Test::Command::WidgetMaker')
 );
 ok($wid2,'add wid2');
 
 my $wid3 = $w->add_operation(
     name => 'wid3',
-    operation_type => Workflow::OperationType::Command->get('Workflow::Test::Command::WidgetMaker')
+    operation_type => Cord::OperationType::Command->get('Cord::Test::Command::WidgetMaker')
 );
 ok($wid3,'add wid3');
 
 my $converge = $w->add_operation(
     name => 'conv',
-    operation_type => Workflow::OperationType::Converge->create(
+    operation_type => Cord::OperationType::Converge->create(
         input_properties => [qw/widget1 widget2 widget3/],
         output_properties => ['widgets']
     )
@@ -53,7 +53,7 @@ ok($converge,'add conv');
 
 my $reader = $w->add_operation(
     name => 'reader',
-    operation_type => Workflow::OperationType::Command->get('Workflow::Test::Command::WidgetManyReader')
+    operation_type => Cord::OperationType::Command->get('Cord::Test::Command::WidgetManyReader')
 );
 ok($reader,'add reader');
 

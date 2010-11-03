@@ -3,8 +3,8 @@
 use strict;
 use warnings;
 
-use above 'Workflow';
-use Workflow::Simple;
+use above 'Cord';
+use Cord::Simple;
 
 UR::ModuleBase->message_callback(
     'debug',
@@ -12,12 +12,12 @@ UR::ModuleBase->message_callback(
         my $error = shift;
         my $self = shift;
 
-        print $self->class . ' ' . $error->string if $self->isa('Workflow::Executor');
+        print $self->class . ' ' . $error->string if $self->isa('Cord::Executor');
     }
 );
 
-$Workflow::Simple::start_servers = 0;
-$Workflow::Simple::store_db = 1;
+$Cord::Simple::start_servers = 0;
+$Cord::Simple::store_db = 1;
 
 my $output = run_workflow_lsf(
     \*DATA, 
@@ -25,11 +25,11 @@ my $output = run_workflow_lsf(
     'sleep time' => 90 
 );
 
-print Data::Dumper->new([$output,\@Workflow::Simple::ERROR])->Dump;
+print Data::Dumper->new([$output,\@Cord::Simple::ERROR])->Dump;
 
 __DATA__
 <?xml version='1.0' standalone='yes'?>
-<workflow name="Example Workflow" executor="Workflow::Executor::SerialDeferred">
+<workflow name="Example Workflow" executor="Cord::Executor::SerialDeferred">
   <link fromOperation="input connector" fromProperty="sleep time" toOperation="sleep" toProperty="seconds" />
   <link fromOperation="echo" fromProperty="result" toOperation="wait for sleep and echo" toProperty="echo result" />
   <link fromOperation="wait for sleep and echo" fromProperty="echo result" toOperation="output connector" toProperty="result" />
@@ -38,21 +38,21 @@ __DATA__
   <link fromOperation="input connector" fromProperty="model input string" toOperation="echo" toProperty="input" />
   <link fromOperation="time" fromProperty="today" toOperation="output connector" toProperty="today" />
   <operation name="wait for sleep and echo">
-    <operationtype typeClass="Workflow::OperationType::Block">
+    <operationtype typeClass="Cord::OperationType::Block">
       <property>echo result</property>
       <property>sleep result</property>
     </operationtype>
   </operation>
   <operation name="sleep">
-    <operationtype commandClass="Workflow::Test::Command::Sleep" typeClass="Workflow::OperationType::Command" />
+    <operationtype commandClass="Cord::Test::Command::Sleep" typeClass="Cord::OperationType::Command" />
   </operation>
   <operation name="echo">
-    <operationtype commandClass="Workflow::Test::Command::Echo" typeClass="Workflow::OperationType::Command" />
+    <operationtype commandClass="Cord::Test::Command::Echo" typeClass="Cord::OperationType::Command" />
   </operation>
   <operation name="time">
-    <operationtype commandClass="Workflow::Test::Command::Time" typeClass="Workflow::OperationType::Command" />
+    <operationtype commandClass="Cord::Test::Command::Time" typeClass="Cord::OperationType::Command" />
   </operation>
-  <operationtype typeClass="Workflow::OperationType::Model">
+  <operationtype typeClass="Cord::OperationType::Model">
     <inputproperty>model input string</inputproperty>
     <inputproperty>sleep time</inputproperty>
     <outputproperty>model output string</outputproperty>

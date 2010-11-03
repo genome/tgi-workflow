@@ -9,7 +9,7 @@ use Data::Dumper;
 use Storable qw/store_fd fd_retrieve/;
 
 my $run = {
-    type => 'Workflow::OperationType::Dummy',
+    type => 'Cord::OperationType::Dummy',
     input => { }
 };
 

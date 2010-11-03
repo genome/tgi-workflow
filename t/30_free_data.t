@@ -10,19 +10,19 @@ use warnings;
 
 use Test::More tests => 6;
 use Devel::Size qw(size total_size);
-use above 'Workflow';
+use above 'Cord';
 
 my $dir = -d 't/xml.d' ? 't/xml.d' : 'xml.d';
 
-my $firstsize = total_size($UR::Object::all_objects_loaded->{'Workflow::Operation::Data'});
+my $firstsize = total_size($UR::Object::all_objects_loaded->{'Cord::Operation::Data'});
 
-require_ok('Workflow::Model');
+require_ok('Cord::Model');
 
-can_ok('Workflow::Model',qw/create validate is_valid execute/);
+can_ok('Cord::Model',qw/create validate is_valid execute/);
 
-my $w = Workflow::Model->create_from_xml($dir . '/00_basic.xml');
+my $w = Cord::Model->create_from_xml($dir . '/00_basic.xml');
 ok($w,'create workflow');
-isa_ok($w,'Workflow::Model');
+isa_ok($w,'Cord::Model');
 
 ok(do {
     $w->validate;
@@ -49,7 +49,7 @@ foreach my $i (1..10) {
     
 }
 
-my $size = total_size($UR::Object::all_objects_loaded->{'Workflow::Operation::Data'});
+my $size = total_size($UR::Object::all_objects_loaded->{'Cord::Operation::Data'});
 
 ok($size <= $firstsize, 'no cache growth');
 

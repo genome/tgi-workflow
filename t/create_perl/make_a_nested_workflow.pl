@@ -3,10 +3,10 @@
 use strict;
 use warnings;
 
-use above 'Workflow';
+use above 'Cord';
 use Data::Dumper;
 
-my $w_inner = Workflow::Model->create(
+my $w_inner = Cord::Model->create(
     name => 'Example Inner Workflow',
     input_properties => [ 'input string' ],
     output_properties => [ 'output string', 'result' ],
@@ -14,7 +14,7 @@ my $w_inner = Workflow::Model->create(
 {
     my $echo = $w_inner->add_operation(
         name => 'echo',
-        operation_type => Workflow::Test::Command::Echo->operation
+        operation_type => Cord::Test::Command::Echo->operation
     );
 
     $w_inner->add_link(
@@ -37,7 +37,7 @@ my $w_inner = Workflow::Model->create(
     );
 }
 
-my $w = Workflow::Model->create(
+my $w = Cord::Model->create(
     name => 'Example Workflow',
     input_properties => ['test input'],
     output_properties => ['test output', 'result' ],

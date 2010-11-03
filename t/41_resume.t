@@ -11,17 +11,17 @@ use warnings;
 use UR;
 use Test::More skip_all => 'resume works but this test has weird issues';
 use Devel::Size qw(size total_size);
-use Workflow;
+use Cord;
 
 my $dir = -d 't/xml.d' ? 't/xml.d' : 'xml.d';
 
 my $id;
 
-require_ok('Workflow::Model');
-can_ok('Workflow::Model',qw/create validate is_valid execute/);
+require_ok('Cord::Model');
+can_ok('Cord::Model',qw/create validate is_valid execute/);
 
 {
-    my $w = Workflow::Model->create_from_xml($dir . '/03_die.xml');
+    my $w = Cord::Model->create_from_xml($dir . '/03_die.xml');
     ok($w,'create workflow');
 #    ok($w->executor->limit(2),'limit executor to 2');
 
@@ -62,14 +62,14 @@ foreach my $o (UR::Object->all_objects_loaded) {
     
     unless (grep(/^UR::/, @c)) {
         diag(ref($o) . ' ' . $o->id);
-        unless (ref($o) eq 'Workflow::OperationType::Command') {
+        unless (ref($o) eq 'Cord::OperationType::Command') {
             $pass = 0;
         }
     }
 }
 ok($pass,'cleared workflow objects');
 
-my $normal = Workflow::Operation::Instance->get($id);
+my $normal = Cord::Operation::Instance->get($id);
 
 $normal->treeview_debug;
 

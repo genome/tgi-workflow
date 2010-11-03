@@ -3,29 +3,29 @@
 use strict;
 use warnings;
 
-use above 'Workflow';
+use above 'Cord';
 use Data::Dumper;
 
-my $w = Workflow::Model->create(
+my $w = Cord::Model->create(
     name => 'Example Workflow',
     input_properties => [ 'model input string', 'sleep time' ],
     output_properties => [ 'model output string', 'today', 'result' ],
 );
 my $echo = $w->add_operation(
     name => 'echo',
-    operation_type => Workflow::Test::Command::Echo->operation
+    operation_type => Cord::Test::Command::Echo->operation
 );
 my $sleep = $w->add_operation(
     name => 'sleep',
-    operation_type => Workflow::Test::Command::Sleep->operation
+    operation_type => Cord::Test::Command::Sleep->operation
 );
 my $time = $w->add_operation(
     name => 'time',
-    operation_type => Workflow::Test::Command::Time->operation
+    operation_type => Cord::Test::Command::Time->operation
 );
 my $block = $w->add_operation(
     name => 'wait for sleep and echo',
-    operation_type => Workflow::OperationType::Block->create(
+    operation_type => Cord::OperationType::Block->create(
         properties => ['echo result','sleep result']
     ),
 );

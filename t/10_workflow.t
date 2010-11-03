@@ -9,42 +9,42 @@ use strict;
 use warnings;
 
 use Test::More tests => 28;
-use above 'Workflow';
+use above 'Cord';
 
-require_ok('Workflow::Model');
+require_ok('Cord::Model');
 
-can_ok('Workflow::Model',qw/create add_operation get_input_connector get_output_connector add_link validate is_valid execute/);
+can_ok('Cord::Model',qw/create add_operation get_input_connector get_output_connector add_link validate is_valid execute/);
 
-my $w = Workflow::Model->create(
-    name => 'Example Workflow',
+my $w = Cord::Model->create(
+    name => 'Example Cord',
     input_properties => [ 'model input string', 'sleep time' ],
     output_properties => [ 'model output string', 'today', 'result' ],
 );
 ok($w,'create workflow');
-isa_ok($w,'Workflow::Model');
+isa_ok($w,'Cord::Model');
 
 my $echo = $w->add_operation(
     name => 'echo',
-    operation_type => Workflow::Test::Command::Echo->operation_type
+    operation_type => Cord::Test::Command::Echo->operation_type
 );
 ok($echo,'add echo operation');
-isa_ok($echo,'Workflow::Operation');
+isa_ok($echo,'Cord::Operation');
 
 my $sleep = $w->add_operation(
     name => 'sleep',
-    operation_type => Workflow::Test::Command::Sleep->operation_type
+    operation_type => Cord::Test::Command::Sleep->operation_type
 );
 ok($sleep,'add sleep operation');
 
 my $time = $w->add_operation(
     name => 'time',
-    operation_type => Workflow::Test::Command::Time->operation_type
+    operation_type => Cord::Test::Command::Time->operation_type
 );
 ok($time,'add time operation');
  
 my $block = $w->add_operation(
     name => 'wait for sleep and echo',
-    operation_type => Workflow::OperationType::Block->create(
+    operation_type => Cord::OperationType::Block->create(
         properties => ['echo result','sleep result']
     ),
 );
@@ -52,11 +52,11 @@ ok($block,'add block operation');
 
 my $modelin = $w->get_input_connector;
 ok($modelin,'get input connector');
-isa_ok($modelin,'Workflow::Operation');
+isa_ok($modelin,'Cord::Operation');
 
 my $modelout = $w->get_output_connector;
 ok($modelout,'get output connector');
-isa_ok($modelout,'Workflow::Operation');
+isa_ok($modelout,'Cord::Operation');
 
 my $link;
 
@@ -67,7 +67,7 @@ $link = $w->add_link(
     right_property => 'input',
 );
 ok($link,'link model input connector:model input string to echo:input');
-isa_ok($link,'Workflow::Link');
+isa_ok($link,'Cord::Link');
 
 $link = $w->add_link(
     left_operation => $modelin,

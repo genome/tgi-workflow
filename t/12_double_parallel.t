@@ -9,16 +9,16 @@ use strict;
 use warnings;
 
 use Test::More tests => 6;
-use above 'Workflow';
+use above 'Cord';
 
 my $dir = -d 't/xml.d' ? 't/xml.d' : 'xml.d';
 
-require_ok('Workflow::Model');
-can_ok('Workflow::Model',qw/create validate is_valid execute/);
+require_ok('Cord::Model');
+can_ok('Cord::Model',qw/create validate is_valid execute/);
 
-my $w = Workflow::Model->create_from_xml($dir . '/12_parallel.xml');
+my $w = Cord::Model->create_from_xml($dir . '/12_parallel.xml');
 ok($w,'create workflow');
-isa_ok($w,'Workflow::Model');
+isa_ok($w,'Cord::Model');
 
 ok(do {
     $w->validate;

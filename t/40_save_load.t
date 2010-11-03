@@ -13,7 +13,7 @@ use Test::More skip_all => 'reverse all changes removes observers which prevents
 use Devel::Size qw(size total_size);
 use File::Basename;
 
-use above 'Workflow';
+use above 'Cord';
 
 #my $dir = -d 't/xml.d' ? 't/xml.d' : 'xml.d';
 
@@ -21,11 +21,11 @@ my $dir = File::Basename::dirname(__FILE__). '/xml.d';
 
 my $id;
 
-require_ok('Workflow::Model');
-can_ok('Workflow::Model',qw/create validate is_valid execute/);
+require_ok('Cord::Model');
+can_ok('Cord::Model',qw/create validate is_valid execute/);
 
 {
-    my $w = Workflow::Model->create_from_xml($dir . '/00_basic.xml');
+    my $w = Cord::Model->create_from_xml($dir . '/00_basic.xml');
     ok($w,'create workflow');
 
     ok(do {
@@ -83,14 +83,14 @@ foreach my $o (UR::Context->all_objects_loaded('UR::Object')) {
     
     unless (grep(/^UR::/, @c)) {
 #        diag(ref($o) . ' ' . $o->id);
-        unless (ref($o) eq 'Workflow::OperationType::Command') {
+        unless (ref($o) eq 'Cord::OperationType::Command') {
             $pass = 0;
         }
     }
 }
 ok($pass,'cleared workflow objects');
 
-my $normal = Workflow::Operation::Instance->get($id);
+my $normal = Cord::Operation::Instance->get($id);
 
 ok($normal,'loaded instance');
 ok(my @array = $normal->child_instances,'has children');
