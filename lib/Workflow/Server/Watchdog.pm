@@ -1,11 +1,11 @@
-package Workflow::Server::Watchdog;
+package Cord::Server::Watchdog;
 
 use strict;
 use warnings;
 use POE::Component::IKC::ClientLite;
 
-use Workflow;
-class Workflow::Server::Watchdog {
+use Cord;
+class Cord::Server::Watchdog {
     has => [
         start_time => { is => 'TIMESTAMP' },
         duration => { is => 'NUMBER' },
@@ -24,10 +24,10 @@ sub create {
 
     $self->dispatch_identifier($ENV{LSB_JOBID});
 
-    if ($Workflow::Server::Worker::client) {
+    if ($Cord::Server::Worker::client) {
         my $poe = create_ikc_client(
-            ip => $Workflow::Server::Worker::host,
-            port => $Workflow::Server::Worker::port
+            ip => $Cord::Server::Worker::host,
+            port => $Cord::Server::Worker::port
         );
         die "can't connect to create watchdog\n" unless $poe;
     

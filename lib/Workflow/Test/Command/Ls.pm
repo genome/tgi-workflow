@@ -1,15 +1,15 @@
-package Workflow::Test::Command::Ls;
+package Cord::Test::Command::Ls;
 
 use strict;
 use warnings;
 
-use Workflow;
+use Cord;
 use Command; 
 
 my $testdir = $ENV{WF_TESTDIR};
 
-class Workflow::Test::Command::Ls {
-    is => ['Workflow::Test::Command'],
+class Cord::Test::Command::Ls {
+    is => ['Cord::Test::Command'],
     has_param => [
         lsf_queue => {
             default_value => 'short',

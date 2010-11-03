@@ -2,17 +2,17 @@
 use strict;
 use warnings;
 
-use Workflow;
-use Workflow::Simple;
+use Cord;
+use Cord::Simple;
 
-package Workflow::Operation::Command;
+package Cord::Operation::Command;
 
-class Workflow::Operation::Command {
+class Cord::Operation::Command {
     is => ['Command'],
     subclass_description_preprocessor => '_add_properties',
     has => [
         _operation => {
-            is => 'Workflow::Operation',
+            is => 'Cord::Operation',
             id_by => 'workflow_operation_id'
         },
         workflow_operation_id => {
@@ -129,7 +129,7 @@ sub execute {
         $_ => $self->$_
     } $self->input_property_names;
     
-    my $result = Workflow::Simple::run_workflow_lsf(
+    my $result = Cord::Simple::run_workflow_lsf(
         $self->_operation,
         %stuff
     );
@@ -141,7 +141,7 @@ sub execute {
             $result_output_returned = 1 if $k eq 'result';
         }
     } else {
-        foreach my $error (@Workflow::Simple::ERROR) {
+        foreach my $error (@Cord::Simple::ERROR) {
             $self->error_message($error->error);
         }
         die 'Errors occured while executing "' . $self->_operation->name . "\"\n";

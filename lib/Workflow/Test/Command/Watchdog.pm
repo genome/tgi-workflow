@@ -1,13 +1,13 @@
-package Workflow::Test::Command::Watchdog;
+package Cord::Test::Command::Watchdog;
 
 use strict;
 use warnings;
 
-use Workflow;
+use Cord;
 use Command; 
 
-class Workflow::Test::Command::Watchdog {
-    is => ['Workflow::Test::Command'],
+class Cord::Test::Command::Watchdog {
+    is => ['Cord::Test::Command'],
     has_input => [
         seconds => { 
             is => 'Integer', 
@@ -46,7 +46,7 @@ EOS
 sub execute {
     my $self = shift;
 
-    my $dog = Workflow::Server::Watchdog->create( duration => 30 );
+    my $dog = Cord::Server::Watchdog->create( duration => 30 );
 
     if ($self->seconds) {
         sleep $self->seconds;

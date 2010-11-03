@@ -2,13 +2,13 @@
 use strict;
 use warnings;
 
-use Workflow;
+use Cord;
 use YAML;
 
-package Workflow::Command::Resume;
+package Cord::Command::Resume;
 
-class Workflow::Command::Resume {
-    is => ['Workflow::Command'],
+class Cord::Command::Resume {
+    is => ['Cord::Command'],
     has => [
         instance_id => {
             is => 'Number',
@@ -56,17 +56,17 @@ sub execute {
     eval "use " . $self->namespace if (defined $self->namespace);
     # i dont care what the result is, so we're not checking $@ 
     
-    my @i = Workflow::Operation::Instance->get(
+    my @i = Cord::Operation::Instance->get(
         id => $self->instance_id,
         -recurse => ['parent_instance_id','instance_id']
     );
 
-    my $i = Workflow::Operation::Instance->get($self->instance_id);
+    my $i = Cord::Operation::Instance->get($self->instance_id);
 
-    $i->operation->set_all_executor(Workflow::Executor::SerialDeferred->get);
+    $i->operation->set_all_executor(Cord::Executor::SerialDeferred->get);
 
     if ($self->reset_status_on_id) {
-        my $reset_i = Workflow::Operation::Instance->get($self->reset_status_on_id);
+        my $reset_i = Cord::Operation::Instance->get($self->reset_status_on_id);
         $reset_i->status('crashed');
     }
 

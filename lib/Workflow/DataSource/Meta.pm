@@ -1,11 +1,11 @@
-package Workflow::DataSource::Meta;
+package Cord::DataSource::Meta;
 
 use warnings;
 use strict;
 
 use UR;
 
-class Workflow::DataSource::Meta {
+class Cord::DataSource::Meta {
     is => ['UR::DataSource::Meta'],
     type_name => 'workflow datasource meta',
 };

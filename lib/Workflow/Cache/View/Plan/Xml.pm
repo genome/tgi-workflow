@@ -1,7 +1,7 @@
 
-package Workflow::Cache::View::Plan::Xml;
+package Cord::Cache::View::Plan::Xml;
 
-class Workflow::Cache::View::Plan::Xml {
+class Cord::Cache::View::Plan::Xml {
     is => 'UR::Object::View::Default::Text',
     has_constant => [
         perspective => {

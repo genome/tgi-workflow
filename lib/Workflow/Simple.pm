@@ -1,5 +1,5 @@
 
-package Workflow::Simple;
+package Cord::Simple;
 
 require Exporter;
 our @ISA = qw(Exporter);
@@ -16,10 +16,10 @@ if (defined $ENV{NO_LSF} && $ENV{NO_LSF}) {
 
 use strict;
 
-use Workflow ();
+use Cord ();
 use Guard;
-use Workflow::Server;
-use Workflow::Server::Remote;
+use Cord::Server;
+use Cord::Server::Remote;
 use POSIX ":sys_wait_h";
 
 sub run_workflow {
@@ -32,10 +32,10 @@ sub run_workflow {
     my $error;
 
     my $w;
-    if (ref($xml) && UNIVERSAL::isa($xml,'Workflow::Operation')) {
+    if (ref($xml) && UNIVERSAL::isa($xml,'Cord::Operation')) {
         $w = $xml;
     } else {
-        $w = Workflow::Operation->create_from_xml($xml);
+        $w = Cord::Operation->create_from_xml($xml);
     }
     $w->execute(
         input => \%inputs,
@@ -50,7 +50,7 @@ sub run_workflow {
     $w->wait;
 
     if (defined $error) {
-        @ERROR = Workflow::Operation::InstanceExecution::Error->is_loaded;    
+        @ERROR = Cord::Operation::InstanceExecution::Error->is_loaded;    
         return undef;
     }
 
@@ -61,8 +61,8 @@ sub run_workflow {
     return $instance->output;
 }
 
-use Workflow::Operation::Instance;
-use Workflow::Model::Instance;
+use Cord::Operation::Instance;
+use Cord::Model::Instance;
 
 ## nukes the guards if a child exits (killing others)
 sub handle_child_exit (&&) {
@@ -91,7 +91,7 @@ sub resume_lsf {
     my $id = shift;
     @ERROR = ();
 
-    my ($r, $guards) = Workflow::Server::Remote->launch;
+    my ($r, $guards) = Cord::Server::Remote->launch;
     my $g = _advertise($r);
 
     my $response;
@@ -125,13 +125,13 @@ sub run_workflow_lsf {
                 $newxml .= $line;
             }
             $xml = $newxml;
-        } elsif (UNIVERSAL::isa($xml,'Workflow::Operation')) {
+        } elsif (UNIVERSAL::isa($xml,'Cord::Operation')) {
             $xml = $xml->save_to_xml;
         }
     }
     @ERROR = ();
 
-    my ($r, $guards) = Workflow::Server::Remote->launch;
+    my ($r, $guards) = Cord::Server::Remote->launch;
     my $g = _advertise($r);    
 
     my $response;

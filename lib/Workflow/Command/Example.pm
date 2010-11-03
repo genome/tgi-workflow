@@ -1,12 +1,12 @@
-package Workflow::Command::Example;
+package Cord::Command::Example;
 
 use strict;
 use warnings;
 
-use Workflow;
+use Cord;
 use Command;
 
-class Workflow::Command::Example {
+class Cord::Command::Example {
     is => 'Command',
     doc => 'example commands that run workflows'
 };

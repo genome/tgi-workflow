@@ -1,10 +1,10 @@
 
-package Workflow::Executor::Server;
+package Cord::Executor::Server;
 
 use strict;
 
-class Workflow::Executor::Server {
-    isa => 'Workflow::Executor'
+class Cord::Executor::Server {
+    isa => 'Cord::Executor'
 };
 
 sub execute {
@@ -14,7 +14,7 @@ sub execute {
     my $opdata = $params{operation_instance};
     $self->debug_message($opdata->id . ' ' . $opdata->operation->name);
 
-    Workflow::Server::UR->dispatch(
+    Cord::Server::UR->dispatch(
         $params{operation_instance},
         $params{edited_input}
     );

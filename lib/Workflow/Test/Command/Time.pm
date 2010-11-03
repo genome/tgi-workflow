@@ -1,13 +1,13 @@
-package Workflow::Test::Command::Time;
+package Cord::Test::Command::Time;
 
 use strict;
 use warnings;
 
-use Workflow;
+use Cord;
 use Command; 
 
-class Workflow::Test::Command::Time {
-    is => ['Workflow::Test::Command'],
+class Cord::Test::Command::Time {
+    is => ['Cord::Test::Command'],
     has_output => [
         today => { 
             calculate => q|

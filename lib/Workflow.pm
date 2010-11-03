@@ -1,4 +1,4 @@
-package Workflow;
+package Cord;
 
 use warnings;
 use strict;
@@ -6,7 +6,7 @@ use strict;
 our $VERSION = '0.00_01';
 
 use UR;
-use Workflow::Config ();
+use Cord::Config ();
 
 # this keeps around old parts of the UR::Object API we removed in the 0.01 release
 use UR::ObjectV001removed;
@@ -14,7 +14,7 @@ use Carp qw{carp};
 
 our @EXPORT = qw/operation operation_type operation_io/;
 
-class Workflow {
+class Cord {
     is => ['UR::Namespace'],
     type_name => 'workflow',
 };
@@ -24,10 +24,10 @@ sub operation_io {
 
     my $object;
     if (defined $data) {
-        $object = Workflow::OperationType::Command->create_from_command($class,$data);
+        $object = Cord::OperationType::Command->create_from_command($class,$data);
     } else {
         ## i really hate doing this, but it supports old code
-        $object = Workflow::OperationType::Command->get($class);
+        $object = Cord::OperationType::Command->get($class);
     }
 
     return $object;

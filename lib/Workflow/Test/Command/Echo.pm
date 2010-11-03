@@ -1,13 +1,13 @@
-package Workflow::Test::Command::Echo;
+package Cord::Test::Command::Echo;
 
 use strict;
 use warnings;
 
-use Workflow;
+use Cord;
 use Command; 
 
-class Workflow::Test::Command::Echo {
-    is => ['Workflow::Test::Command'],
+class Cord::Test::Command::Echo {
+    is => ['Cord::Test::Command'],
     has => [
         input => { 
             doc => 'input',

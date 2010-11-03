@@ -1,14 +1,14 @@
 
-package Workflow::Server::HTTPD;
+package Cord::Server::HTTPD;
 
 use strict;
-use base 'Workflow::Server';
+use base 'Cord::Server';
 use POE qw(Component::Server::TCP Filter::HTTPD);
 
 use URI;
 use URI::QueryParam;
 
-use Workflow ();
+use Cord ();
 
 our $server_and_port;
 our $server_channel;
@@ -156,7 +156,7 @@ sub setup {
 
                 $heap->{run_results} = {};
 
-                my @servers = Workflow::Service->load();
+                my @servers = Cord::Service->load();
                 foreach my $s (sort { UR::Time->compare_dates($a->start_time,$b->start_time) }@servers) {
                     my $hostname = $s->hostname;
                     my $port = $s->port;
@@ -173,7 +173,7 @@ sub setup {
                     $heap->{run_result}->{"$hostname:$port"};
                 }
                 
-                Workflow::Service->unload();
+                Cord::Service->unload();
 
                 $response->add_content("</table>");
                 $kernel->yield('finish_response');
@@ -273,7 +273,7 @@ sub setup {
                     'IKC','call',
                     'poe://UR/workflow/eval',
                     [q{
-                        my $i = Workflow::Operation::Instance->is_loaded(} . $id . q{);
+                        my $i = Cord::Operation::Instance->is_loaded(} . $id . q{);
                         $i->is_running(1);
                         $i->resume;
                         return $i;
@@ -312,7 +312,7 @@ sub setup {
                     'IKC','call',
                     'poe://UR/workflow/eval',
                     [q{
-                        my $i = Workflow::Operation::Instance->is_loaded(} . $id . q{);
+                        my $i = Cord::Operation::Instance->is_loaded(} . $id . q{);
                         $i->is_running(0);
                         $i->status('crashed');
                         $i->completion;
@@ -529,7 +529,7 @@ MARK
                     "poe://UR/workflow/eval",
                     [
                         q{
-                            my @instance = Workflow::Operation::Instance->is_loaded(parent_instance_id => undef);
+                            my @instance = Cord::Operation::Instance->is_loaded(parent_instance_id => undef);
 
                             my %infos = ();
                             foreach my $i (@instance) {
@@ -559,7 +559,7 @@ MARK
                 while (my ($id,$info) = each (%infos)) {
                     my ($name, $status) = @{ $info };
                     
-                    my $link = '/browse/Workflow::Operation::Instance/' . $id;
+                    my $link = '/browse/Cord::Operation::Instance/' . $id;
                     
                     $response->add_content("<tr><td>$id</td><td><a href=\"$link\">$name</a></td><td>$status</td>");
                     $response->add_content("<td><a href=\"/abandon/$id$advanceduri\">Kill</a></tr>") if ($heap->{advanced});
@@ -573,7 +573,7 @@ MARK
                     "poe://UR/workflow/eval",
                     [
                         q{
-                            my @instance = Workflow::Operation::Instance->is_loaded();
+                            my @instance = Cord::Operation::Instance->is_loaded();
                             
                             my %infos = ();
                             foreach my $i (@instance) {
@@ -618,7 +618,7 @@ MARK
                     my $info = $infos{$id};
                     my ($name, $status, $opresult, $dispatch_id) = @{ $info };
                     
-                    my $link = '/browse/Workflow::Operation::Instance/' . $id;
+                    my $link = '/browse/Cord::Operation::Instance/' . $id;
                     
                     $response->add_content("<tr><td>$id</td><td><a href=\"$link\">$name</a></td><td>$status</td><td>$opresult</td><td><a href=\"/lsf/$dispatch_id\">$dispatch_id</a></td>");
                     $response->add_content("<td><a href=\"/kill/$dispatch_id$advanceduri\">Kill</a></td><td><a href=\"/poke/$id$advanceduri\">Resume</a></td>") if ($heap->{advanced});
@@ -632,7 +632,7 @@ MARK
                     "poe://UR/workflow/eval",
                     [
                         q{
-                            my @errors = Workflow::Operation::InstanceExecution::Error->is_loaded();
+                            my @errors = Cord::Operation::InstanceExecution::Error->is_loaded();
                             
                             my %infos = ();
                             foreach my $e (@errors) {
@@ -663,7 +663,7 @@ MARK
                 while (my ($id,$info) = each (%infos)) {
                     my ($instance_id, $path_name, $name, $error) = @{ $info };
                     
-                    my $link = '/browse/Workflow::Operation::InstanceExecution::Error/' . $id;
+                    my $link = '/browse/Cord::Operation::InstanceExecution::Error/' . $id;
                     
                     $response->add_content("<tr><td>$instance_id</td><td><a href=\"$link\">$path_name</a></td><td><pre>$error</pre></td></tr>");
                 }

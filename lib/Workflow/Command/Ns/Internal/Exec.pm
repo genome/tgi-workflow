@@ -1,13 +1,13 @@
-package Workflow::Command::Ns::Internal::Exec;
+package Cord::Command::Ns::Internal::Exec;
 
 use strict;
 use warnings;
 
-use Workflow ();
+use Cord ();
 use Storable qw(store_fd fd_retrieve);
 
-class Workflow::Command::Ns::Internal::Exec {
-    is  => ['Workflow::Command'],
+class Cord::Command::Ns::Internal::Exec {
+    is  => ['Cord::Command'],
     has => [
         debug => {
             is => 'Boolean',
@@ -25,13 +25,13 @@ class Workflow::Command::Ns::Internal::Exec {
     ]
 };
 
-$Workflow::DEBUG_GLOBAL || 0;  ## suppress dumb warnings
+$Cord::DEBUG_GLOBAL || 0;  ## suppress dumb warnings
 
 sub execute {
     my $self = shift;
 
     if ($self->debug) {
-        $Workflow::DEBUG_GLOBAL = 1;
+        $Cord::DEBUG_GLOBAL = 1;
     }
 
     # unserialize and retrieve input

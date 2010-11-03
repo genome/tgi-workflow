@@ -1,11 +1,11 @@
-package Workflow::Vocabulary;
+package Cord::Vocabulary;
 
 use warnings;
 use strict;
 
 use UR;
 
-class Workflow::Vocabulary {
+class Cord::Vocabulary {
     is => ['UR::Vocabulary'],
     type_name => 'workflow vocabulary',
 };

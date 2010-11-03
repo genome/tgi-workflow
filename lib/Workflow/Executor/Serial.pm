@@ -1,10 +1,10 @@
 
-package Workflow::Executor::Serial;
+package Cord::Executor::Serial;
 
 use strict;
 
-class Workflow::Executor::Serial {
-    isa => 'Workflow::Executor',
+class Cord::Executor::Serial {
+    isa => 'Cord::Executor',
 };
 
 sub execute {

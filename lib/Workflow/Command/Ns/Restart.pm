@@ -1,12 +1,12 @@
-package Workflow::Command::Ns::Restart;
+package Cord::Command::Ns::Restart;
 
 use strict;
 use warnings;
 
-use Workflow ();
+use Cord ();
 
-class Workflow::Command::Ns::Restart {
-    is  => ['Workflow::Command'],
+class Cord::Command::Ns::Restart {
+    is  => ['Cord::Command'],
     has => [
         instance_id => {
             shell_args_position => 1,

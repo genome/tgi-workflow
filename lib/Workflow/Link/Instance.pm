@@ -1,12 +1,12 @@
 
-package Workflow::Link::Instance;
+package Cord::Link::Instance;
 
 use strict;
 use warnings;
 
-class Workflow::Link::Instance {
+class Cord::Link::Instance {
     has => [
-        operation_instance => { is => 'Workflow::Operation::Instance', id_by => 'other_operation_instance_id' },
+        operation_instance => { is => 'Cord::Operation::Instance', id_by => 'other_operation_instance_id' },
         property => { is => 'SCALAR' },
         index => { is => 'INTEGER', is_optional=>1 },
         broken => { is => 'Boolean', default_value => 0 },
@@ -53,7 +53,7 @@ sub value {
     my $self = shift;
 
     my $val = $self->raw_value;
-    while (UNIVERSAL::isa($val,'Workflow::Link::Instance')) {
+    while (UNIVERSAL::isa($val,'Cord::Link::Instance')) {
         $val = $val->value;
     }
 

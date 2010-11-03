@@ -1,11 +1,11 @@
 use strict;
 use warnings;
 
-package Workflow::DataSource::InstanceSchema;
+package Cord::DataSource::InstanceSchema;
 
-use Workflow;
+use Cord;
 
-class Workflow::DataSource::InstanceSchema {
+class Cord::DataSource::InstanceSchema {
     is => ['UR::DataSource::Oracle'],
     type_name => 'workflow datasource instanceschema',
 };

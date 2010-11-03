@@ -1,14 +1,14 @@
-package Workflow::Command::Ns::Internal::Cleanup;
+package Cord::Command::Ns::Internal::Cleanup;
 
 use strict;
 use warnings;
 
-use Workflow ();
+use Cord ();
 use IPC::Open3 qw(open3);
 use IO::Select;
 
-class Workflow::Command::Ns::Internal::Cleanup {
-    is => ['Workflow::Command'],
+class Cord::Command::Ns::Internal::Cleanup {
+    is => ['Cord::Command'],
     has =>
       [ job_group => { doc => 'Job group to clean broken dependencies from' } ]
 };

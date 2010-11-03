@@ -1,10 +1,10 @@
-package Workflow::Job::Event::Lsf;
+package Cord::Job::Event::Lsf;
 
 use strict;
-use Workflow;
+use Cord;
 
-class Workflow::Job::Event::Lsf {
-    is              => 'Workflow::Job::Event',
+class Cord::Job::Event::Lsf {
+    is              => 'Cord::Job::Event',
     attributes_have => [
         populate_from => {
             is          => 'String',

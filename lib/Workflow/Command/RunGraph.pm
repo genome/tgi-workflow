@@ -2,18 +2,18 @@
 use strict;
 use warnings;
 
-use Workflow;
+use Cord;
 use Carp;
 #use XML::LibXML;
 #use XML::LibXSLT;
 
-package Workflow::Command::RunGraph;
+package Cord::Command::RunGraph;
 
 eval "use XML::LibXML; use XML::LibXSLT;";
 if (!$@) {
 
-class Workflow::Command::RunGraph {
-    is => ['Workflow::Command'],
+class Cord::Command::RunGraph {
+    is => ['Cord::Command'],
     has => [
         instance_id => {
             is => 'Number',
@@ -182,7 +182,7 @@ sub execute {
     $self->addKey("node_type","node","node_type","string");
     
 $DB::single=1;
-    my $master_node = Workflow::Operation::Instance->get($self->instance_id);
+    my $master_node = Cord::Operation::Instance->get($self->instance_id);
     unless ($master_node) {
         $self->error_message("Not a valid workflow instance ID");
         return;
@@ -358,7 +358,7 @@ sub execute_old {
     my $self = shift;
     
 $DB::single=1;
-    my $i = Workflow::Operation::Instance->get($self->instance_id);
+    my $i = Cord::Operation::Instance->get($self->instance_id);
     unless ($i) {
         $self->error_message("Not a valid workflow instance ID");
         return;
@@ -444,7 +444,7 @@ sub _get_node_text {
     }
 
     my $node_type = "operation";
-    if ($node->isa('Workflow::Model::Instance')) {
+    if ($node->isa('Cord::Model::Instance')) {
         $status_attribs .= ",shape=doublecircle";
         $node_type = "instance";
     }

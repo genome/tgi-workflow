@@ -1,13 +1,13 @@
 
-package Workflow::Server::Hub;
+package Cord::Server::Hub;
 
 use strict;
-use base 'Workflow::Server';
+use base 'Cord::Server';
 use POE qw(Component::IKC::Server Wheel::FollowTail);
 
 #our $port_number = 13424;
 
-use Workflow ();
+use Cord ();
 use Sys::Hostname;
 use Text::CSV;
 
@@ -370,7 +370,7 @@ sub setup {
                 }
             },
             unlock_me => sub {
-                Workflow::Server->unlock('Hub');
+                Cord::Server->unlock('Hub');
             },
             quit => sub {
                 my ($kernel) = @_[KERNEL];
@@ -584,7 +584,7 @@ sub setup {
                     'annotate-log',
                     'perl',
                     '-e',
-                    $libstring . 'use ' . $namespace . '; use ' . $command_class . '; use Workflow::Server::Worker; Workflow::Server::Worker->start("' . $hostname . '",' . $port . ',2)'
+                    $libstring . 'use ' . $namespace . '; use ' . $command_class . '; use Cord::Server::Worker; Cord::Server::Worker->start("' . $hostname . '",' . $port . ',2)'
                 );
 
                 my $pid;
@@ -657,7 +657,7 @@ sub setup {
                 }
 
                 my $cmd = 'bsub -g /workflow-worker -q ' . $queue . ' ' . $lsf_opts .
-                    ' -J "' . $name . '" annotate-log perl -e \'' . $libstring . 'use ' . $namespace . '; use ' . $command_class . '; use Workflow::Server::Worker; Workflow::Server::Worker->start("' . $hostname . '",' . $port . ')\'';
+                    ' -J "' . $name . '" annotate-log perl -e \'' . $libstring . 'use ' . $namespace . '; use ' . $command_class . '; use Cord::Server::Worker; Cord::Server::Worker->start("' . $hostname . '",' . $port . ')\'';
 
                 evTRACE and print "dispatch lsf_cmd $cmd\n";
 

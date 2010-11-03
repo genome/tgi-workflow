@@ -1,9 +1,9 @@
-package Workflow::Job::Event;
+package Cord::Job::Event;
 
 use strict;
-use Workflow;
+use Cord;
 
-class Workflow::Job::Event {
+class Cord::Job::Event {
     is_abstract                    => 1,
     sub_classification_method_name => '_resolve_subclass_name',
     id_by                          => [
@@ -19,7 +19,7 @@ class Workflow::Job::Event {
     has => [
         job_class => { is => 'String' },
         job       => {
-            is          => 'Workflow::Job',
+            is          => 'Cord::Job',
             id_class_by => 'job_class',
             id_by       => 'job_id'
         }

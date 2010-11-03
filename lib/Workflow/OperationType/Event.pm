@@ -1,12 +1,12 @@
 
-package Workflow::OperationType::Event;
+package Cord::OperationType::Event;
 
 use strict;
 use warnings;
 use Sys::Hostname;
 
-class Workflow::OperationType::Event {
-    isa => 'Workflow::OperationType',
+class Cord::OperationType::Event {
+    isa => 'Cord::OperationType',
     is_transactional => 0,
     id_by => [ 'event_id' ],
     has => [
@@ -168,7 +168,7 @@ sub call {
     $self->status_message('HOST:  '. hostname);
     $self->status_message('USER:  '. $command_obj->user_name);
 
-    if ($Workflow::DEBUG_GLOBAL) {
+    if ($Cord::DEBUG_GLOBAL) {
         if (UNIVERSAL::can('Devel::ptkdb','brkonsub')) {
             Devel::ptkdb::brkonsub($command_name . '::execute');
         } elsif (UNIVERSAL::can('DB','cmd_b_sub')) {

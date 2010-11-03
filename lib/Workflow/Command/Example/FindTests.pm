@@ -1,13 +1,13 @@
-package Workflow::Command::Example::FindTests;
+package Cord::Command::Example::FindTests;
 
 use strict;
 use warnings;
 
 use File::Find;
-use Workflow ();
+use Cord ();
 
-class Workflow::Command::Example::FindTests {
-    is         => ['Workflow::Command'],
+class Cord::Command::Example::FindTests {
+    is         => ['Cord::Command'],
     has_input  => [ working_dir => { value => '.' } ],
     has_output => [ test_files => { is_optional => 1 } ],
     has_param  => [ lsf_queue => { value => 'short' } ]

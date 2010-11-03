@@ -1,14 +1,14 @@
-package Workflow::Test::Command::WidgetReader;
+package Cord::Test::Command::WidgetReader;
 
 use strict;
 use warnings;
 
-use Workflow;
+use Cord;
 use Command; 
 
 
-class Workflow::Test::Command::WidgetReader {
-    is => ['Workflow::Test::Command'],
+class Cord::Test::Command::WidgetReader {
+    is => ['Cord::Test::Command'],
     has_output => [
         size => { is_optional => 1 },
         color => { is_optional => 1 },
@@ -19,7 +19,7 @@ class Workflow::Test::Command::WidgetReader {
     ],
 };
 
-operation_io Workflow::Test::Command::WidgetReader {
+operation_io Cord::Test::Command::WidgetReader {
     input  => [ 'widget' ],
     output => [ 'size', 'color', 'shape' ],
 };

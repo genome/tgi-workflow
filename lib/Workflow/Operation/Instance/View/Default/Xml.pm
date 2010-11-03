@@ -1,6 +1,6 @@
-package Workflow::Operation::Instance::View::Default::Xml;
+package Cord::Operation::Instance::View::Default::Xml;
 
-class Workflow::Operation::Instance::View::Default::Xml {
+class Cord::Operation::Instance::View::Default::Xml {
     is => 'UR::Object::View::Default::Xml'
 };
 

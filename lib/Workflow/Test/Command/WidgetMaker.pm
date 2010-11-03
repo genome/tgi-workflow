@@ -1,15 +1,15 @@
-package Workflow::Test::Command::WidgetMaker;
+package Cord::Test::Command::WidgetMaker;
 
 use strict;
 use warnings;
 
-use Workflow;
+use Cord;
 use Command; 
 
-use Workflow::Test::Widget;
+use Cord::Test::Widget;
 
-class Workflow::Test::Command::WidgetMaker {
-    is => ['Workflow::Test::Command'],
+class Cord::Test::Command::WidgetMaker {
+    is => ['Cord::Test::Command'],
     has_input => [
         size => { },
         color => { },
@@ -41,7 +41,7 @@ EOS
 sub execute {
     my $self = shift;
 
-    my $w = Workflow::Test::Widget->new({
+    my $w = Cord::Test::Widget->new({
         size => $self->size,
         color => $self->color,
         shape => $self->shape

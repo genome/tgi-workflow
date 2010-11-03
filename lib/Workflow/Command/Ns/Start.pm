@@ -1,12 +1,12 @@
-package Workflow::Command::Ns::Start;
+package Cord::Command::Ns::Start;
 
 use strict;
 use warnings;
 
-use Workflow ();
+use Cord ();
 
-class Workflow::Command::Ns::Start {
-    is  => ['Workflow::Command'],
+class Cord::Command::Ns::Start {
+    is  => ['Cord::Command'],
     has => [
         plan_file => {
             shell_args_position => 1,
@@ -69,7 +69,7 @@ sub execute {
 
     ## load and validate plan
 
-    my $wf_plan = Workflow::Operation->create_from_xml( $self->plan_file );
+    my $wf_plan = Cord::Operation->create_from_xml( $self->plan_file );
 
     unless ( $self->validate_workflow($wf_plan) ) {
         $self->error_message("Cannot execute invalid plan");
@@ -94,9 +94,9 @@ sub execute {
 
     my $done_plan;
     if ( my $done_class = $self->done_command ) {
-        $done_plan = Workflow::Operation->create(
+        $done_plan = Cord::Operation->create(
             name           => $wf_plan->name . ' done',
-            operation_type => Workflow::OperationType::Command->get($done_class)
+            operation_type => Cord::OperationType::Command->get($done_class)
         );
 
         unless ( $self->validate_workflow($done_plan) ) {
@@ -108,7 +108,7 @@ sub execute {
     ## create operation instance for plan and done plan
 
     my $wf_instance =
-      Workflow::Operation::Instance->create( operation => $wf_plan );
+      Cord::Operation::Instance->create( operation => $wf_plan );
 
     $wf_instance->input( \%inputs );
     $wf_instance->output( {} );
@@ -147,7 +147,7 @@ sub execute {
 
     if ($done_plan) {
         my $done_instance =
-          Workflow::Operation::Instance->create( operation => $done_plan );
+          Cord::Operation::Instance->create( operation => $done_plan );
 
         $done_instance->input( { operation_id => $wf_instance->id } );
         $done_instance->output( {} );

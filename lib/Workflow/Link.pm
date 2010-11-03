@@ -1,17 +1,17 @@
 
-package Workflow::Link;
+package Cord::Link;
 
 use strict;
 use warnings;
 
 # links attach outputs to inputs
 
-class Workflow::Link {
+class Cord::Link {
     has => [
-        workflow_model => { is => 'Workflow::Model', id_by => 'workflow_model_id' },
-        right_operation => { is => 'Workflow::Operation', id_by => 'right_workflow_operation_id' },
+        workflow_model => { is => 'Cord::Model', id_by => 'workflow_model_id' },
+        right_operation => { is => 'Cord::Operation', id_by => 'right_workflow_operation_id' },
         right_property => { is => 'BLOB' },
-        left_operation => { is => 'Workflow::Operation', id_by => 'left_workflow_operation_id' },
+        left_operation => { is => 'Cord::Operation', id_by => 'left_workflow_operation_id' },
         left_property => { is => 'BLOB' },
         breakable => { is => 'Boolean', default_value => 0 }
     ]
@@ -68,7 +68,7 @@ sub right_data {
     my $self = shift;
     my $dataset = shift;
 
-    my $right_data = Workflow::Operation::Instance->get(
+    my $right_data = Cord::Operation::Instance->get(
         operation => $self->right_operation,
         model_instance => $dataset
     );
@@ -80,7 +80,7 @@ sub left_data {
     my $self = shift;
     my $dataset = shift;
 
-    my $left_data = Workflow::Operation::Instance->get(
+    my $left_data = Cord::Operation::Instance->get(
         operation => $self->left_operation,
         model_instance => $dataset
     );

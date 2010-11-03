@@ -1,11 +1,11 @@
 
-package Workflow::OperationType::Block;
+package Cord::OperationType::Block;
 
 use strict;
 use warnings;
 
-class Workflow::OperationType::Block {
-    isa => 'Workflow::OperationType',
+class Cord::OperationType::Block {
+    isa => 'Cord::OperationType',
     has => [
         stay_in_process => {
             value => 1

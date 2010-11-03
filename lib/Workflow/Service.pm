@@ -1,12 +1,12 @@
-package Workflow::Service;
+package Cord::Service;
 
 use strict;
 use warnings;
 use Sys::Hostname ();
 use IO::File;
 
-use Workflow;
-class Workflow::Service {
+use Cord;
+class Cord::Service {
     type_name => 'workflow service',
     table_name => 'WORKFLOW_SERVICE',
     id_by => [
@@ -28,8 +28,8 @@ class Workflow::Service {
                 return $psline;
             ) },
     ],
-    schema_name => $Workflow::Config::primary_schema_name,
-    data_source => $Workflow::Config::primary_data_source,
+    schema_name => $Cord::Config::primary_schema_name,
+    data_source => $Cord::Config::primary_data_source,
 };
 
 sub create {
@@ -40,7 +40,7 @@ sub create {
         hostname => Sys::Hostname::hostname(),
         username => (getpwuid($<))[0],
         process_id => $$,
-        port => $args{port} || $Workflow::Server::UR::port_number,
+        port => $args{port} || $Cord::Server::UR::port_number,
         start_time => UR::Time->now
     );
 

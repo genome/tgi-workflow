@@ -1,6 +1,6 @@
 # This class is a remote control for workflow servers.
 
-package Workflow::Server::Remote;
+package Cord::Server::Remote;
 
 use strict;
 use warnings;
@@ -13,16 +13,16 @@ use IPC::Run;
 use Socket;
 use Sys::Hostname;
 use Time::HiRes qw/usleep/;
-use Workflow::Server::UR;
-use Workflow::Server::Hub;
+use Cord::Server::UR;
+use Cord::Server::Hub;
 
-class Workflow::Server::Remote {
+class Cord::Server::Remote {
     is_transactional => 0,
     id_by            => [ 'host', 'port' ],
     has              => [
         host => {
             is  => 'String',
-            doc => 'Hostname to connect to Workflow::Server::UR process'
+            doc => 'Hostname to connect to Cord::Server::UR process'
         },
         port => {
             is  => 'Integer',
@@ -53,7 +53,7 @@ sub load_poe {
     if ($ENV{PERL5DB}) {
         warn "Debugger detected.  The workflow engine may trigger runaway debugging in ptkdb...\n";
         warn "Use console debugger or see eclark for assistance.\n";
-        for my $mod (qw/Workflow::Server::Remote/) {
+        for my $mod (qw/Cord::Server::Remote/) {
             warn "\t$mod...\n";
             eval "use $mod";
             die $@ if $@;
@@ -100,7 +100,7 @@ sub launch {
     );
     my $h_g = guard { $h->kill_kill; $h->finish; };
 
-    Workflow::Server->wait_for_lock( 'Hub', $h );
+    Cord::Server->wait_for_lock( 'Hub', $h );
     $hl_g->cancel;
 
     my $u = IPC::Run::start(
@@ -112,10 +112,10 @@ sub launch {
     );
     my $u_g = guard { $u->kill_kill; $u->finish; };
 
-    Workflow::Server->wait_for_lock( 'UR', $u );
+    Cord::Server->wait_for_lock( 'UR', $u );
     $ul_g->cancel;
 
-    Workflow::Server->unlock('Simple');
+    Cord::Server->unlock('Simple');
     $sl_g->cancel;
 
     ## servers use prctl PR_SET_PDEATHSIG SIGHUP, they dont need guards to die
@@ -242,7 +242,7 @@ sub add_plan {
             while ( my $line = <$xml> ) {
                 $xml .= $line;
             }
-        } elsif ( UNIVERSAL::isa( $plan, 'Workflow::Operation' ) ) {
+        } elsif ( UNIVERSAL::isa( $plan, 'Cord::Operation' ) ) {
 
             # OBJECT
             $xml = $plan->save_to_xml;
@@ -306,7 +306,7 @@ sub loaded_instances {
 
     my @ids = $self->_seval(
         q{
-            my @instance = Workflow::Operation::Instance->is_loaded(parent_instance_id => undef);
+            my @instance = Cord::Operation::Instance->is_loaded(parent_instance_id => undef);
 
             my @ids = ();
             foreach my $i (@instance) {
@@ -400,8 +400,8 @@ sub _is_port_available {
 sub guard_lock {
     my ( $class, $lockname ) = @_;
 
-    Workflow::Server->lock($lockname);
-    return guard { Workflow::Server->unlock($lockname); };
+    Cord::Server->lock($lockname);
+    return guard { Cord::Server->unlock($lockname); };
 }
 
 1;

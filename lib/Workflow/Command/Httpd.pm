@@ -2,15 +2,15 @@
 use strict;
 use warnings;
 
-use Workflow;
-use Workflow::Server::HTTPD;
+use Cord;
+use Cord::Server::HTTPD;
 use POE qw(Component::IKC::Client);
 use Sys::Hostname ();
 
-package Workflow::Command::Httpd;
+package Cord::Command::Httpd;
 
-class Workflow::Command::Httpd {
-    is => ['Workflow::Command'],
+class Cord::Command::Httpd {
+    is => ['Cord::Command'],
     has => [
         host => {
             is => 'String',
@@ -52,7 +52,7 @@ sub execute {
 
     print "URL: http://$hostname:$port/\n";
 
-    Workflow::Server::HTTPD->setup;
+    Cord::Server::HTTPD->setup;
 
     POE::Kernel->run;
 }

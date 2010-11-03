@@ -1,11 +1,11 @@
 
-package Workflow::OperationType::Converge;
+package Cord::OperationType::Converge;
 
 use strict;
 use warnings;
 
-class Workflow::OperationType::Converge {
-    isa => 'Workflow::OperationType',
+class Cord::OperationType::Converge {
+    isa => 'Cord::OperationType',
     has => [
         stay_in_process => {
             value => 1
@@ -27,7 +27,7 @@ sub execute {
     }
 
     my @output_values = map {
-        UNIVERSAL::isa($_,'Workflow::Link::Instance') ? $_->value : $_
+        UNIVERSAL::isa($_,'Cord::Link::Instance') ? $_->value : $_
     } @$output;
 
     my ($output_name) = @{ $self->output_properties };

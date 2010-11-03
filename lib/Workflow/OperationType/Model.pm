@@ -1,11 +1,11 @@
 
-package Workflow::OperationType::Model;
+package Cord::OperationType::Model;
 
 use strict;
 use warnings;
 
-class Workflow::OperationType::Model {
-    isa => 'Workflow::OperationType',
+class Cord::OperationType::Model {
+    isa => 'Cord::OperationType',
 };
 
 sub execute {

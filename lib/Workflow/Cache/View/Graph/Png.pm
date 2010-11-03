@@ -1,7 +1,7 @@
 
-package Workflow::Cache::View::Graph::Png;
+package Cord::Cache::View::Graph::Png;
 
-class Workflow::Cache::View::Graph::Png {
+class Cord::Cache::View::Graph::Png {
     is => 'UR::Object::View::Default::Text',
     has_constant => [
         perspective => {

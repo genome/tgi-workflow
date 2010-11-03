@@ -1,5 +1,5 @@
 
-package Workflow::Model;
+package Cord::Model;
 
 use strict;
 use warnings;
@@ -7,13 +7,13 @@ use GraphViz;
 use XML::Simple;
 use File::Basename;
 
-use Workflow ();
+use Cord ();
 
-class Workflow::Model {
-    isa => 'Workflow::Operation',
+class Cord::Model {
+    isa => 'Cord::Operation',
     has => [
-        operations => { is => 'Workflow::Operation', is_many => 1, reverse_id_by => 'workflow_model' },
-        links => { is => 'Workflow::Link', is_many => 1 },
+        operations => { is => 'Cord::Operation', is_many => 1, reverse_id_by => 'workflow_model' },
+        links => { is => 'Cord::Link', is_many => 1 },
     ]
 };
 
@@ -23,7 +23,7 @@ sub create {
 
     my $optype = $params{operation_type};
     unless ($params{operation_type}) {
-        $optype = Workflow::OperationType::Model->create(
+        $optype = Cord::OperationType::Model->create(
             input_properties => delete($params{input_properties}) || [],
             output_properties => delete($params{output_properties}) || []
         );
@@ -35,14 +35,14 @@ sub create {
 
     $self->add_operation(
         name => 'input connector',
-        operation_type => Workflow::OperationType::ModelInput->create(
+        operation_type => Cord::OperationType::ModelInput->create(
             input_properties => [],
             output_properties => $optype->input_properties
         ),
     );
     $self->add_operation(
         name => 'output connector',
-        operation_type => Workflow::OperationType::ModelOutput->create(
+        operation_type => Cord::OperationType::ModelOutput->create(
             input_properties => $optype->output_properties,
             output_properties => []
         ),
@@ -94,14 +94,14 @@ sub create_from_xml_simple_structure {
         $self = $class->SUPER::create_from_xml_simple_structure($struct,%params);
 
         foreach my $op_struct (@$operations) {
-            my $op = Workflow::Operation->create_from_xml_simple_structure($op_struct,workflow_model=>$self);
-            if ($op->operation_type->isa('Workflow::OperationType::Model')) {
+            my $op = Cord::Operation->create_from_xml_simple_structure($op_struct,workflow_model=>$self);
+            if ($op->operation_type->isa('Cord::OperationType::Model')) {
                 $op->executor($params{executor}) if ($params{executor});
             }
         }
 
         foreach my $link_struct (@$links) {
-            my $link = Workflow::Link->create_from_xml_simple_structure($link_struct,workflow_model=>$self);
+            my $link = Cord::Link->create_from_xml_simple_structure($link_struct,workflow_model=>$self);
         }
     }
 
@@ -135,7 +135,7 @@ sub as_xml_simple_structure {
 sub get_input_connector {
     my $self = shift;
 
-    my $input = Workflow::Operation->get(
+    my $input = Cord::Operation->get(
         workflow_model => $self,
         name => 'input connector'
     );
@@ -145,7 +145,7 @@ sub get_input_connector {
 sub get_output_connector {
     my $self = shift;
 
-    my $output = Workflow::Operation->get(
+    my $output = Cord::Operation->get(
         workflow_model => $self,
         name => 'output connector'
     );
@@ -199,7 +199,7 @@ sub add_gv_nodes {
 
         $n = 0;
 
-        if ($operation->isa('Workflow::Model')) {
+        if ($operation->isa('Cord::Model')) {
 
             my $cluster = {
                 label => '-' . $operation->name . '-',
@@ -282,7 +282,7 @@ sub validate {
     
     my @errors = ();
     foreach my $operation ($self->operations) {  ## unique names
-        my @ops_with_this_name = Workflow::Operation->get(
+        my @ops_with_this_name = Cord::Operation->get(
             workflow_model => $self,
             name => $operation->name
         );
@@ -347,7 +347,7 @@ sub validate {
         
     ## sub_models
     {
-        my @submodels = Workflow::Model->get(
+        my @submodels = Cord::Model->get(
             workflow_model => $self  ## this is confusing, workflow_model is actually the parent
         );
         
@@ -446,7 +446,7 @@ sub set_all_executor {
     $self->executor($executor);
     
     foreach my $op ($self->operations) {
-        if ($op->isa('Workflow::Model')) {
+        if ($op->isa('Cord::Model')) {
             $op->set_all_executor($executor);
         }
     }

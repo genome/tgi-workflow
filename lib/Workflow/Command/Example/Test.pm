@@ -1,15 +1,15 @@
-package Workflow::Command::Example::Test;
+package Cord::Command::Example::Test;
 
 use strict;
 use warnings;
 use Data::Dumper qw/Dumper/;
 
-class Workflow::Command::Example::Test {
-    is       => ['Workflow::Operation::Command'],
+class Cord::Command::Example::Test {
+    is       => ['Cord::Operation::Command'],
     workflow => sub {
         my $file = __FILE__;
         $file =~ s/\.pm$/.xml/;
-        Workflow::Operation->create_from_xml($file);
+        Cord::Operation->create_from_xml($file);
     }
 };
 

@@ -1,10 +1,10 @@
-package Workflow::Cache;
+package Cord::Cache;
 
 use strict;
 use warnings;
 
-use Workflow;
-class Workflow::Cache {
+use Cord;
+class Cord::Cache {
     type_name  => 'workflow cache',
     table_name => 'WORKFLOW_PLAN',
     id_by      => [
@@ -13,15 +13,15 @@ class Workflow::Cache {
     has => [
         xml  => { is => 'BLOB', is_optional => 1 },
         plan => {
-            is             => 'Workflow::Operation',
+            is             => 'Cord::Operation',
             calculate_from => ['xml'],
             calculate      => q[
-                Workflow::Operation->create_from_xml($xml); 
+                Cord::Operation->create_from_xml($xml); 
             ]
         }
     ],
-    schema_name => $Workflow::Config::primary_schema_name,
-    data_source => $Workflow::Config::primary_data_source,
+    schema_name => $Cord::Config::primary_schema_name,
+    data_source => $Cord::Config::primary_data_source,
 };
 
 1;

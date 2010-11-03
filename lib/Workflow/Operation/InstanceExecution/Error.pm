@@ -1,10 +1,10 @@
 
-package Workflow::Operation::InstanceExecution::Error;
+package Cord::Operation::InstanceExecution::Error;
 
 use strict;
 use warnings;
 
-class Workflow::Operation::InstanceExecution::Error {
+class Cord::Operation::InstanceExecution::Error {
     attributes_have => [
         copy_on_create => { 
             is => 'String',
@@ -14,7 +14,7 @@ class Workflow::Operation::InstanceExecution::Error {
     has_optional => [
         # Real properties of this class
         execution => {
-            is => 'Workflow::Operation::InstanceExecution',
+            is => 'Cord::Operation::InstanceExecution',
             id_by => 'execution_id'
         },
         error => {
@@ -23,7 +23,7 @@ class Workflow::Operation::InstanceExecution::Error {
         },
         # Calculated Properties
         operation_instance => { 
-            is => 'Workflow::Operation::Instance', 
+            is => 'Cord::Operation::Instance', 
             id_by => 'instance_id' 
         },
         # Next two properties must be run after copy_on_create's are done

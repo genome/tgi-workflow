@@ -2,7 +2,7 @@
 ## This module may be broken
 
 =pod
-package Workflow::Executor::Fork;
+package Cord::Executor::Fork;
 
 use strict;
 use forks qw(debug);
@@ -10,8 +10,8 @@ use forks::shared;
 
 threads->debug(1);
 
-class Workflow::Executor::Fork {
-    isa => 'Workflow::Executor',
+class Cord::Executor::Fork {
+    isa => 'Cord::Executor',
     has => [
         threads => { }
     ]

@@ -1,12 +1,12 @@
-package Workflow::Command::Ns::Internal;
+package Cord::Command::Ns::Internal;
 
 use strict;
 use warnings;
 
-use Workflow;
+use Cord;
 use Command;
 
-class Workflow::Command::Ns::Internal {
+class Cord::Command::Ns::Internal {
     is => 'Command',
     doc => 'Internal commands for running serverless workflows'
 };

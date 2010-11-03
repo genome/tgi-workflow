@@ -1,13 +1,13 @@
-package Workflow::Test::Command::PoorlyNested;
+package Cord::Test::Command::PoorlyNested;
 
 use strict;
 use warnings;
 
-use Workflow;
-use Workflow::Simple;
+use Cord;
+use Cord::Simple;
 
-class Workflow::Test::Command::PoorlyNested {
-    is => ['Workflow::Test::Command'],
+class Cord::Test::Command::PoorlyNested {
+    is => ['Cord::Test::Command'],
     has => [
         input => { 
             doc => 'input',
@@ -43,9 +43,9 @@ sub execute {
     my $self = shift;
 
 
-    my $op = Workflow::Operation->create(
+    my $op = Cord::Operation->create(
         name => 'poorly nested',
-        operation_type => Workflow::OperationType::Command->get('Workflow::Test::Command::Echo')
+        operation_type => Cord::OperationType::Command->get('Cord::Test::Command::Echo')
     );
 
     $op->parallel_by('input');

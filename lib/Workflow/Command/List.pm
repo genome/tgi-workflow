@@ -1,12 +1,12 @@
-package Workflow::Operation::RootInstance;
+package Cord::Operation::RootInstance;
 
 use strict;
 use warnings;
 
-use Workflow;
+use Cord;
 use Command; 
 
-class Workflow::Operation::RootInstance {
+class Cord::Operation::RootInstance {
     table_name => "
         (SELECT wi.workflow_instance_id, wi.name, wie.status, wie.user_name, wie.start_time 
            FROM workflow.workflow_instance wi
@@ -21,17 +21,17 @@ class Workflow::Operation::RootInstance {
         user_name => { is => 'Varchar2' },
         start_time => { is => 'TIMESTAMP' } 
     ],
-    data_source => $Workflow::Config::primary_data_source
+    data_source => $Cord::Config::primary_data_source
 };
 
-package Workflow::Command::List;
+package Cord::Command::List;
 
 my $uname = getpwuid $<;
-class Workflow::Command::List {
+class Cord::Command::List {
     is => ['UR::Object::Command::List'],
     has_constant => [
         subject_class_name => {
-            value => 'Workflow::Operation::RootInstance'
+            value => 'Cord::Operation::RootInstance'
         },
     ],
     has => [

@@ -2,13 +2,13 @@
 use strict;
 use warnings;
 
-use Workflow;
+use Cord;
 use YAML;
 
-package Workflow::Command::Show;
+package Cord::Command::Show;
 
-class Workflow::Command::Show {
-    is => ['Workflow::Command'],
+class Cord::Command::Show {
+    is => ['Cord::Command'],
     has => [
         instance_id => {
             is => 'Number',
@@ -44,7 +44,7 @@ EOS
 sub execute {
     my $self = shift;
     
-    my $i = Workflow::Operation::Instance->get($self->instance_id);
+    my $i = Cord::Operation::Instance->get($self->instance_id);
 
     if ($self->debug) {
         $i->treeview_debug;

@@ -1,13 +1,13 @@
-package Workflow::Test::Command::Die;
+package Cord::Test::Command::Die;
 
 use strict;
 use warnings;
 
-use Workflow;
+use Cord;
 use Command; 
 
-class Workflow::Test::Command::Die {
-    is => ['Workflow::Test::Command'],
+class Cord::Test::Command::Die {
+    is => ['Cord::Test::Command'],
     has_input => [
         seconds => { 
             is => 'Integer', 

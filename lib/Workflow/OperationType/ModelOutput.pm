@@ -1,11 +1,11 @@
 
-package Workflow::OperationType::ModelOutput;
+package Cord::OperationType::ModelOutput;
 
 use strict;
 use warnings;
 
-class Workflow::OperationType::ModelOutput {
-    isa => 'Workflow::OperationType',
+class Cord::OperationType::ModelOutput {
+    isa => 'Cord::OperationType',
     has => [
         stay_in_process => {
             value => 1

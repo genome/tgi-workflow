@@ -1,12 +1,12 @@
-package Workflow::DataSource::Local;
+package Cord::DataSource::Local;
 
 use strict;
 use warnings;
 
-use Workflow ();
+use Cord ();
 use File::Temp qw(tempdir);
 
-class Workflow::DataSource::Local {
+class Cord::DataSource::Local {
     is => [ 'UR::DataSource::SQLite', 'UR::Singleton' ],
 };
 

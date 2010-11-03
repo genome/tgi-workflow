@@ -1,13 +1,13 @@
 
-package Workflow::OperationType::Mail;
+package Cord::OperationType::Mail;
 
 use strict;
 use warnings;
 use Template;
 use MIME::Entity;
 
-class Workflow::OperationType::Mail {
-    isa => 'Workflow::OperationType',
+class Cord::OperationType::Mail {
+    isa => 'Cord::OperationType',
     has => [
         default_input => { 
             is => 'HASH' 

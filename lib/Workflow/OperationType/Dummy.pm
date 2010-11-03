@@ -1,11 +1,11 @@
 
-package Workflow::OperationType::Dummy;
+package Cord::OperationType::Dummy;
 
 use strict;
 use warnings;
 
-class Workflow::OperationType::Dummy {
-    isa => 'Workflow::OperationType',
+class Cord::OperationType::Dummy {
+    isa => 'Cord::OperationType',
 };
 
 sub execute {

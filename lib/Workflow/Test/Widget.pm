@@ -1,9 +1,9 @@
 
-package Workflow::Test::Widget;
+package Cord::Test::Widget;
 
 use base qw(Class::Accessor);
 use strict;
 
-Workflow::Test::Widget->mk_accessors(qw(size color shape));
+Cord::Test::Widget->mk_accessors(qw(size color shape));
 
 1;

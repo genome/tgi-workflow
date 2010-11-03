@@ -1,14 +1,14 @@
-package Workflow::Test::Command::SequenceLength;
+package Cord::Test::Command::SequenceLength;
 
 use strict;
 use warnings;
 
 use Bio::Seq;
 use Bio::SeqIO;
-use Workflow;
+use Cord;
 
-class Workflow::Test::Command::SequenceLength {
-    is => ['Workflow::Test::Command'],
+class Cord::Test::Command::SequenceLength {
+    is => ['Cord::Test::Command'],
     has => [
         fasta_file => { 
             is => 'String', 

@@ -2,21 +2,21 @@
 use strict;
 use warnings;
 
-use Workflow;
-use Workflow::Server::UR;
-use Workflow::Server::Hub;
+use Cord;
+use Cord::Server::UR;
+use Cord::Server::Hub;
 
-package Workflow::Command::Server;
+package Cord::Command::Server;
 
-class Workflow::Command::Server {
-    is => ['Workflow::Command'],
+class Cord::Command::Server {
+    is => ['Cord::Command'],
     has_optional => [
         type => {
             is => 'String',
             default_value => 'both',
             doc => 'Type of server to run: UR,Hub or Both',
         },
-# hub host is commented out because Workflow::Server::UR is hardcoded to localhost, oops
+# hub host is commented out because Cord::Server::UR is hardcoded to localhost, oops
 #        hub_host => {
 #            is => 'String',
 #            doc => 'Host running the Hub server',
@@ -37,7 +37,7 @@ class Workflow::Command::Server {
 sub sub_command_sort_position { 10 }
 
 sub help_brief {
-    "Runs a Workflow::Server::UR or Workflow::Server::Hub process";
+    "Runs a Cord::Server::UR or Cord::Server::Hub process";
 }
 
 sub help_synopsis {
@@ -55,9 +55,9 @@ EOS
 sub execute {
     my $self = shift;
 
-#    $Workflow::Server::UR::port_number = $self->ur_port
+#    $Cord::Server::UR::port_number = $self->ur_port
 #        if $self->ur_port;
-#    $Workflow::Server::Hub::port_number = $self->hub_port
+#    $Cord::Server::Hub::port_number = $self->hub_port
 #        if $self->hub_port;
 
     my $type = lc($self->type);
@@ -70,11 +70,11 @@ sub execute {
         my $pid = fork;
         if ($pid) {
             print "Hub pid: $$\n";
-            Workflow::Server::Hub->start(ur_port => $self->ur_port, hub_port => $self->hub_port);
+            Cord::Server::Hub->start(ur_port => $self->ur_port, hub_port => $self->hub_port);
         } elsif (defined $pid) {
             sleep 3;
             print "UR pid: $$\n";
-            Workflow::Server::UR->start(ur_port => $self->ur_port, hub_port => $self->hub_port);
+            Cord::Server::UR->start(ur_port => $self->ur_port, hub_port => $self->hub_port);
         } else {
             die "no child?";
         }
@@ -84,7 +84,7 @@ sub execute {
 
             $0 = 'workflow urd ' . $self->ur_port;
 
-            Workflow::Server::UR->start(ur_port => $self->ur_port, hub_port => $self->hub_port);
+            Cord::Server::UR->start(ur_port => $self->ur_port, hub_port => $self->hub_port);
 
 #        } else {
 #            die 'must define a hub_host to start this server';
@@ -94,7 +94,7 @@ sub execute {
 
         $0 = 'workflow hubd ' . $self->hub_port; 
 
-        Workflow::Server::Hub->start(ur_port => $self->ur_port, hub_port => $self->hub_port);
+        Cord::Server::Hub->start(ur_port => $self->ur_port, hub_port => $self->hub_port);
     }
 
 }

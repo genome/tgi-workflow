@@ -1,14 +1,14 @@
 
-package Workflow::Server::UR;
+package Cord::Server::UR;
 
 use strict;
-use base 'Workflow::Server';
+use base 'Cord::Server';
 use POE qw(Component::IKC::Server Component::IKC::Client);
-use Workflow::Server::Hub;
+use Cord::Server::Hub;
 
 #our $port_number = 13425;
 
-use Workflow ();
+use Cord ();
 
 BEGIN {
     if (defined $ENV{WF_TRACE_UR}) {
@@ -77,7 +77,7 @@ evTRACE and print "workflow _start\n";
 
                 $kernel->post('IKC','monitor','*'=>{register=>'conn',unregister=>'disc'});
 
-                $heap->{record} = Workflow::Service->create(port => $port_number);
+                $heap->{record} = Cord::Service->create(port => $port_number);
                 UR::Context->commit();
 
                 $kernel->delay('commit',30);
@@ -98,7 +98,7 @@ evTRACE and print "workflow _stop\n";
                 ## not calling sig_handled so this is still terminal
             },
             unlock_me => sub {
-                Workflow::Server->unlock('UR');
+                Cord::Server->unlock('UR');
             },
             simple_start => sub {
                 my ($kernel, $session, $arg) = @_[KERNEL,SESSION,ARG0];
@@ -154,12 +154,12 @@ evTRACE and print "workflow quit_stage_2\n";
                         $heap->{changes} = 0;
                         $heap->{unchanged_commits} = 0;
                     } else {
-                        if ($Workflow::Config::primary_data_source->has_default_handle) {
+                        if ($Cord::Config::primary_data_source->has_default_handle) {
                             $heap->{unchanged_commits}++;
                             if ($heap->{unchanged_commits} > 2) {
 #                                evTRACE and print "workflow commit disconnecting " . $heap->{unchanged_commits} . "\n";
                                 ## its been 5 minutes and nothing has changed.  disconnect
-#                                $Workflow::Config::primary_data_source->disconnect_default_dbh;
+#                                $Cord::Config::primary_data_source->disconnect_default_dbh;
                                 $heap->{unchanged_commits} = 0;
                             }
                         }
@@ -183,7 +183,7 @@ evTRACE and print "workflow disc ", ($real ? '' : 'alias '), "$name\n";
                 my ($xml) = @$arg;
 evTRACE and print "workflow load\n";
 
-                my $workflow = Workflow::Operation->create_from_xml($xml);
+                my $workflow = Cord::Operation->create_from_xml($xml);
                 $heap->{workflow_plans}->{$workflow->id} = $workflow;
                 
                 return $workflow->id;
@@ -197,7 +197,7 @@ evTRACE and print "workflow execute\n";
  
                 my $workflow = $heap->{workflow_plans}->{$id};
 
-                my $executor = Workflow::Executor::Server->get;
+                my $executor = Cord::Executor::Server->get;
                 $workflow->set_all_executor($executor);
  
                 my %opts = (
@@ -231,14 +231,14 @@ evTRACE and print "workflow resume\n";
 
                 $heap->{changes}++;
                 
-                    my @tree = Workflow::Operation::Instance->get(
+                    my @tree = Cord::Operation::Instance->get(
                         id => $id,
                         -recurse => ['parent_instance_id','instance_id']
                     );
                 
-                my $instance = Workflow::Operation::Instance->get($id);
+                my $instance = Cord::Operation::Instance->get($id);
 
-                my $executor = Workflow::Executor::Server->get;
+                my $executor = Cord::Executor::Server->get;
                 $instance->operation->set_all_executor($executor);                
 
                 if ($output_dest) {
@@ -251,7 +251,7 @@ evTRACE and print "workflow resume\n";
                 }
 
                 if ($instance->is_done) {
-                    Workflow::Operation::InstanceExecution::Error->create(
+                    Cord::Operation::InstanceExecution::Error->create(
                         execution => $instance->current,
                         error => "Cannot resume finished workflow"
                     );
@@ -304,7 +304,7 @@ evTRACE and print "workflow begin_instance\n";
 
                 $heap->{changes}++;
 
-                my $instance = Workflow::Operation::Instance->get($id);
+                my $instance = Cord::Operation::Instance->get($id);
 
                 $instance->status('running');
                 $instance->current->start_time(UR::Time->now);
@@ -317,13 +317,13 @@ evTRACE and print "workflow end_instance\n";
 
                 $heap->{changes}++;
 
-                my $instance = Workflow::Operation::Instance->get($id);
+                my $instance = Cord::Operation::Instance->get($id);
                 $instance->status($status);
                 $instance->current->end_time(UR::Time->now);
                 if ($status eq 'done') {
                     $instance->output({ %{ $instance->output }, %$output });
                 } elsif ($status eq 'crashed') {
-                    Workflow::Operation::InstanceExecution::Error->create(
+                    Cord::Operation::InstanceExecution::Error->create(
                         execution => $instance->current,
                         error => $error_string
                     );
@@ -336,7 +336,7 @@ evTRACE and print "workflow finalize_instance $id $cpu_sec $mem $swap\n";
 
                 $heap->{changes}++;
 
-                my $instance = Workflow::Operation::Instance->get($id);
+                my $instance = Cord::Operation::Instance->get($id);
 
                 $instance->current->cpu_time($cpu_sec) if $cpu_sec;
                 $instance->current->max_memory($mem) if $mem;
@@ -351,7 +351,7 @@ evTRACE and print "workflow schedule_instance\n";
 
                 $heap->{changes}++;
 
-                my $instance = Workflow::Operation::Instance->get($id);
+                my $instance = Cord::Operation::Instance->get($id);
 
                 $instance->current->status('scheduled');
                 $instance->current->dispatch_identifier($dispatch_id);

@@ -1,13 +1,13 @@
-package Workflow::Command::Example::FormatResults;
+package Cord::Command::Example::FormatResults;
 
 use strict;
 use warnings;
 
-use Workflow ();
+use Cord ();
 use Data::Dumper qw/Dumper/;
 
-class Workflow::Command::Example::FormatResults {
-    is        => ['Workflow::Command'],
+class Cord::Command::Example::FormatResults {
+    is        => ['Cord::Command'],
     has_input => [
         test_files   => { is => 'ARRAY' },
         test_results => { is => 'ARRAY' }

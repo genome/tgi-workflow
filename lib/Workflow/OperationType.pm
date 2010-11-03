@@ -1,11 +1,11 @@
 
-package Workflow::OperationType;
+package Cord::OperationType;
 
 use strict;
 use warnings;
 use Carp;
 
-class Workflow::OperationType {
+class Cord::OperationType {
     is_abstract => 1,
     has => [
         stay_in_process => { 

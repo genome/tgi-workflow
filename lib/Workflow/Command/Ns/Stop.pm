@@ -1,12 +1,12 @@
-package Workflow::Command::Ns::Stop;
+package Cord::Command::Ns::Stop;
 
 use strict;
 use warnings;
 
-use Workflow ();
+use Cord ();
 
-class Workflow::Command::Ns::Stop {
-    is  => ['Workflow::Command'],
+class Cord::Command::Ns::Stop {
+    is  => ['Cord::Command'],
     has => [
         instance_id => {
             shell_args_position => 1,

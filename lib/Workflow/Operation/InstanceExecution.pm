@@ -1,22 +1,22 @@
 
-package Workflow::Operation::InstanceExecution;
+package Cord::Operation::InstanceExecution;
 
 use strict;
 use warnings;
 
-class Workflow::Operation::InstanceExecution {
+class Cord::Operation::InstanceExecution {
     id_by => [
         execution_id =>
           { is => 'NUMBER', len => 11, column_name => 'WORKFLOW_EXECUTION_ID' },
     ],
     table_name  => 'WORKFLOW_INSTANCE_EXECUTION',
-    schema_name => $Workflow::Config::primary_schema_name,
-    data_source => $Workflow::Config::primary_data_source,
+    schema_name => $Cord::Config::primary_schema_name,
+    data_source => $Cord::Config::primary_data_source,
     has         => [
         instance_id =>
           { is => 'NUMBER', len => 11, column_name => 'WORKFLOW_INSTANCE_ID' },
         operation_instance =>
-          { is => 'Workflow::Operation::Instance', id_by => 'instance_id' },
+          { is => 'Cord::Operation::Instance', id_by => 'instance_id' },
         status       => { is => 'VARCHAR2',  len => 15, value       => 'new' },
         start_time   => { is => 'TIMESTAMP', len => 20, is_optional => 1 },
         end_time     => { is => 'TIMESTAMP', len => 20, is_optional => 1 },
@@ -77,14 +77,14 @@ class Workflow::Operation::InstanceExecution {
             is_optional   => 1
         },
         errors => {
-            is            => 'Workflow::Operation::InstanceExecution::Error',
+            is            => 'Cord::Operation::InstanceExecution::Error',
             is_many       => 1,
             reverse_id_by => 'execution',
             is_optional   => 1
         },
         child_instances => {
             doc => 'instances that were started by code called during this execution',
-            is            => 'Workflow::Operation::Instance',
+            is            => 'Cord::Operation::Instance',
             is_many       => 1,
             reverse_id_by => 'parent_execution'
         }

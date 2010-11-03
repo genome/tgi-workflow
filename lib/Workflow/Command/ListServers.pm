@@ -1,11 +1,11 @@
 
-package Workflow::Command::ListServers;
+package Cord::Command::ListServers;
 
-class Workflow::Command::ListServers {
+class Cord::Command::ListServers {
     is => ['UR::Object::Command::List'],
     has_constant => [
         subject_class_name => {
-            value => 'Workflow::Service'
+            value => 'Cord::Service'
         },
     ],
     has => [

@@ -1,11 +1,11 @@
 
-package Workflow::OperationType::WebService;
+package Cord::OperationType::WebService;
 
 use strict;
 use warnings;
 
-class Workflow::OperationType::WebService {
-    isa => 'Workflow::OperationType',
+class Cord::OperationType::WebService {
+    isa => 'Cord::OperationType',
     has => [
         wsdl_url => { is => 'String' },
         wsdl_operation => { is => 'String' },

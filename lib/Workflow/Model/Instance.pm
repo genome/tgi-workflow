@@ -1,27 +1,27 @@
 
-package Workflow::Model::Instance;
+package Cord::Model::Instance;
 
 use strict;
 use warnings;
 
-class Workflow::Model::Instance {
-    isa => 'Workflow::Operation::Instance',
+class Cord::Model::Instance {
+    isa => 'Cord::Operation::Instance',
     has => [
         child_instances => {
-            is            => 'Workflow::Operation::Instance',
+            is            => 'Cord::Operation::Instance',
             is_many       => 1,
             reverse_id_by => 'parent_instance'
         },
         input_connector => {
-            is    => 'Workflow::Operation::Instance',
+            is    => 'Cord::Operation::Instance',
             id_by => 'input_connector_id'
         },
         output_connector => {
-            is    => 'Workflow::Operation::Instance',
+            is    => 'Cord::Operation::Instance',
             id_by => 'output_connector_id'
         },
         ordered_child_instances => {
-            is        => 'Workflow::Operation::Instance',
+            is        => 'Cord::Operation::Instance',
             is_many   => 1,
             calculate => q{ $self->sorted_child_instances }
         },
@@ -53,7 +53,7 @@ sub create {
 
     my @all_opi;
     foreach ( $self->operation->operations ) {
-        my $this_data = Workflow::Operation::Instance->create(
+        my $this_data = Cord::Operation::Instance->create(
             operation       => $_,
             parent_instance => $self
         );
@@ -66,14 +66,14 @@ sub create {
     }
 
     $self->input_connector(
-        Workflow::Operation::Instance->get(
+        Cord::Operation::Instance->get(
             operation       => $self->operation->get_input_connector,
             parent_instance => $self
         )
     );
 
     $self->output_connector(
-        Workflow::Operation::Instance->get(
+        Cord::Operation::Instance->get(
             operation       => $self->operation->get_output_connector,
             parent_instance => $self
         )
@@ -169,7 +169,7 @@ sub completion {
         my $reason =
 "Execution halted due to unresolvable dependencies or crashed children.  Status and incomplete inputs:\n" . $self->explain;
 
-        Workflow::Operation::InstanceExecution::Error->create(
+        Cord::Operation::InstanceExecution::Error->create(
             execution => $self->current,
             error     => $reason
         );
@@ -180,7 +180,7 @@ sub completion {
     foreach my $output_name ( keys %{ $oc->input } ) {
         if ( ref( $oc->input->{$output_name} ) eq 'ARRAY' ) {
             my @new = map {
-                UNIVERSAL::isa( $_, 'Workflow::Link::Instance' )
+                UNIVERSAL::isa( $_, 'Cord::Link::Instance' )
                   ? $_->value
                   : $_
             } @{ $oc->input->{$output_name} };

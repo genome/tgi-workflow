@@ -1,13 +1,13 @@
-package Workflow::Test::Command::Sleep;
+package Cord::Test::Command::Sleep;
 
 use strict;
 use warnings;
 
-use Workflow;
+use Cord;
 use Command; 
 
-class Workflow::Test::Command::Sleep {
-    is => ['Workflow::Test::Command'],
+class Cord::Test::Command::Sleep {
+    is => ['Cord::Test::Command'],
     has_input => [
         seconds => { 
             is => 'Integer', 

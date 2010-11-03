@@ -1,7 +1,7 @@
-package Workflow::Operation::Instance::View::Statuspopup::Xml;
+package Cord::Operation::Instance::View::Statuspopup::Xml;
 
-class Workflow::Operation::Instance::View::Statuspopup::Xml {
-    is  => 'Workflow::Operation::Instance::View::Status::Xml',
+class Cord::Operation::Instance::View::Statuspopup::Xml {
+    is  => 'Cord::Operation::Instance::View::Status::Xml',
 };
 
 1;

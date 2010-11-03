@@ -1,17 +1,17 @@
 
-package Workflow::Operation;
+package Cord::Operation;
 
 use strict;
 use warnings;
 use XML::Simple;
 
-class Workflow::Operation {
+class Cord::Operation {
     has => [
         name => { is => 'Text' },
-        workflow_model => { is => 'Workflow::Operation', id_by => 'workflow_model_id', is_optional => 1 },
-        operation_type => { is => 'Workflow::OperationType', id_by => 'workflow_operationtype_id' },
+        workflow_model => { is => 'Cord::Operation', id_by => 'workflow_model_id', is_optional => 1 },
+        operation_type => { is => 'Cord::OperationType', id_by => 'workflow_operationtype_id' },
         is_valid => { is => 'Boolean', default_value=>0, doc => 'Flag set when validate has run' },
-        executor => { is => 'Workflow::Executor', id_by => 'workflow_executor_id', is_optional => 1 },
+        executor => { is => 'Cord::Executor', id_by => 'workflow_executor_id', is_optional => 1 },
         parallel_by => { is => 'String', is_optional=>1 },
         log_dir => { is => 'String', is_optional =>1 },
         filename => { is => 'String', is_optional => 1 }
@@ -23,7 +23,7 @@ sub dependent_operations {
     
     my %operations = map {
         $_->right_operation->id => $_->right_operation
-    } Workflow::Link->get(left_operation => $self);
+    } Cord::Link->get(left_operation => $self);
     
     return values %operations;
 }
@@ -33,7 +33,7 @@ sub depended_on_by {
     
     my %operations = map {
         $_->left_operation->id => $_->left_operation
-    } Workflow::Link->get(right_operation => $self);
+    } Cord::Link->get(right_operation => $self);
     
     return values %operations;
 }
@@ -43,7 +43,7 @@ sub create {
     my $self = $class->SUPER::create(@_);
 
     if (!$self->workflow_model && !$self->executor) {
-        $self->executor(Workflow::Executor::SerialDeferred->get);
+        $self->executor(Cord::Executor::SerialDeferred->get);
     }
 
     return $self;
@@ -67,9 +67,9 @@ sub create_from_xml_simple_structure {
 
     ## i dont like this at all
     ## delegate sub-models
-    if ($class eq __PACKAGE__ && (exists $struct->{operationtype} && $struct->{operationtype}->{typeClass} eq 'Workflow::OperationType::Model' || $struct->{workflowFile})) {
+    if ($class eq __PACKAGE__ && (exists $struct->{operationtype} && $struct->{operationtype}->{typeClass} eq 'Cord::OperationType::Model' || $struct->{workflowFile})) {
 
-        $self = Workflow::Model->create_from_xml_simple_structure($struct,%params);
+        $self = Cord::Model->create_from_xml_simple_structure($struct,%params);
     } else {
         $params{parallel_by} = $struct->{parallelBy} if $struct->{parallelBy};
         $params{log_dir} = $struct->{logDir} if $struct->{logDir};
@@ -85,7 +85,7 @@ sub create_from_xml_simple_structure {
         }
         
 
-        my $optype = Workflow::OperationType->create_from_xml_simple_structure($struct->{operationtype});
+        my $optype = Cord::OperationType->create_from_xml_simple_structure($struct->{operationtype});
         $self = $class->create(
             name => $struct->{name},
             operation_type => $optype,
@@ -163,7 +163,7 @@ sub execute {
         }
     }
 
-    my $operation_instance = Workflow::Operation::Instance->create(
+    my $operation_instance = Cord::Operation::Instance->create(
         operation => $self,
         output_cb => $params{output_cb},
         error_cb => $params{error_cb}

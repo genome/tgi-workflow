@@ -1,11 +1,11 @@
 
-package Workflow::Command;
+package Cord::Command;
 
 use strict;
 use warnings;
-use Workflow;
+use Cord;
 
-class Workflow::Command {
+class Cord::Command {
     is => ['Command'],
     english_name => 'workflow command',
 };
@@ -18,7 +18,7 @@ sub command_name {
 }
 
 sub help_brief {
-    "modularized commands for Workflow"
+    "modularized commands for Cord"
 }
 
 1;

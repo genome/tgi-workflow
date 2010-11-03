@@ -1,9 +1,9 @@
 
-package Workflow::Executor;
+package Cord::Executor;
 
 use strict;
 
-class Workflow::Executor {
+class Cord::Executor {
     is => 'UR::Singleton',
     is_transactional => 0,
     is_abstract => 1

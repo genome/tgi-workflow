@@ -1,4 +1,4 @@
-package Workflow::Command::Ns::Internal::Run;
+package Cord::Command::Ns::Internal::Run;
 
 use strict;
 use warnings;
@@ -6,10 +6,10 @@ use warnings;
 use AnyEvent::Util;
 use IPC::Run qw(start);
 use Storable qw/store_fd fd_retrieve/;
-use Workflow ();
+use Cord ();
 
-class Workflow::Command::Ns::Internal::Run {
-    is  => ['Workflow::Command'],
+class Cord::Command::Ns::Internal::Run {
+    is  => ['Cord::Command'],
     has => [
         root_instance_id => {
             shell_args_position => 1,
@@ -43,7 +43,7 @@ sub execute {
     $self->status_message(
         sprintf( "Loading workflow instance: %s", $self->root_instance_id ) );
 
-    my @load = Workflow::Operation::Instance->get(
+    my @load = Cord::Operation::Instance->get(
         id => $self->root_instance_id,
         -recurse => ['parent_instance_id','instance_id']
     );
@@ -51,7 +51,7 @@ sub execute {
     $self->status_message(
         sprintf( "Getting operation instance: %s", $self->instance_id ));
 
-    my $opi = Workflow::Operation::Instance->get($self->instance_id);
+    my $opi = Cord::Operation::Instance->get($self->instance_id);
 
     $self->status_message(
         sprintf( "Acquiring rowlock on instance: %s", $opi->id));
@@ -65,7 +65,7 @@ sub execute {
     my $t = $opi->operation->operation_type;
 
     ## disconnect from workflow database
-    $Workflow::Config::primary_data_source->disconnect_default_dbh;
+    $Cord::Config::primary_data_source->disconnect_default_dbh;
 
     my ($outputs, $exitcode, $ok) = $self->run_optype(
         $t, $self->merged_input($opi) 
@@ -236,7 +236,7 @@ sub try_count {
     my $self = shift;
     my $op = shift;
 
-    my $dbh = $Workflow::Config::primary_data_source->get_default_handle;
+    my $dbh = $Cord::Config::primary_data_source->get_default_handle;
 
     my ($cnt) = $dbh->selectrow_array(<<"    SQL", {}, $op->id);
         SELECT count(workflow_execution_id) FROM workflow.workflow_instance_execution WHERE workflow_instance_id = ?

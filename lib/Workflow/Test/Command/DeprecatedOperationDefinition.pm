@@ -1,13 +1,13 @@
-package Workflow::Test::Command::DeprecatedOperationDefinition;
+package Cord::Test::Command::DeprecatedOperationDefinition;
 
 use strict;
 use warnings;
 
-use Workflow;
+use Cord;
 use Command; 
 
-class Workflow::Test::Command::DeprecatedOperationDefinition {
-    is => ['Workflow::Test::Command'],
+class Cord::Test::Command::DeprecatedOperationDefinition {
+    is => ['Cord::Test::Command'],
     has => [
         today => { 
             calculate => q|
@@ -22,7 +22,7 @@ class Workflow::Test::Command::DeprecatedOperationDefinition {
     ],
 };
 
-operation_io Workflow::Test::Command::DeprecatedOperationDefinition {
+operation_io Cord::Test::Command::DeprecatedOperationDefinition {
     input  => [ ],
     output => [ 'today', 'now' ],
     lsf_resource => 'rusage[tmp=100]',

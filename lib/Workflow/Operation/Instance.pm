@@ -1,23 +1,23 @@
 
-package Workflow::Operation::Instance;
+package Cord::Operation::Instance;
 
 use strict;
 use warnings;
 use Storable qw(freeze thaw);
-use Workflow ();
+use Cord ();
 
-class Workflow::Operation::Instance {
+class Cord::Operation::Instance {
     sub_classification_method_name => '_resolve_subclass_name',
     id_by                          => [
         instance_id =>
           { is => 'INTEGER', column_name => 'WORKFLOW_INSTANCE_ID' }
     ],
     table_name => 'WORKFLOW_INSTANCE',
-    schema_name => $Workflow::Config::primary_schema_name,
-    data_source => $Workflow::Config::primary_data_source,
+    schema_name => $Cord::Config::primary_schema_name,
+    data_source => $Cord::Config::primary_data_source,
     has         => [
         cache_workflow => {
-            is          => 'Workflow::Cache',
+            is          => 'Cord::Cache',
             id_by       => 'cache_workflow_id',
             is_optional => 1
         },
@@ -28,7 +28,7 @@ class Workflow::Operation::Instance {
             is_optional => 1
         },
         operation => {    # Allow subclasses to make this optional
-            is           => 'Workflow::Operation',
+            is           => 'Cord::Operation',
             id_by        => 'workflow_operation_id',
             is_transient => 1
         },
@@ -38,13 +38,13 @@ class Workflow::Operation::Instance {
           },
         name                => { is => 'TEXT' },
         parent_execution => {
-            is          => 'Workflow::Operation::Instance',
+            is          => 'Cord::Operation::Instance',
             id_by       => 'parent_execution_id',
             is_optional => 1
         },
         parent_execution_id => { is  => 'Number', is_optional => 1 },
         parent_instance     => {
-            is          => 'Workflow::Model::Instance',
+            is          => 'Cord::Model::Instance',
             id_by       => 'parent_instance_id',
             is_optional => 1
         },
@@ -69,7 +69,7 @@ class Workflow::Operation::Instance {
         },
         parallel_index => { is => 'INTEGER', is_optional => 1 },
         peer_of        => {
-            is          => 'Workflow::Operation::Instance',
+            is          => 'Cord::Operation::Instance',
             id_by       => 'peer_instance_id',
             is_optional => 1
         },
@@ -87,7 +87,7 @@ class Workflow::Operation::Instance {
             },
         },
         current => {
-            is          => 'Workflow::Operation::InstanceExecution',
+            is          => 'Cord::Operation::InstanceExecution',
             id_by       => 'current_execution_id',
             is_optional => 1
         },
@@ -114,12 +114,12 @@ class Workflow::Operation::Instance {
         end_time     => { via => 'current', },
         elapsed_time => { via => 'current', },
         executor     => {     #TODO store executor upon creation
-            is        => 'Workflow::Executor',
+            is        => 'Cord::Executor',
             calculate => q{
                 my $executor = $self->operation->executor || $self->parent_instance->executor;
                 
                 if ($self->operation_type->stay_in_process) {
-                    $executor = Workflow::Executor::Serial->get;
+                    $executor = Cord::Executor::Serial->get;
                 }
                 return $executor;
             },
@@ -127,7 +127,7 @@ class Workflow::Operation::Instance {
         ## this property does not belong here, it will be removed
         ## when the inheritence structure is fixed
         related_instances => {
-            is        => 'Workflow::Operation::Instance',
+            is        => 'Cord::Operation::Instance',
             is_many   => 1,
             calculate => q{
                 my @spool = $self->can('ordered_child_instances') ? $self->ordered_child_instances : (); 
@@ -139,7 +139,7 @@ class Workflow::Operation::Instance {
                 }
                 my %ugly;
                 if (scalar @spool) {
-                    foreach my $op (Workflow::Operation::Instance->get(
+                    foreach my $op (Cord::Operation::Instance->get(
                         parent_execution_id => [map { $_->current_execution_id } @spool],
                     )) {
                         $ugly{$op->parent_execution_id} ||= [];
@@ -155,7 +155,7 @@ class Workflow::Operation::Instance {
             }
         },
         ordered_child_instances => {
-            is        => 'Workflow::Operation::Instance',
+            is        => 'Cord::Operation::Instance',
             is_many   => 1,
             calculate => q{ 
                 if ($self->can('sorted_child_instances')) {
@@ -172,14 +172,14 @@ sub _resolve_subclass_name {
     my $class = shift;
 
     my $suffix = 'Operation::Instance';
-    if ( $class =~ /^Workflow::(.+)$/ ) {
+    if ( $class =~ /^Cord::(.+)$/ ) {
         $suffix = $1;
     }
     if ( ref( $_[0] ) && $_[0]->isa(__PACKAGE__) ) {
 
         $_[0]->load_operation if ( $_[0]->can('load_operation') );
 
-        if ( $_[0]->operation && $_[0]->operation->class eq 'Workflow::Model' )
+        if ( $_[0]->operation && $_[0]->operation->class eq 'Cord::Model' )
         {
             $suffix = 'Model::Instance';
         }
@@ -187,15 +187,15 @@ sub _resolve_subclass_name {
         $class->get_rule_for_params(@_)
         ->specified_value_for_property_name('workflow_operation_id') )
     {
-        my $operation = Workflow::Operation->get($id);
-        if ( $operation->class eq 'Workflow::Model' ) {
+        my $operation = Cord::Operation->get($id);
+        if ( $operation->class eq 'Cord::Model' ) {
             $suffix = 'Model::Instance';
         }
     } else {
         die 'dont know how to subclass';
     }
 
-    return 'Workflow::' . $suffix;
+    return 'Cord::' . $suffix;
 }
 
 sub load_operation {
@@ -210,7 +210,7 @@ sub load_operation {
         #        print "not yet\n" unless $op;
     } elsif ( $self->cache_workflow && !$self->workflow_operation_id ) {
         my $op =
-          Workflow::Operation->create_from_xml( $self->cache_workflow->xml );
+          Cord::Operation->create_from_xml( $self->cache_workflow->xml );
 
         $self->operation($op);
     }
@@ -218,7 +218,7 @@ sub load_operation {
 }
 
 our @observers = (
-    Workflow::Operation::InstanceExecution->add_observer(
+    Cord::Operation::InstanceExecution->add_observer(
         aspect   => 'status',
         callback => sub {
             my ( $self, $property, $old, $new ) = @_;
@@ -265,7 +265,7 @@ our @observers = (
                 && !defined $self->peer_of )
             {
                 my $c =
-                  Workflow::Cache->create(
+                  Cord::Cache->create(
                     xml => $self->operation->save_to_xml );
 
                 $self->cache_workflow($c);
@@ -363,7 +363,7 @@ sub create {
     unless ( $self->current ) {
 
         # due to the weird inheritance here, this may have already been set
-        my $ie = Workflow::Operation::InstanceExecution->create(
+        my $ie = Cord::Operation::InstanceExecution->create(
             operation_instance => $self,
             status             => 'new',
             is_done            => 0,
@@ -461,7 +461,7 @@ sub err_log_file {
 sub set_input_links {
     my $self = shift;
 
-    my @links = Workflow::Link->get( right_operation => $self->operation, );
+    my @links = Cord::Link->get( right_operation => $self->operation, );
 
     my %linkage = ();
 
@@ -475,7 +475,7 @@ sub set_input_links {
         }
         next unless $opi;
 
-        my $linki = Workflow::Link::Instance->create(
+        my $linki = Cord::Link::Instance->create(
             operation_instance => $opi,
             property           => $link->left_property
         );
@@ -527,7 +527,7 @@ sub unfinished_inputs {
                 $vallist = [ $current_inputs{$input_name} ];
             }
           VALCHECK: foreach my $v (@$vallist) {
-                if ( UNIVERSAL::isa( $v, 'Workflow::Link::Instance' ) ) {
+                if ( UNIVERSAL::isa( $v, 'Cord::Link::Instance' ) ) {
                     if ( $v->broken ) {
                         unless ( defined $self->input_value($input_name) ) {
                             push @unfinished_inputs, $input_name;
@@ -578,7 +578,7 @@ sub input_value {
     if (
         UNIVERSAL::isa(
             $self->input->{$input_name},
-            'Workflow::Link::Instance'
+            'Cord::Link::Instance'
         )
       )
     {
@@ -605,7 +605,7 @@ sub treeview_debug {
         my $vals = ref($v) eq 'ARRAY' ? $v : [$v];
         foreach my $dv (@$vals) {
             my $vc = $dv;
-            if ( UNIVERSAL::isa( $dv, 'Workflow::Link::Instance' ) ) {
+            if ( UNIVERSAL::isa( $dv, 'Cord::Link::Instance' ) ) {
                 $vc =
                     $dv->operation_instance->id . '->'
                   . $dv->property
@@ -621,7 +621,7 @@ sub treeview_debug {
         my $vals = ref($v) eq 'ARRAY' ? $v : [$v];
         foreach my $dv (@$vals) {
             my $vc = $dv;
-            if ( UNIVERSAL::isa( $dv, 'Workflow::Link::Instance' ) ) {
+            if ( UNIVERSAL::isa( $dv, 'Cord::Link::Instance' ) ) {
                 $vc =
                     $dv->operation_instance->id . '->'
                   . $dv->property
@@ -656,7 +656,7 @@ sub reset_current {
     my ($self) = @_;
 
     if ( $self->status eq 'crashed' or $self->status eq 'running' ) {
-        my $ie = Workflow::Operation::InstanceExecution->create(
+        my $ie = Cord::Operation::InstanceExecution->create(
             operation_instance => $self,
             status             => 'new',
             is_done            => 0,
@@ -725,14 +725,14 @@ sub resolved_inputs {
         if (
             UNIVERSAL::isa(
                 $self->input->{$input_name},
-                'Workflow::Link::Instance'
+                'Cord::Link::Instance'
             )
           )
         {
             $current_inputs{$input_name} = $self->input_value($input_name);
         } elsif ( ref( $self->input->{$input_name} ) eq 'ARRAY' ) {
             my @new = map {
-                UNIVERSAL::isa( $_, 'Workflow::Link::Instance' )
+                UNIVERSAL::isa( $_, 'Cord::Link::Instance' )
                   ? $_->value
                   : $_
             } @{ $self->input->{$input_name} };
@@ -754,7 +754,7 @@ sub orphan {
     foreach my $dep (@deps) {
         if ( defined $dep->input ) {
             while ( my ( $k, $v ) = each( %{ $dep->input } ) ) {
-                if ( UNIVERSAL::isa( $v, 'Workflow::Link::Instance' ) ) {
+                if ( UNIVERSAL::isa( $v, 'Cord::Link::Instance' ) ) {
                     if ( $v->operation_instance == $self ) {
                         unless ( $v->broken ) {
                             my $break_val = $outputs{ $v->property };
@@ -782,7 +782,7 @@ sub is_orphan {
     foreach my $dep (@deps) {
         if ( defined $dep->input ) {
             while ( my ( $k, $v ) = each( %{ $dep->input } ) ) {
-                if ( UNIVERSAL::isa( $v, 'Workflow::Link::Instance' ) ) {
+                if ( UNIVERSAL::isa( $v, 'Cord::Link::Instance' ) ) {
                     if ( $v->operation_instance == $self ) {
                         unless ( $v->broken ) {
                             $broken = 0;
@@ -790,7 +790,7 @@ sub is_orphan {
                     }
                 } elsif ( ref($v) eq 'ARRAY' ) {
                     foreach my $vv (@$v) {
-                        if ( UNIVERSAL::isa( $vv, 'Workflow::Link::Instance' ) )
+                        if ( UNIVERSAL::isa( $vv, 'Cord::Link::Instance' ) )
                         {
                             if ( $vv->operation_instance == $self ) {
                                 unless ( $vv->broken ) {
@@ -810,12 +810,6 @@ sub is_orphan {
 # operations with no parent can't be broken by definition
         $broken = 0;
     }
-
-#    if ($self->name eq 'Example Inner Workflow') {
-#        $self->status_message('       ' . $self->name . ' is ' . ($broken ? '' : 'not ') . 'an orphan (' . scalar(@deps) . ')[' . $self->id . ']' );
-#
-#        print Data::Dumper->new([\@deps])->Dump . "\n";
-#    }
 
     return $broken;
 }
@@ -918,7 +912,7 @@ sub spin {
             }
 
             for ( my $i = 1 ; $i <= $self->peers ; $i++ ) {
-                my $peer = Workflow::Operation::Instance->get(
+                my $peer = Cord::Operation::Instance->get(
                     peer_of        => $mp,
                     parallel_index => $i
                 );
@@ -969,12 +963,12 @@ sub dependent_operations {
         next if $sibling == $self;
 
         foreach my $v ( values %{ $sibling->input } ) {
-            if ( UNIVERSAL::isa( $v, 'Workflow::Link::Instance' ) ) {
+            if ( UNIVERSAL::isa( $v, 'Cord::Link::Instance' ) ) {
                 $instances{ $sibling->id } = $sibling
                   if ( $v->operation_instance == $self && !$v->broken );
             } elsif ( $self->is_parallel && ref($v) eq 'ARRAY' ) {
                 my $vv = $v->[ $self->parallel_index ];
-                if ( UNIVERSAL::isa( $vv, 'Workflow::Link::Instance' ) ) {
+                if ( UNIVERSAL::isa( $vv, 'Cord::Link::Instance' ) ) {
                     $instances{ $sibling->id } = $sibling
                       if ( $vv->operation_instance == $self && !$vv->broken );
                 }
@@ -990,11 +984,11 @@ sub depended_on_by {
 
     my %instances = ();
     foreach my $v ( values %{ $self->input } ) {
-        if ( UNIVERSAL::isa( $v, 'Workflow::Link::Instance' ) && !$v->broken ) {
+        if ( UNIVERSAL::isa( $v, 'Cord::Link::Instance' ) && !$v->broken ) {
             $instances{ $v->operation_instance->id } = $v->operation_instance;
         } elsif ( ref($v) eq 'ARRAY' ) {
             foreach my $vv (@$v) {
-                if ( UNIVERSAL::isa( $v, 'Workflow::Link::Instance' )
+                if ( UNIVERSAL::isa( $v, 'Cord::Link::Instance' )
                     && !$v->broken )
                 {
                     $instances{ $vv->operation_instance->id } =
@@ -1018,7 +1012,7 @@ sub create_peers {
     foreach my $dep (@deps) {
         my %input = ();
         while ( my ( $k, $v ) = each( %{ $dep->input } ) ) {
-            if ( UNIVERSAL::isa( $v, 'Workflow::Link::Instance' )
+            if ( UNIVERSAL::isa( $v, 'Cord::Link::Instance' )
                 && $v->operation_instance == $self )
             {
                 $input{$k} = [$v];
@@ -1035,7 +1029,7 @@ sub create_peers {
         $i++
       )
     {
-        my $peer = Workflow::Operation::Instance->create(
+        my $peer = Cord::Operation::Instance->create(
             operation      => $self->operation,
             parallel_index => $i,
             peer_of        => $self
@@ -1059,7 +1053,7 @@ sub create_peers {
                 if (
                     ref( $dep->input->{$_} ) eq 'ARRAY'
                     && UNIVERSAL::isa( $dep->input->{$_}->[0],
-                        'Workflow::Link::Instance' )
+                        'Cord::Link::Instance' )
                     && $dep->input->{$_}->[0]->operation_instance == $self
                   )
                 {
@@ -1073,7 +1067,7 @@ sub create_peers {
             #                $dep->input->{$k}->[$i] = $dep->input->{$k}->[0];
             #            }
             foreach my $k (@k) {
-                $dep->input->{$k}->[$i] = Workflow::Link::Instance->create(
+                $dep->input->{$k}->[$i] = Cord::Link::Instance->create(
                     operation_instance => $peer,
                     property           => $dep->input->{$k}->[0]->property
                 );
@@ -1097,7 +1091,7 @@ sub fix_parallel_input_links {
     while ( my ( $k, $v ) = each( %{ $self->input } ) ) {
         $input{$k} = $v;
         if ( $k eq $self->parallel_by ) {
-            if ( UNIVERSAL::isa( $v, 'Workflow::Link::Instance' ) ) {
+            if ( UNIVERSAL::isa( $v, 'Cord::Link::Instance' ) ) {
                 $input{$k} = $v->clone( index => $self->parallel_index );
             } else {
                 $input{$k} = $input{$k}->[ $self->parallel_index ];

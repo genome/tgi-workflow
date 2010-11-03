@@ -1,10 +1,10 @@
-package Workflow::Job;
+package Cord::Job;
 
 use strict;
-use Workflow;
-use Workflow::Job::Event;
+use Cord;
+use Cord::Job::Event;
 
-class Workflow::Job {
+class Cord::Job {
     is          => 'UR::Value',   ## necessary for UR to call _load during get()
     is_abstract => 1,
     sub_classification_method_name => '_resolve_subclass_name',
@@ -22,7 +22,7 @@ class Workflow::Job {
     ],
     has_many => [
         events => {
-            is         => 'Workflow::Job::Event',
+            is         => 'Cord::Job::Event',
             reverse_as => 'job'
         }
     ]

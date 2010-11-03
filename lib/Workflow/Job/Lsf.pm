@@ -1,11 +1,11 @@
-package Workflow::Job::Lsf;
+package Cord::Job::Lsf;
 
 use strict;
-use Workflow;
+use Cord;
 use Date::Parse;
 
-class Workflow::Job::Lsf {
-    is              => 'Workflow::Job',
+class Cord::Job::Lsf {
+    is              => 'Cord::Job',
     attributes_have => [
         populate_from => {
             is          => 'String',
@@ -14,7 +14,7 @@ class Workflow::Job::Lsf {
     ],
     has_many => [
         events => {
-            is => 'Workflow::Job::Event::Lsf'
+            is => 'Cord::Job::Event::Lsf'
             ,    ## specifying this manually makes default views better
             reverse_as => 'job'
         }

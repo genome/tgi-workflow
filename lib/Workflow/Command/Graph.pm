@@ -2,12 +2,12 @@
 use strict;
 use warnings;
 
-use Workflow;
+use Cord;
 
-package Workflow::Command::Graph;
+package Cord::Command::Graph;
 
-class Workflow::Command::Graph {
-    is  => ['Workflow::Command'],
+class Cord::Command::Graph {
+    is  => ['Cord::Command'],
     has => [
         xml => {
             is          => 'String',
@@ -56,7 +56,7 @@ sub execute {
     my $wf;
 
     if ($self->cache_id) {
-        my $c = Workflow::Cache->get($self->cache_id);
+        my $c = Cord::Cache->get($self->cache_id);
 
         die 'none found for cache_id: ' . $self->cache_id unless $c;
 
@@ -68,21 +68,21 @@ sub execute {
             exit;
         }
 
-        $wf = Workflow::Operation->create_from_xml( $self->xml );
+        $wf = Cord::Operation->create_from_xml( $self->xml );
     } else {
         eval 'use ' . $self->class_name;
         die $@ if $@;
 
         my $cn = $self->class_name;
 
-        unless ( $cn->isa('Workflow::Operation::Command') ) {
+        unless ( $cn->isa('Cord::Operation::Command') ) {
             $self->error_message(
-                "$cn does not inherit from Workflow::Operation::Command");
+                "$cn does not inherit from Cord::Operation::Command");
             exit;
         }
 
         $wf =
-          Workflow::Operation->get( $self->class_name->workflow_operation_id );
+          Cord::Operation->get( $self->class_name->workflow_operation_id );
     }
 
     my @errors = $wf->validate;

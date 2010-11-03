@@ -1,13 +1,13 @@
-package Workflow::Command::Ns::Internal::End;
+package Cord::Command::Ns::Internal::End;
 
 use strict;
 use warnings;
 
-use Workflow ();
-use Workflow::Command::Ns::Start ();
+use Cord ();
+use Cord::Command::Ns::Start ();
 
-class Workflow::Command::Ns::Internal::End {
-    is  => ['Workflow::Command'],
+class Cord::Command::Ns::Internal::End {
+    is  => ['Cord::Command'],
     has => [
         instance_id => {
             shell_args_position => 1,
@@ -36,7 +36,7 @@ sub execute {
     $self->status_message(
         sprintf( "Loading workflow instance: %s", $self->instance_id ) );
 
-    my @load = Workflow::Operation::Instance->get(
+    my @load = Cord::Operation::Instance->get(
         id => $self->instance_id,
         -recurse => ['parent_instance_id','instance_id']
     );
@@ -93,11 +93,11 @@ sub execute {
         }
 
         if (my $done_instance_id = $self->done_instance_id) {
-            my $done_instance = Workflow::Operation::Instance->get(
+            my $done_instance = Cord::Operation::Instance->get(
                 $done_instance_id
             );
 
-            my $starter = Workflow::Command::Ns::Start->create(
+            my $starter = Cord::Command::Ns::Start->create(
                 job_group => $jobgroup
             );
 

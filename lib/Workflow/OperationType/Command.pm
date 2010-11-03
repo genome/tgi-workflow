@@ -1,11 +1,11 @@
 
-package Workflow::OperationType::Command;
+package Cord::OperationType::Command;
 
 use strict;
 use warnings;
 
-class Workflow::OperationType::Command {
-    isa => [ 'UR::Value', 'Workflow::OperationType' ],
+class Cord::OperationType::Command {
+    isa => [ 'UR::Value', 'Cord::OperationType' ],
     is_transactional => 0,
     id_by => [ 'command_class_name' ],
     has => [
@@ -188,7 +188,7 @@ sub execute {
 
     my $command = $command_name->create(%properties);
 
-    if ($Workflow::DEBUG_GLOBAL) {
+    if ($Cord::DEBUG_GLOBAL) {
         if (UNIVERSAL::can('Devel::ptkdb','brkonsub')) {
             Devel::ptkdb::brkonsub($command_name . '::execute');
         } elsif (UNIVERSAL::can('DB','cmd_b_sub')) {

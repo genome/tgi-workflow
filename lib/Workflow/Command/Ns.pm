@@ -1,12 +1,12 @@
-package Workflow::Command::Ns;
+package Cord::Command::Ns;
 
 use strict;
 use warnings;
 
-use Workflow;
+use Cord;
 use Command;
 
-class Workflow::Command::Ns {
+class Cord::Command::Ns {
     is => 'Command',
     doc => 'Utility commands for running serverless workflows'
 };

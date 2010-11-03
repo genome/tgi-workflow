@@ -1,11 +1,11 @@
 
-package Workflow::Test::Command;
+package Cord::Test::Command;
 
 use strict;
 use warnings;
-use Workflow;
+use Cord;
 
-class Workflow::Test::Command {
+class Cord::Test::Command {
     is => ['Command'],
     english_name => 'workflow-test command',
 };
@@ -18,7 +18,7 @@ sub command_name {
 }
 
 sub help_brief {
-    "modularized commands for testing Workflow"
+    "modularized commands for testing Cord"
 }
 
 1;

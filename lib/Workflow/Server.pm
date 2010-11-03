@@ -1,5 +1,5 @@
 
-package Workflow::Server;
+package Cord::Server;
 
 use strict;
 #use POE;
