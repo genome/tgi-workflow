@@ -1,12 +1,12 @@
-package Workflow::Test::Command::WidgetManyReader;
+package Cord::Test::Command::WidgetManyReader;
 
 use strict;
 use warnings;
 
-use Workflow;
+use Cord;
 use Command; 
 
-class Workflow::Test::Command::WidgetManyReader {
+class Cord::Test::Command::WidgetManyReader {
     is => ['Workflow::Test::Command'],
     has_output => [
         size => { is_many => 1, is_optional => 1 },
