@@ -22,8 +22,6 @@ if (not defined $pid) {
     use above 'Workflow';
     use Workflow::Simple;
 
-    $Workflow::Simple::store_db = 0;
-
     my $output = run_workflow_lsf(
         \*DATA, 
         'model input string' => 'foo bar baz',

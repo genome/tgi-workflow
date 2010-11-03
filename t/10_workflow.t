@@ -25,20 +25,20 @@ isa_ok($w,'Workflow::Model');
 
 my $echo = $w->add_operation(
     name => 'echo',
-    operation_type => Workflow::Test::Command::Echo->operation_type
+    operation_type => Workflow::OperationType::Command->get('Workflow::Test::Command::Echo')
 );
 ok($echo,'add echo operation');
 isa_ok($echo,'Workflow::Operation');
 
 my $sleep = $w->add_operation(
     name => 'sleep',
-    operation_type => Workflow::Test::Command::Sleep->operation_type
+    operation_type => Workflow::OperationType::Command->get('Workflow::Test::Command::Sleep')
 );
 ok($sleep,'add sleep operation');
 
 my $time = $w->add_operation(
     name => 'time',
-    operation_type => Workflow::Test::Command::Time->operation_type
+    operation_type => Workflow::OperationType::Command->get('Workflow::Test::Command::Time')
 );
 ok($time,'add time operation');
  
