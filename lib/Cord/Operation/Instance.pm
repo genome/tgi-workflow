@@ -53,6 +53,15 @@ class Cord::Operation::Instance {
             implied_by  => 'parent_instance',
             is_optional => 1
         },
+        root => {
+            is => 'Workflow::Operation::Instance',
+            id_by => 'root_id',
+            is_transient => 1
+        },
+        root_id => {
+            implied_by => 'root',
+            is_transient => 1
+        }, 
         output        => { is => 'HASH', is_transient => 1 },
         input         => { is => 'HASH', is_transient => 1 },
         input_stored  => { is => 'BLOB', is_optional => 1 },
@@ -217,11 +226,35 @@ sub load_operation {
 
 }
 
+## used as a unique Set, values are always 1.
+my %active_notification_url = ();
+
 our @observers = (
-    Cord::Operation::InstanceExecution->add_observer(
+    UR::Context->add_observer(
+        aspect => 'commit',
+        callback => sub {
+            my ( $self ) = @_;
+
+            for my $url (keys %active_notification_url) {
+                system("curl -k $url >/dev/null 2>/dev/null </dev/null &");
+            }
+        }
+      ),
+      Cord::Operation::InstanceExecution->add_observer(
         aspect   => 'status',
         callback => sub {
             my ( $self, $property, $old, $new ) = @_;
+
+            if ( $new ne $old ) {
+                my $root = $self->operation_instance->root;
+                if (my $url = $root->operation->notify_url) {
+                    my $root_id = $root->id;
+                    for (split(/\s+/, $url)) {
+                        $_ =~ s/\[WORKFLOW_ID\]/$root_id/g;
+                        $active_notification_url{$_} = 1;
+                    }
+                }
+            }
 
             if ( $old eq 'done' && $new ne $old ) {
                 $self->operation_instance->_undo_done_instance( $old, $new );
@@ -239,13 +272,21 @@ our @observers = (
             $self->input( thaw $self->input_stored );
             $self->output( thaw $self->output_stored );
 
+            my $parent;
+            if ($self->parent_instance_id) {
+                $parent = $self->parent_instance;
+
+                $self->root($parent->root);
+            } else {
+                $self->root($self);
+            }
+
             if (
-                $self->parent_instance_id
+                $parent
                 && (   $self->name eq 'input connector'
                     || $self->name eq 'output connector' )
               )
             {
-                my $parent = $self->parent_instance;
 
                 my $name = $self->name;
                 $name =~ s/ /_/g;
@@ -269,10 +310,13 @@ our @observers = (
                     xml => $self->operation->save_to_xml );
 
                 $self->cache_workflow($c);
+                $self->root($self);
             } elsif ( defined $self->parent_instance ) {
                 $self->cache_workflow( $self->parent_instance->cache_workflow );
+                $self->root($self->parent_instance->root);
             } elsif ( defined $self->peer_of ) {
                 $self->cache_workflow( $self->peer_of->cache_workflow );
+                $self->root($self);
             }
 
             $self->name( $self->operation->name );

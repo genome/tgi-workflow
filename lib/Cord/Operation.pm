@@ -14,7 +14,8 @@ class Cord::Operation {
         executor => { is => 'Cord::Executor', id_by => 'workflow_executor_id', is_optional => 1 },
         parallel_by => { is => 'String', is_optional=>1 },
         log_dir => { is => 'String', is_optional =>1 },
-        filename => { is => 'String', is_optional => 1 }
+        filename => { is => 'String', is_optional => 1 },
+        notify_url => { is => 'String', is_optional => 1, doc => 'URL that will be sent a GET request when any sub-status changes in this Workflow or Operation, multiple urls may be seperated by spaces' }
     ]
 };
 
@@ -73,11 +74,12 @@ sub create_from_xml_simple_structure {
     } else {
         $params{parallel_by} = $struct->{parallelBy} if $struct->{parallelBy};
         $params{log_dir} = $struct->{logDir} if $struct->{logDir};
+        $params{notify_url} = $struct->{notifyUrl} if $struct->{notifyUrl};
 
         if (exists $params{log_dir} && defined $params{log_dir}) {
             if ($params{log_dir}) {
                 if ($params{log_dir} !~ /^\/gsc/) {
-                    die "log diretory not on a valid network volume for lsf: $params{log_dir}\n";
+                    die "log directory not on a valid network volume for lsf: $params{log_dir}\n";
                 }
             } else {
                 die "log directory does not exist: $params{log_dir}\n";
@@ -106,6 +108,7 @@ sub as_xml_simple_structure {
 
     $struct->{logDir} = $self->log_dir if ($self->log_dir);
     $struct->{parallelBy} = $self->parallel_by if ($self->parallel_by);
+    $struct->{notifyUrl} = $self->notify_url if ($self->notify_url);
 
     if (!$self->workflow_model) {
         $struct->{executor} = $self->executor->class;

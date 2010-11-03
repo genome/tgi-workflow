@@ -8,7 +8,7 @@ BEGIN {
 use strict;
 use warnings;
 
-use Test::More tests => 27;
+use Test::More tests => 29;
 use Switch;
 
 use above 'Workflow';
@@ -72,6 +72,15 @@ foreach my $operationtype (@operationtypes) {
             is_deeply($out,{
                 bzz => [qw{a b c d e f 1 2 3 4 5 6 abcdef}], result => 1
             },'check output ' . $operationtype);
+
+            ok($out = $o->execute(
+                foo => 'a',
+                bar => 'b',
+                baz => 'c'
+            ), 'execute ' . $operationtype);
+            is_deeply($out,{
+                bzz => [qw{a b c}], result => 1
+            },'check_output ' . $operationtype);
         }
         case 'Dummy' {
             my $o;
