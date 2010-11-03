@@ -1,5 +1,5 @@
 <?xml version='1.0' standalone='yes'?>
-<workflow name="Example Workflow" executor="Workflow::Executor::SerialDeferred">
+<workflow name="Example Workflow" executor="Cord::Executor::SerialDeferred">
   <link fromOperation="input connector" fromProperty="sleep time" toOperation="sleep" toProperty="seconds" />
   <link fromOperation="input connector" fromProperty="model input string" toOperation="echo" toProperty="input" />
   <link fromOperation="echo" fromProperty="output" toOperation="mail" toProperty="echo_string" />
@@ -8,22 +8,22 @@
   <link fromOperation="mail" fromProperty="result" toOperation="wait for sleep and mail" toProperty="mail result" />
   <link fromOperation="wait for sleep and mail" fromProperty="mail result" toOperation="output connector" toProperty="result" />
   <operation name="wait for sleep and mail">
-    <operationtype typeClass="Workflow::OperationType::Block">
+    <operationtype typeClass="Cord::OperationType::Block">
       <property>mail result</property>
       <property>sleep result</property>
     </operationtype>
   </operation>
   <operation name="sleep">
-    <operationtype commandClass="Workflow::Test::Command::Sleep" typeClass="Workflow::OperationType::Command" />
+    <operationtype commandClass="Cord::Test::Command::Sleep" typeClass="Cord::OperationType::Command" />
   </operation>
   <operation name="echo">
-    <operationtype commandClass="Workflow::Test::Command::Echo" typeClass="Workflow::OperationType::Command" />
+    <operationtype commandClass="Cord::Test::Command::Echo" typeClass="Cord::OperationType::Command" />
   </operation>
   <operation name="time">
-    <operationtype commandClass="Workflow::Test::Command::Time" typeClass="Workflow::OperationType::Command" />
+    <operationtype commandClass="Cord::Test::Command::Time" typeClass="Cord::OperationType::Command" />
   </operation>
   <operation name="mail">
-    <operationtype typeClass="Workflow::OperationType::Mail">
+    <operationtype typeClass="Cord::OperationType::Mail">
       <inputproperty default="eclark@genome.wustl.edu">email_address</inputproperty>
       <inputproperty default="01_mail.xml test workflow">subject</inputproperty>
       <inputproperty default="template.d/01_mail.txt">template_file</inputproperty>
@@ -31,7 +31,7 @@
       <inputproperty>today</inputproperty>
     </operationtype>
   </operation>
-  <operationtype typeClass="Workflow::OperationType::Model">
+  <operationtype typeClass="Cord::OperationType::Model">
     <inputproperty>model input string</inputproperty>
     <inputproperty>sleep time</inputproperty>
     <outputproperty>result</outputproperty>
