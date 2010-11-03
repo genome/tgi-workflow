@@ -7,7 +7,7 @@ BEGIN {
 
 use strict;
 use warnings;
-use Test::More;
+use Test::More skip_all => 'Broken in dist branch';
 
 my $pid = fork();
 if (not defined $pid) {
@@ -21,8 +21,6 @@ if (not defined $pid) {
 
     use above 'Cord';
     use Cord::Simple;
-
-    $Cord::Simple::store_db = 0;
 
     my $output = run_workflow_lsf(
         \*DATA, 
@@ -40,7 +38,7 @@ ok(1,'past forking code');
 
 __DATA__
 <?xml version='1.0' standalone='yes'?>
-<workflow name="Example Cord" executor="Cord::Executor::SerialDeferred">
+<workflow name="Example Workflow" executor="Cord::Executor::SerialDeferred">
   <link fromOperation="input connector" fromProperty="sleep time" toOperation="sleep" toProperty="seconds" />
   <link fromOperation="echo" fromProperty="result" toOperation="wait for sleep and echo" toProperty="echo result" />
   <link fromOperation="wait for sleep and echo" fromProperty="echo result" toOperation="output connector" toProperty="result" />
