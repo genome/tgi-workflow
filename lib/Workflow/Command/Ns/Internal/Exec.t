@@ -1,15 +1,16 @@
 
 use strict;
 use warnings;
-
+#TODO rewrite this so its a real test.
+use Test::More skip_all => 1;
 
 use IPC::Run qw(start);
 use Data::Dumper;
 use Storable qw/store_fd fd_retrieve/;
 
 my $run = {
-    type => 'abcd',
-    input => 'efgh'
+    type => 'Workflow::OperationType::Dummy',
+    input => { }
 };
 
 my $wtr = IO::Handle->new;
