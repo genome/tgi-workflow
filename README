@@ -1,0 +1,4 @@
+Cord - Concurrent Operations with Remote Dispatch
+
+Cord is a framework for building dependency trees, which we call workflows,
+using Command classes with the UR class framework in perl.
