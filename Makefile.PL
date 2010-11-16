@@ -5,7 +5,7 @@ author 'Eric Clark <eclark@wustl.edu>';
 version_from 'lib/Cord.pm';
 license 'perl';
 
-build_requires 'Test::More';
+requires 'UR' => 0;
 requires 'POE' => '';
 auto_install;
 
