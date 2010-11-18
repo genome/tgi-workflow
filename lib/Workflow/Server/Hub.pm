@@ -645,11 +645,6 @@ sub setup {
                     }
                 }
 
-                # Attempt to secure a host exclusively for profiling
-                if (defined $ENV{WF_PROFILER} && $ENV{WF_PROFILER} == 1) {
-                  $lsf_opts .= ' -x ';
-                }
-
                 my $hostname = hostname;
                 my $port = $port_number;
 
