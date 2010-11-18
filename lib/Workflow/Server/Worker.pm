@@ -67,6 +67,28 @@ sub __build {
 
                 $ENV{'WORKFLOW_PARENT_EXECUTION'} = $instance->{current_execution_id};
 
+                my $collectl_cv;
+                my $collectl_pid;
+                if ($ENV{'WORKFLOW_COLLECTL'} && -e $err_log) {
+                    ## munge error log name to be the collectl name
+                    
+                    $collectl_cv = AnyEvent::Util::run_cmd(
+                        "###FIXME collectl cmd",
+                        close_all => 1,
+                        '$$' => \$collectl_pid,
+                        on_prepare => sub {
+                            # in child
+                        }
+                    );
+
+                    my $cv = AnyEvent->condvar;
+                    my $w = AnyEvent->timer(
+                        after => 2,
+                        cb => $cv
+                    );
+                    $cv->recv;
+                }
+
                 my $status = 'done';
                 my $output;
                 my $error_string;
@@ -94,6 +116,10 @@ sub __build {
                     $status = 'crashed';
                 } else {
                     UR::Context->commit();
+                }
+
+                if ($collectl_cv) {
+                    ## shut down collectl
                 }
 
                 $kernel->post('IKC','post','poe://Hub/dispatch/end_work',[$job_id, $kernel->ID, $instance->id, $status, $output, $error_string]);
