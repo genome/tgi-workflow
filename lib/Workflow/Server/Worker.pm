@@ -61,7 +61,7 @@ sub __build {
             },
             execute => sub {
                 my ($kernel, $heap, $arg) = @_[KERNEL, HEAP, ARG0];
-                my ($instance, $type, $input, $sc_flag) = @$arg;
+                my ($instance, $type, $input, $sc_flag, $out_log, $err_log) = @$arg;
                 
                 $kernel->alarm_remove_all;
 

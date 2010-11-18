@@ -447,7 +447,7 @@ sub setup {
                     $heap->{claimed}->{$remote_kernel} = $payload;
 
                     $kernel->post('IKC','post','poe://UR/workflow/begin_instance',[ $instance->id, $dispatch_id ]);
-                    $kernel->post('IKC','post',$where,[$instance, $type, $input, $sc]);
+                    $kernel->post('IKC','post',$where,[$instance, $type, $input, $sc, $payload->{out_log}, $payload->{err_log}]);
                 } else {
                     warn "dispatch get_work: unknown id $dispatch_id\n";
                     $kernel->post('IKC','post',"poe://$remote_kernel/worker/disconnect");
