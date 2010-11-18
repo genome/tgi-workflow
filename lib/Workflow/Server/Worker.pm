@@ -76,27 +76,30 @@ sub __build {
                 my $collectl_args = "--all --export lexpr -f /tmp -on";
                 my $collectl_output;
                 if ($ENV{'WF_PROFILER'} && -e $err_log) {
-                    if (! -x $collectl_cmd) {
-                        warn "WF_PROFILER is enabled, but $collectl_cmd is not present and executable\n";
-                    }
                     # Both WF_PROFILER and error logging must be set in order to be
                     # sure that we have a path to put our profiling stats in.
                     $collectl_output = $err_log;
                     $collectl_output =~ s/.err/.collectl.out/;
-                    $collectl_cv = AnyEvent::Util::run_cmd(
-                        "$collectl_cmd $collectl_args",
-                        close_all => 1,
-                        '$$' => \$collectl_pid,
-                        on_prepare => sub { delete $ENV{PERL5LIB} }
-                    );
+                    if (! -x $collectl_cmd) {
+                        warn "WF_PROFILER is enabled, but $collectl_cmd is not present and executable\n";
+                    } else {
+                      # Note that we undefine PERL5LIB because collectl is perl
+                      # and we want it to use the proper perl.
+                      $collectl_cv = AnyEvent::Util::run_cmd(
+                          "$collectl_cmd $collectl_args",
+                          close_all => 1,
+                          '$$' => \$collectl_pid,
+                          on_prepare => sub { delete $ENV{PERL5LIB} }
+                          );
 
-                    my $cv = AnyEvent->condvar;
-                    # We use a timer to give collectl time to start up.
-                    my $w = AnyEvent->timer(
-                        after => 2,
-                        cb => $cv
-                    );
-                    $cv->recv;
+                      my $cv = AnyEvent->condvar;
+                      # We use a timer to give collectl time to start up.
+                      my $w = AnyEvent->timer(
+                          after => 2,
+                          cb => $cv
+                          );
+                      $cv->recv;
+                    }
                 }
 
                 my $status = 'done';
