@@ -10,6 +10,9 @@ use POE;
 
 use File::Copy;
 use File::Basename;
+use File::Temp;
+use File::Path;
+
 use POE::Component::IKC::Client;
 use Workflow::Server::Hub;
 use Error qw(:try);
@@ -70,10 +73,21 @@ sub __build {
 
                 $ENV{'WORKFLOW_PARENT_EXECUTION'} = $instance->{current_execution_id};
 
+                # See if we're running under LSF and LSF gave us a directory that will be
+                # auto-cleaned up when the job terminates
+                my $tmp_location = $ENV{'TMPDIR'} || "/tmp";
+                if ($ENV{'LSB_JOBID'}) {
+                    my $lsf_possible_tempdir = sprintf("%s/%s.tmpdir", $ENV{'TMPDIR'}, $ENV{'LSB_JOBID'});
+                    $tmp_location = $lsf_possible_tempdir if (-d $lsf_possible_tempdir);
+                }
+                # tempdir() thows its own exception if there's a problem
+                my $tempdir = File::Temp::tempdir("workflow-metrics-XXXXX", DIR=>$tmp_location, CLEANUP => 1);
+                File::Path::make_path($tempdir);
+
                 my $collectl_cv;
                 my $collectl_pid;
                 my $collectl_cmd = "/usr/bin/collectl";
-                my $collectl_args = "--all --export lexpr -f /tmp -on";
+                my $collectl_args = "--all --export lexpr -f $tempdir -on";
                 my $collectl_output;
                 if ($ENV{'WF_PROFILER'} && -e $err_log) {
                     # Both WF_PROFILER and error logging must be set in order to be
@@ -135,7 +149,7 @@ sub __build {
                     ## shut down collectl
                     kill 15, $collectl_pid;
                     $collectl_cv->recv;
-                    move "/tmp/L", $collectl_output or die "Failed to move collectl output file /tmp/L to $collectl_output: $!";
+                    move "$tempdir/L", $collectl_output or die "Failed to move collectl output file $tempdir/L to $collectl_output: $!";
                 }
 
                 ## this should only contain plain key value pairs
