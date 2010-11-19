@@ -131,6 +131,13 @@ sub __build {
                     UR::Context->commit();
                 }
 
+                ## this should only contain plain key value pairs
+                #  it is relayed over the wire before it goes in oracle
+                #  so dont try to shove a bam in it
+                my %metrics = (
+#                    mcpu_hosts => $ENV{LSB_MCPU_HOSTS}  EXAMPLE
+                );
+
                 if ($collectl_cv) {
                     ## shut down collectl
                     kill 15, $collectl_pid;
@@ -138,7 +145,7 @@ sub __build {
                     move "/tmp/L", $collectl_output or die "Failed to move collectl output file /tmp/L to $collectl_output: $!";
                 }
 
-                $kernel->post('IKC','post','poe://Hub/dispatch/end_work',[$job_id, $kernel->ID, $instance->id, $status, $output, $error_string]);
+                $kernel->post('IKC','post','poe://Hub/dispatch/end_work',[$job_id, $kernel->ID, $instance->id, $status, $output, $error_string, \%metrics]);
                 $kernel->yield('disconnect');
             },
             disconnect => sub {

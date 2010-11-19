@@ -66,9 +66,9 @@ class Workflow::Operation::InstanceExecution {
         },
         cpu_time      => { is => 'NUMBER',   len => 11, is_optional => 1 },
         max_threads   => { is => 'NUMBER',   len => 4,  is_optional => 1 },
-        max_swap      => { is => 'NUMBER',   len => 10,  is_optional => 1 },
+        max_swap      => { is => 'NUMBER',   len => 10, is_optional => 1 },
         max_processes => { is => 'NUMBER',   len => 4,  is_optional => 1 },
-        max_memory    => { is => 'NUMBER',   len => 10,  is_optional => 1 },
+        max_memory    => { is => 'NUMBER',   len => 10, is_optional => 1 },
         user_name     => { is => 'VARCHAR2', len => 20, is_optional => 1 },
         debug_mode    => {
             is            => 'Boolean',
@@ -83,10 +83,16 @@ class Workflow::Operation::InstanceExecution {
             is_optional   => 1
         },
         child_instances => {
-            doc => 'instances that were started by code called during this execution',
+            doc =>
+'instances that were started by code called during this execution',
             is            => 'Workflow::Operation::Instance',
             is_many       => 1,
             reverse_id_by => 'parent_execution'
+        },
+        metrics => {
+            is         => 'Workflow::Operation::InstanceExecution::Metric',
+            is_many    => 1,
+            reverse_as => 'instance_execution'
         }
     ]
 };
@@ -111,14 +117,37 @@ sub fix_logs {
         $self->stderr($err);
     }
 
-    if (!$self->stdout && !$self->stderr) {
-        if ($self->operation_instance->operation_type->can('stdout_log')) {
-            $self->stdout($self->operation_instance->operation_type->stdout_log); 
+    if ( !$self->stdout && !$self->stderr ) {
+        if ( $self->operation_instance->operation_type->can('stdout_log') ) {
+            $self->stdout(
+                $self->operation_instance->operation_type->stdout_log );
         }
-        if ($self->operation_instance->operation_type->can('stderr_log')) {
-            $self->stderr($self->operation_instance->operation_type->stderr_log);
-        }  
+        if ( $self->operation_instance->operation_type->can('stderr_log') ) {
+            $self->stderr(
+                $self->operation_instance->operation_type->stderr_log );
+        }
     }
+}
+
+sub set_metric {
+    my ( $self, $name, $value ) = @_;
+
+    if ( defined $name ) {
+        my $metric = $self->metrics( name => $name );
+        if ( defined $metric ) {
+            $metric->value($value);
+        } else {
+            $metric = $self->add_metric( name => $name, value => $value );
+        }
+        return $metric;
+    }
+}
+
+sub get_metric {
+    my ( $self, $name ) = @_;
+    my $metric = $self->metrics( name => $name );
+    return $metric->value if $metric;
+    return;
 }
 
 1;

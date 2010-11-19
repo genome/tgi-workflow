@@ -455,7 +455,7 @@ sub setup {
             },
             end_work => sub {
                 my ($kernel, $heap, $arg) = @_[KERNEL, HEAP, ARG0];
-                my ($dispatch_id, $remote_kernel, $id, $status, $output, $error_string) = @$arg;
+                my ($dispatch_id, $remote_kernel, $id, $status, $output, $error_string, $metrics) = @$arg;
                 evTRACE and print "dispatch end_work $dispatch_id $id\n";
 
                 delete $heap->{failed}->{$id};
@@ -477,7 +477,7 @@ sub setup {
                     $heap->{cleaning_up}->{$remote_kernel} = 1;
                 }
 
-                $kernel->post('IKC','post','poe://UR/workflow/end_instance',[ $id, $status, $output, $error_string ])
+                $kernel->post('IKC','post','poe://UR/workflow/end_instance',[ $id, $status, $output, $error_string, $metrics ])
                     unless $was_shortcutting;
 
                 $heap->{finalizable}{$id} = $dispatch_id;

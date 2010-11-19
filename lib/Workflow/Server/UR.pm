@@ -312,7 +312,7 @@ evTRACE and print "workflow begin_instance\n";
             },
             end_instance => sub {
                 my ($kernel, $heap, $arg) = @_[KERNEL,HEAP,ARG0];
-                my ($id,$status,$output,$error_string) = @$arg;
+                my ($id,$status,$output,$error_string,$metrics) = @$arg;
 evTRACE and print "workflow end_instance\n";
 
                 $heap->{changes}++;
@@ -320,6 +320,10 @@ evTRACE and print "workflow end_instance\n";
                 my $instance = Workflow::Operation::Instance->get($id);
                 $instance->status($status);
                 $instance->current->end_time(UR::Time->now);
+
+                while (my ($k,$v) = each(%$metrics)) {
+                    $instance->current->add_metric(name => $k, value => $v);
+                }
                 if ($status eq 'done') {
                     $instance->output({ %{ $instance->output }, %$output });
                 } elsif ($status eq 'crashed') {
