@@ -889,7 +889,7 @@ sub spin {
             $retry_count{ $self->id } ||= 0;
 
             if (  !$self->can('child_instances')
-                && $retry_count{ $self->id } < 2 )
+                && $retry_count{ $self->id } < 0 )
             {
                 $retry_count{ $self->id }++;
 

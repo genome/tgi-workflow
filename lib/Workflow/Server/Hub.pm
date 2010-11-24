@@ -417,7 +417,7 @@ sub setup {
                         $heap->{failed}->{$instance->id}++;
                     }
 
-                    if ($heap->{failed}->{$instance->id} <= 5) {
+                    if ($heap->{failed}->{$instance->id} <= 1) {
                         $heap->{queue}->enqueue(200,$payload);
                     } else {
                         $kernel->yield('end_work',[-666,$remote_kernel,$instance->id,'crashed',{}]);
