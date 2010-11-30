@@ -208,8 +208,8 @@ sub execute {
     $command_name->dump_debug_messages(0);
 
     my $retvalue = $command->execute;
-    unless (defined $retvalue && $retvalue) {
-        die $command_name . ' failed to return a true value: ' . $retvalue;
+    unless (defined $retvalue && $retvalue && $retvalue > 0) {
+        die $command_name . ' failed to return a positive true value: ' . $retvalue;
     }
 
     UR::ModuleBase->message_callback('error',$error_cb);
