@@ -1,4 +1,5 @@
 #!/gsc/bin/perl
+# Copyright 2010 Washington University in St. Louis.
 
 use strict;
 use warnings;
