@@ -4,8 +4,14 @@ package Cord::Server::Worker;
 use strict;
 
 use AnyEvent::Impl::POE;
+use AnyEvent::Util;
 use AnyEvent;
 use POE;
+
+use File::Copy;
+use File::Basename;
+use File::Temp;
+use File::Path;
 
 use POE::Component::IKC::Client;
 use Cord::Server::Hub;
@@ -61,11 +67,54 @@ sub __build {
             },
             execute => sub {
                 my ($kernel, $heap, $arg) = @_[KERNEL, HEAP, ARG0];
-                my ($instance, $type, $input, $sc_flag) = @$arg;
-                
+                my ($instance, $type, $input, $sc_flag, $out_log, $err_log) = @$arg;
+
                 $kernel->alarm_remove_all;
 
                 $ENV{'WORKFLOW_PARENT_EXECUTION'} = $instance->{current_execution_id};
+
+                # See if we're running under LSF and LSF gave us a directory that will be
+                # auto-cleaned up when the job terminates
+                my $tmp_location = $ENV{'TMPDIR'} || "/tmp";
+                if ($ENV{'LSB_JOBID'}) {
+                    my $lsf_possible_tempdir = sprintf("%s/%s.tmpdir", $ENV{'TMPDIR'}, $ENV{'LSB_JOBID'});
+                    $tmp_location = $lsf_possible_tempdir if (-d $lsf_possible_tempdir);
+                }
+                # tempdir() thows its own exception if there's a problem
+                my $tempdir = File::Temp::tempdir("workflow-metrics-XXXXX", DIR=>$tmp_location, CLEANUP => 1);
+                File::Path::make_path($tempdir);
+
+                my $collectl_cv;
+                my $collectl_pid;
+                my $collectl_cmd = "/usr/bin/collectl";
+                my $collectl_args = "--all --export lexpr -f $tempdir -on";
+                my $collectl_output;
+                if ($ENV{'WF_PROFILER'} && -e $err_log) {
+                    # Both WF_PROFILER and error logging must be set in order to be
+                    # sure that we have a path to put our profiling stats in.
+                    $collectl_output = $err_log;
+                    $collectl_output =~ s/.err/.collectl.out/;
+                    if (! -x $collectl_cmd) {
+                        warn "WF_PROFILER is enabled, but $collectl_cmd is not present and executable\n";
+                    } else {
+                      # Note that we undefine PERL5LIB because collectl is perl
+                      # and we want it to use the proper perl.
+                      $collectl_cv = AnyEvent::Util::run_cmd(
+                          "$collectl_cmd $collectl_args",
+                          close_all => 1,
+                          '$$' => \$collectl_pid,
+                          on_prepare => sub { delete $ENV{PERL5LIB} }
+                          );
+
+                      my $cv = AnyEvent->condvar;
+                      # We use a timer to give collectl time to start up.
+                      my $w = AnyEvent->timer(
+                          after => 2,
+                          cb => $cv
+                          );
+                      $cv->recv;
+                    }
+                }
 
                 my $status = 'done';
                 my $output;
@@ -96,7 +145,31 @@ sub __build {
                     UR::Context->commit();
                 }
 
-                $kernel->post('IKC','post','poe://Hub/dispatch/end_work',[$job_id, $kernel->ID, $instance->id, $status, $output, $error_string]);
+                if ($collectl_cv) {
+                    ## shut down collectl
+                    kill 15, $collectl_pid;
+                    $collectl_cv->recv;
+                    move "$tempdir/L", $collectl_output or die "Failed to move collectl output file $tempdir/L to $collectl_output: $!";
+                }
+
+                ## this should only contain plain key value pairs
+                #  it is relayed over the wire before it goes in oracle
+                #  so dont try to shove a bam in it
+                my %metrics;
+
+                # parse collectl output if present and store metrics.
+                if (-s $collectl_output) {
+                    open S, "<$collectl_output" or die "Unable to open collectl output file: $collectl_output: $!";
+                    my @lines = <S>;
+                    close S;
+                    foreach my $line (@lines) {
+                        chomp $line;
+                        my ($metric,$value) = split(' ',$line);
+                        $metrics{$metric} = $value;
+                    }
+                }
+
+                $kernel->post('IKC','post','poe://Hub/dispatch/end_work',[$job_id, $kernel->ID, $instance->id, $status, $output, $error_string, \%metrics]);
                 $kernel->yield('disconnect');
             },
             disconnect => sub {

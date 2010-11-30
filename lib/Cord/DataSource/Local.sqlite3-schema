@@ -45,3 +45,10 @@ CREATE TABLE workflow_service (
     username TEXT,
     PRIMARY KEY (hostname, port, start_time, process_id, username)
 );
+
+CREATE TABLE workflow_execution_metric (
+    workflow_execution_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    value TEXT
+    PRIMARY KEY (workflow_execution_id, name)
+);

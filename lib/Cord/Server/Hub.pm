@@ -417,7 +417,7 @@ sub setup {
                         $heap->{failed}->{$instance->id}++;
                     }
 
-                    if ($heap->{failed}->{$instance->id} <= 5) {
+                    if ($heap->{failed}->{$instance->id} <= 1) {
                         $heap->{queue}->enqueue(200,$payload);
                     } else {
                         $kernel->yield('end_work',[-666,$remote_kernel,$instance->id,'crashed',{}]);
@@ -447,7 +447,7 @@ sub setup {
                     $heap->{claimed}->{$remote_kernel} = $payload;
 
                     $kernel->post('IKC','post','poe://UR/workflow/begin_instance',[ $instance->id, $dispatch_id ]);
-                    $kernel->post('IKC','post',$where,[$instance, $type, $input, $sc]);
+                    $kernel->post('IKC','post',$where,[$instance, $type, $input, $sc, $payload->{out_log}, $payload->{err_log}]);
                 } else {
                     warn "dispatch get_work: unknown id $dispatch_id\n";
                     $kernel->post('IKC','post',"poe://$remote_kernel/worker/disconnect");
@@ -455,7 +455,7 @@ sub setup {
             },
             end_work => sub {
                 my ($kernel, $heap, $arg) = @_[KERNEL, HEAP, ARG0];
-                my ($dispatch_id, $remote_kernel, $id, $status, $output, $error_string) = @$arg;
+                my ($dispatch_id, $remote_kernel, $id, $status, $output, $error_string, $metrics) = @$arg;
                 evTRACE and print "dispatch end_work $dispatch_id $id\n";
 
                 delete $heap->{failed}->{$id};
@@ -477,7 +477,7 @@ sub setup {
                     $heap->{cleaning_up}->{$remote_kernel} = 1;
                 }
 
-                $kernel->post('IKC','post','poe://UR/workflow/end_instance',[ $id, $status, $output, $error_string ])
+                $kernel->post('IKC','post','poe://UR/workflow/end_instance',[ $id, $status, $output, $error_string, $metrics ])
                     unless $was_shortcutting;
 
                 $heap->{finalizable}{$id} = $dispatch_id;
@@ -656,7 +656,7 @@ sub setup {
                     $libstring .= 'use lib "' . $lib . '"; ';
                 }
 
-                my $cmd = 'bsub -g /workflow-worker -q ' . $queue . ' ' . $lsf_opts .
+                my $cmd = 'bsub -g /workflow-worker2 -q ' . $queue . ' ' . $lsf_opts .
                     ' -J "' . $name . '" annotate-log perl -e \'' . $libstring . 'use ' . $namespace . '; use ' . $command_class . '; use Cord::Server::Worker; Cord::Server::Worker->start("' . $hostname . '",' . $port . ')\'';
 
                 evTRACE and print "dispatch lsf_cmd $cmd\n";
