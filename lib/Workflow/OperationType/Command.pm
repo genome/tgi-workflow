@@ -209,7 +209,7 @@ sub execute {
 
     my $retvalue = $command->execute;
     unless (defined $retvalue && $retvalue) {
-        die $command_name . ' failed to return a true value: ' $retvalue;
+        die $command_name . ' failed to return a true value: ' . $retvalue;
     }
 
     UR::ModuleBase->message_callback('error',$error_cb);
