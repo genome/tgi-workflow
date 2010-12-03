@@ -1,0 +1,20 @@
+#!/usr/bin/make -f
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+export PREFIX=/usr
+
+PACKAGE=$(shell dh_listpackages)
+SITELIB=`perl -MConfig -e 'print "$$Config{installvendorarch}"'`
+BUILDROOT=debian/$(PACKAGE)
+PERLROOT=$(BUILDROOT)$(SITELIB)
+MKDIR=/bin/mkdir
+CP=/bin/cp
+
+%:
+	dh $@
+
+# Copy the packages's files.
+override_dh_install:
+	$(MKDIR) -p $(PERLROOT)
+	$(CP) -pa bin $(BUILDROOT)/usr/bin
+	$(CP) -pa lib/* $(PERLROOT)
