@@ -26,6 +26,14 @@ sub create_from_xml_simple_structure {
         $_->name => $_
     } $params{workflow_model}->operations;
 
+    unless(exists $ops_by_name{$struct->{fromOperation}}) {
+        Carp::confess('From operation not found: ' . $struct->{fromOperation});
+    }
+
+    unless(exists $ops_by_name{$struct->{fromOperation}}) {
+        Carp::confess('To operation not found: ' . $struct->{toOperation});
+    }
+
     my $self = $class->create(
         left_operation => $ops_by_name{$struct->{fromOperation}},
         left_property => $struct->{fromProperty},
