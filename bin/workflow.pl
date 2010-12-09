@@ -9,8 +9,10 @@ BEGIN {
     # tab-completion request and then exit before doing any real work.
     # The code is in an eval to prevent problems on systems which do no have Getopt::Complete 
     # installed.  The code is in a BEGIN block to ensure it still runs before anything else.
-    eval "use Getopt::Complete::Cache class => 'Workflow::Command', above => 1;";
-    exit if ($@);
+    if ($ENV{COMP_LINE}) {
+        eval "use Getopt::Complete::Cache class => 'Workflow::Command', above => 1;";
+        exit if ($@);
+    }
 };
 
 
