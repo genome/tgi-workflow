@@ -283,8 +283,9 @@ sub bsub_runner {
         }
     }
 
+    my $mail_user = $ENV{USER} || 'apipe-run';
     my $cmd =
-      sprintf( "bsub -H -u \"eclark\@genome.wustl.edu\" -q %s %s %s %s -Q \"5 88\" workflow ns internal run%s %s %s",
+      sprintf( "bsub -H -u \"$mail_user\@genome.wustl.edu\" -q %s %s %s %s -Q \"5 88\" workflow ns internal run%s %s %s",
         $queue, $resource, $job_group, $dep_expr, $dstr, $top->id, $op->id );
 
     $self->status_message("lsf\$ $cmd\n");
