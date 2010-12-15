@@ -1096,6 +1096,12 @@ sub create_peers {
         $peer->current->start_time( UR::Time->now );
 
         $peer->current->fix_logs;
+        if (UNIVERSAL::isa($peer, 'Workflow::Model::Instance')) {
+            for my $child_instance ($peer->child_instances) {
+                $child_instance->current->fix_logs;
+            }
+        }
+
         $peer->fix_parallel_input_links;
 
         foreach my $dep (@deps) {
