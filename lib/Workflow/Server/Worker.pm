@@ -8,10 +8,8 @@ use AnyEvent::Util;
 use AnyEvent;
 use POE;
 
-use File::Copy;
 use File::Basename;
 use File::Temp;
-use File::Path;
 
 use POE::Component::IKC::Client;
 use Workflow::Server::Hub;
@@ -26,7 +24,7 @@ sub start {
     our $host = shift;
     our $port = shift;
     my $use_pid = shift;
-    
+
     $host ||= 'localhost';
     $port ||= die 'no port number';
 
@@ -51,7 +49,7 @@ sub start {
     );
 
     $Storable::forgive_me=1;
-    
+
     POE::Kernel->run();
 }
 
@@ -73,48 +71,35 @@ sub __build {
 
                 $ENV{'WORKFLOW_PARENT_EXECUTION'} = $instance->{current_execution_id};
 
-                # See if we're running under LSF and LSF gave us a directory that will be
-                # auto-cleaned up when the job terminates
-                my $tmp_location = $ENV{'TMPDIR'} || "/tmp";
-                if ($ENV{'LSB_JOBID'}) {
-                    my $lsf_possible_tempdir = sprintf("%s/%s.tmpdir", $ENV{'TMPDIR'}, $ENV{'LSB_JOBID'});
-                    $tmp_location = $lsf_possible_tempdir if (-d $lsf_possible_tempdir);
-                }
-                # tempdir() thows its own exception if there's a problem
-                my $tempdir = File::Temp::tempdir("workflow-metrics-XXXXX", DIR=>$tmp_location, CLEANUP => 1);
-                File::Path::make_path($tempdir);
-
-                my $collectl_cv;
-                my $collectl_pid;
-                my $collectl_cmd = "/usr/bin/collectl";
-                my $collectl_args = "--all --export lexpr -f $tempdir -on";
-                my $collectl_output;
-                if ($ENV{'WF_PROFILER'} && -e $err_log) {
-                    # Both WF_PROFILER and error logging must be set in order to be
-                    # sure that we have a path to put our profiling stats in.
-                    $collectl_output = $err_log;
-                    $collectl_output =~ s/.err/.collectl.out/;
-                    if (! -x $collectl_cmd) {
-                        warn "WF_PROFILER is enabled, but $collectl_cmd is not present and executable\n";
-                    } else {
-                      # Note that we undefine PERL5LIB because collectl is perl
-                      # and we want it to use the proper perl.
-                      $collectl_cv = AnyEvent::Util::run_cmd(
-                          "$collectl_cmd $collectl_args",
-                          close_all => 1,
-                          '$$' => \$collectl_pid,
-                          on_prepare => sub { delete $ENV{PERL5LIB} }
-                          );
-
-                      my $cv = AnyEvent->condvar;
-                      # We use a timer to give collectl time to start up.
-                      my $w = AnyEvent->timer(
-                          after => 2,
-                          cb => $cv
-                          );
-                      $cv->recv;
+                my $profiler = $ENV{'WF_PROFILER'};
+                if ($profiler && ! -e $err_log) {
+                    # Require an err_log for profiling because this is the target destination
+                    # of our metrics output file.
+                    warn "WF_PROFILER is set but err_log is undefined, disabling profiling";
+                    $profile = undef;
+                } elsif ($profiler && -e $err_log) {
+                    # See if we're running under LSF and LSF gave us a directory that will be
+                    # auto-cleaned up when the job terminates.  If so, use it for temp space.
+                    my $tmp_location = $ENV{'TMPDIR'} || "/tmp";
+                    if ($ENV{'LSB_JOBID'}) {
+                        my $lsf_possible_tempdir = "$ENV{TMPDIR}/$ENV{LSB_JOBID}.tmpdir";
+                        $tmp_location = $lsf_possible_tempdir if (-d $lsf_possible_tempdir);
                     }
+                    my $tempdir = File::Temp::tempdir("workflow-metrics-XXXXX", DIR=>$tmp_location, CLEANUP => 1);
+
+                    # Determine output path from err_log
+                    my $outdir = File::Basename::dirname($err_log);
+
+                    my $package = 'Workflow::Metrics::' . ucfirst(lc($profiler));
+                    eval "use $package";
+                    if ($@) {
+                        warn "WF_PROFILER is set but failed to use $package: disabling profiling: $!";
+                        $profiler = undef;
+                    }
+                    $profiler = $profiler->new($instance->{current_execution_id},$tempdir,$outdir);
                 }
+
+                $profiler->pre_run() if ($profiler);
 
                 my $status = 'done';
                 my $output;
@@ -145,28 +130,14 @@ sub __build {
                     UR::Context->commit();
                 }
 
-                if ($collectl_cv) {
-                    ## shut down collectl
-                    kill 15, $collectl_pid;
-                    $collectl_cv->recv;
-                    move "$tempdir/L", $collectl_output or die "Failed to move collectl output file $tempdir/L to $collectl_output: $!";
-                }
-
-                ## this should only contain plain key value pairs
+                ## metrics should only contain plain key value pairs
                 #  it is relayed over the wire before it goes in oracle
                 #  so dont try to shove a bam in it
                 my %metrics;
 
-                # parse collectl output if present and store metrics.
-                if (-s $collectl_output) {
-                    open S, "<$collectl_output" or die "Unable to open collectl output file: $collectl_output: $!";
-                    my @lines = <S>;
-                    close S;
-                    foreach my $line (@lines) {
-                        chomp $line;
-                        my ($metric,$value) = split(' ',$line);
-                        $metrics{$metric} = $value;
-                    }
+                if ($profiler) {
+                  $profiler->post_run();
+                  %metrics = %{ $profiler->report() };
                 }
 
                 $kernel->post('IKC','post','poe://Hub/dispatch/end_work',[$job_id, $kernel->ID, $instance->id, $status, $output, $error_string, \%metrics]);
