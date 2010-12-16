@@ -76,7 +76,7 @@ sub __build {
                     # Require an err_log for profiling because this is the target destination
                     # of our metrics output file.
                     warn "WF_PROFILER is set but err_log is undefined, disabling profiling";
-                    $profile = undef;
+                    $profiler = undef;
                 } elsif ($profiler && -e $err_log) {
                     # See if we're running under LSF and LSF gave us a directory that will be
                     # auto-cleaned up when the job terminates.  If so, use it for temp space.
@@ -96,7 +96,7 @@ sub __build {
                         warn "WF_PROFILER is set but failed to use $package: disabling profiling: $!";
                         $profiler = undef;
                     }
-                    $profiler = $profiler->new($instance->{current_execution_id},$tempdir,$outdir);
+                    $profiler = $package->new($instance->{current_execution_id},$tempdir,$outdir);
                 }
 
                 $profiler->pre_run() if ($profiler);
