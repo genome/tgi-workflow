@@ -14,6 +14,7 @@ sub new {
   my $datadir = shift;
 
   my $self = {
+    pid         => undef,
     instance_id => $instance_id,
     tempdir     => $tempdir,
     datadir     => $datadir,
@@ -26,20 +27,26 @@ sub new {
 }
 
 sub pre_run {
+  warn "pre exec steps";
   return;
 }
 
+# FIXME: run isn't actually used, because we use an execute() method
+# of a command module.  I'm not yet sure how to override such a thing.
 sub run {
   return;
 }
 
 sub post_run {
+  warn "post exec steps";
   return;
 }
 
 sub report {
   my $self = shift;
-  my $metrics;
+  my $metrics = {};
+
+  return $metrics if (! -s $self->{metrics});
 
   open S, "<$self->{metrics}" or die "Unable to open metrics file: $self->{metrics}: $!";
   my @lines = <S>;
