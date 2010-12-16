@@ -1,11 +1,6 @@
-package Genome::Utility::SystemSnapshot::Usrbintime;
+package Workflow::Metrics::Usrbintime;
 
-use Storable;
-use Data::Dumper;
-
-use base qw(Genome::Utility::SystemSnapshot);
-use Genome::Utility::FileSystem;
-use File::Copy;
+use base qw(Workflow::Metrics);
 
 use strict;
 use warnings;
@@ -19,9 +14,10 @@ sub run {
 
   my $timecmd = '/usr/bin/time -f "command: %C\ntime.user: %U\ntime.sys: %S\ntime.wall: %e\ncpu: %P\nmem.avg.shared.text: %X\nmem.avg.unshared.data: %D\nmem.avg.stack: %p\nmem.avg.total: %K\nmem.max.resident: %M\nmem.avg.resident: %t\nmem.maj.fault: %F\nmem.min.fault: %R\ncontext.vol: %w\ncontext.inv: %c\nswaps: %W\nfs.inputs: %I\nfs.outputs: %O\nsocket.sent: %s\nsocket.rcvd: %r\nsignals.delivered: %k\npage.size: %Z\nexit.status: %x\n"' . " -o $self->{metrics}";
 
-  return Genome::Utility::FileSystem->shellcmd(
-    cmd => "$timecmd $cmd $args >$self->{output} 2>$self->{errors}",
-    #output_files => [$self->{output},$self->{metrics}],
+  return AnyEvent::Util::run_cmd(
+    "$timecmd $cmd $args",
+    ">"  => $self->{output},
+    "2>" => $self->{errors},
   );
 }
 
