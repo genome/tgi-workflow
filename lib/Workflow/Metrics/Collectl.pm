@@ -69,6 +69,7 @@ sub run {
 
 sub post_run {
   my $self = shift;
+  return if (! defined $self->{pid});
 
   # Now that cmd_cv->cmd status is true, we're back, and we send SIGTERM to collectl's pid.
   kill 15, $self->{pid};
@@ -88,7 +89,8 @@ sub post_run {
 
 sub report {
   my $self = shift;
-  my $metrics;
+  my $metrics = {};
+  return $metrics if (! -s $self->{metrics});
 
   open S, "<$self->{metrics}" or die "Unable to open metrics file: $self->{metrics}: $!";
   my @lines = <S>;
