@@ -8,7 +8,18 @@ push @aspects,
     subject_class_name => 'Workflow::Operation::InstanceExecution',
     perspective        => 'default',
     toolkit            => 'xml',
-    aspects => []
+    aspects => [
+      {
+        name => 'metrics',
+        aspects => [
+          'name',
+          'value'
+        ],
+        perspective => 'default',
+        toolkit => 'xml',
+        subject_class_name => 'Workflow::Operation::InstanceExecution::Metric',
+      },
+    ]
   };
 
 class Workflow::Operation::Instance::View::Status::Xml {
