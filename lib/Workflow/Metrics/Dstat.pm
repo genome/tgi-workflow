@@ -25,7 +25,7 @@ sub pre_run {
         return;
     }
 
-    my $args = "-Tcldigmnpsy --ipc --lock --tcp --udp --unix --output $self->{metrics}";
+    my $args = "-Tcldigmnpsy --ipc --lock --tcp --udp --unix --net-packets --nfs3 --output $self->{metrics}";
     if ($ENV{WF_PROFILER_ARGS}) {
         warn "WF_PROFILER_ARGS overrides default profiler args";
         $args = $ENV{WF_PROFILER_ARGS};
@@ -33,6 +33,8 @@ sub pre_run {
 
     $self->{cv} = AnyEvent::Util::run_cmd(
         "$cmd $args",
+        '>' => "/dev/null",
+        '2>' => "/dev/null",
         close_all => 1,
         '$$' => \( $self->{pid} ),
         allow_failed_exit_code => 1,
@@ -66,8 +68,7 @@ sub post_run {
   eval {
     $self->{cv}->recv;
   };
-  #if (defined $@ && $@ !~ /^COMMAND KILLED\. Signal 15/) {
-  if ($@) {
+  if (defined $@ && $@ !~ /^COMMAND KILLED\. Signal 15/) {
     # unexpected death message from shellcmd.
     die $@;
   }
