@@ -19,13 +19,15 @@ sub _sleep {
 
 sub pre_run {
     my $self = shift;
-    my $cmd = "/usr/bin/dstat";
+    #my $cmd = "/usr/bin/dstat";
+    my $cmd = "/gsc/var/tmp/blades/dstat/dstat";
     if (! -x $cmd) {
         warn "comand not found: $cmd: NOT profiling";
         return;
     }
 
-    my $args = "-Tcldigmnpsy --ipc --lock --tcp --udp --unix --net-packets --nfs3 --output $self->{metrics}";
+    #my $args = "-Tcldigmnpsy --ipc --lock --tcp --udp --unix --net-packets --nfs3 --output $self->{metrics}";
+    my $args = "-Tcldigmnpsy --ipc --lock --tcp --udp --unix --output $self->{metrics}";
     if ($ENV{WF_PROFILER_ARGS}) {
         warn "WF_PROFILER_ARGS overrides default profiler args";
         $args = $ENV{WF_PROFILER_ARGS};
