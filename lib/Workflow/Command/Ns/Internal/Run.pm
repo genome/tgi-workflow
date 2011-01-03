@@ -163,8 +163,8 @@ sub run_optype {
         require File::Which;
         my $workflow_cmd = File::Which::which('workflow');
 
-        unless ($? == 0) {
-            $self->error_message("Failed command: $workflow_cmd");
+        unless ($workflow_cmd) {
+            $self->error_message("Failed to find workflow command.");
             return {},0,0;
         }
 
