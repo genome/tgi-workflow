@@ -91,7 +91,7 @@ sub launch {
     my $hl_g = $class->guard_lock('Hub');
     my $ul_g = $class->guard_lock('UR');
 
-    require File::Which:
+    require File::Which;
     my $workflow_cmd = File::Which::which('workflow');
 
     my $h = IPC::Run::start(
