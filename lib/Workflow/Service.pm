@@ -11,7 +11,7 @@ class Workflow::Service {
     table_name => 'WORKFLOW_SERVICE',
     id_by => [
         hostname   => { is => 'VARCHAR2', len => 255 },
-        username   => { is => 'VARCHAR2', len => 10 },
+        username   => { is => 'VARCHAR2', len => 20 },
         process_id => { is => 'NUMBER', len => 10 },
         port       => { is => 'NUMBER', len => 7 },
         start_time => { is => 'TIMESTAMP', len => 20 },
