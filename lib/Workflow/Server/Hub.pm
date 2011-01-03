@@ -582,7 +582,7 @@ sub setup {
 
                 my @cmd = (
                     'annotate-log',
-                    'perl',
+                    $^X,
                     '-e',
                     $libstring . 'use ' . $namespace . '; use ' . $command_class . '; use Workflow::Server::Worker; Workflow::Server::Worker->start("' . $hostname . '",' . $port . ',2)'
                 );
@@ -657,7 +657,7 @@ sub setup {
                 }
 
                 my $cmd = 'bsub -g /workflow-worker2 -q ' . $queue . ' ' . $lsf_opts .
-                    ' -J "' . $name . '" annotate-log perl -e \'' . $libstring . 'use ' . $namespace . '; use ' . $command_class . '; use Workflow::Server::Worker; Workflow::Server::Worker->start("' . $hostname . '",' . $port . ')\'';
+                    ' -J "' . $name . '" annotate-log '. $^X .' -e \'' . $libstring . 'use ' . $namespace . '; use ' . $command_class . '; use Workflow::Server::Worker; Workflow::Server::Worker->start("' . $hostname . '",' . $port . ')\'';
 
                 evTRACE and print "dispatch lsf_cmd $cmd\n";
 

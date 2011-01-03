@@ -159,11 +159,12 @@ sub run_optype {
 
     my @cmd = qw(workflow ns internal exec /dev/fd/3 /dev/fd/4);
 
-    if ($self->debug) { 
-        my $workflow_cmd = `which workflow`;
+    if ($self->debug) {
+        require File::Which;
+        my $workflow_cmd = File::Which::which('workflow');
 
         unless ($? == 0) {
-            $self->error_message("Failed command: `which workflow`");
+            $self->error_message("Failed command: $workflow_cmd");
             return {},0,0;
         }
 
@@ -173,7 +174,7 @@ sub run_optype {
        
         splice(@cmd,4,0,'--debug');
  
-        unshift @cmd, 'perl', '-d:ptkdb';
+        unshift @cmd, $^X, '-d:ptkdb';
     }
 
     $self->status_message("Executing: " . join(' ', @cmd));

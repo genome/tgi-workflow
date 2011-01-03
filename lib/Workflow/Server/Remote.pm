@@ -91,9 +91,12 @@ sub launch {
     my $hl_g = $class->guard_lock('Hub');
     my $ul_g = $class->guard_lock('UR');
 
+    require File::Which:
+    my $workflow_cmd = File::Which::which('workflow');
+
     my $h = IPC::Run::start(
         [
-            'workflow',   'server',
+            $^X, $workflow_cmd,   'server',
             '--type=hub', "--hub-port=$hub_port",
             "--ur-port=$ur_port"
         ]
@@ -105,7 +108,7 @@ sub launch {
 
     my $u = IPC::Run::start(
         [
-            'workflow',  'server',
+            $^X, $workflow_cmd,  'server',
             '--type=ur', "--hub-port=$hub_port",
             "--ur-port=$ur_port"
         ]
