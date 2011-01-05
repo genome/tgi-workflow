@@ -12,6 +12,7 @@ class Workflow::OperationType::Command {
         command_class_name => { is => 'String' },
         lsf_resource => { is => 'String', is_optional=>1 },
         lsf_queue => { is => 'String', is_optional=>1 },
+        lsf_project => { is => 'String', is_optional=>1 },
     ],
 };
 
@@ -74,7 +75,7 @@ sub initialize {
         }
     }
 
-    my @params = qw/lsf_resource lsf_queue/;
+    my @params = qw/lsf_resource lsf_queue lsf_project/;
     foreach my $param_name (@params) {
         unless ($self->$param_name) {
             my $prop = $class_meta->property_meta_for_name($param_name);
@@ -100,6 +101,7 @@ sub create_from_xml_simple_structure {
     
     $self->lsf_resource(delete $struct->{lsfResource}) if (exists $struct->{lsfResource});
     $self->lsf_queue(delete $struct->{lsfQueue}) if (exists $struct->{lsfQueue});
+    $self->lsf_project(delete $struct->{lsfProject}) if (exists $struct->{lsfProject});
 
     return $self;
 }
@@ -112,6 +114,7 @@ sub as_xml_simple_structure {
 
     $struct->{lsfResource} = $self->lsf_resource if ($self->lsf_resource);
     $struct->{lsfQueue} = $self->lsf_queue if($self->lsf_queue);
+    $struct->{lsfProject} = $self->lsf_project if($self->lsf_project);
 
     # command classes have theirs defined in source code
     delete $struct->{inputproperty};

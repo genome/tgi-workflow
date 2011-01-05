@@ -528,6 +528,7 @@ sub setup {
                             $lsf_job_id = $kernel->call($_[SESSION],'lsf_bsub',
                                 $payload->{operation_type}->lsf_queue,
                                 $payload->{operation_type}->lsf_resource,
+                                $payload->{operation_type}->lsf_project,
                                 $payload->{operation_type}->command_class_name,
                                 $payload->{out_log},
                                 $payload->{err_log},
@@ -613,7 +614,7 @@ sub setup {
                 }
             },
             lsf_bsub => sub {
-                my ($kernel, $queue, $rusage, $command_class, $stdout_file, $stderr_file, $name, $pindex) = @_[KERNEL, ARG0, ARG1, ARG2, ARG3, ARG4, ARG5, ARG6];
+                my ($kernel, $queue, $rusage, $project, $command_class, $stdout_file, $stderr_file, $name, $pindex) = @_[KERNEL, ARG0, ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7];
                 evTRACE and print "dispatch lsf_cmd $queue $rusage $stdout_file $stderr_file $name\n";
 
                 $queue ||= 'long';
@@ -643,6 +644,10 @@ sub setup {
                     if ($stderr_file) {
                         $lsf_opts .= ' -e ' . $stderr_file;
                     }
+                }
+
+                if ($project) {
+                        $lsf_opts .= ' -P ' . $project;
                 }
 
                 my $hostname = hostname;
