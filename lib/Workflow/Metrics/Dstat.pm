@@ -70,28 +70,18 @@ sub post_run {
   eval {
     $self->{cv}->recv;
   };
-  if (defined $@ && $@ !~ /^COMMAND KILLED\. Signal 15/) {
+  if ($@ && $@ !~ /^COMMAND KILLED\. Signal 15/) {
     # unexpected death message from shellcmd.
-    die $@;
+    # Don't die here, we don't want shutting down the profiler to interrupt
+    # the job being profiled.  Just warn.
+    warn "unexpected death of profiler: $@";
   }
 }
 
 sub report {
-  my $self = shift;
-  my $metrics = {};
   # dstat output is not key/value
-  return $metrics if (! -s $self->{metrics});
-
-  #open S, "<$self->{metrics}" or die "Unable to open metrics file: $self->{metrics}: $!";
-  #my @lines = <S>;
-  #close S;
-  #foreach my $line (@lines) {
-  #  chomp $line;
-  #  next if ($line =~ /^$/);
-  #  my ($metric,$value) = split(' ',$line);
-  #  $metrics->{$metric} = $value;
-  #}
-  #return $metrics;
+  my $self = shift;
+  return {};
 }
 
 1;
