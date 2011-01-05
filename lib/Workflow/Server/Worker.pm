@@ -76,6 +76,7 @@ sub __build {
                     # Require an err_log for profiling because this is the target destination
                     # of our metrics output file.
                     warn "WF_PROFILER is set but err_log is undefined, disabling profiling";
+                    delete $ENV{'WF_PROFILER'};
                     $profiler = undef;
                 } elsif ($profiler && -e $err_log) {
                     # See if we're running under LSF and LSF gave us a directory that will be
@@ -93,10 +94,12 @@ sub __build {
                     my $package = 'Workflow::Metrics::' . ucfirst(lc($profiler));
                     eval "use $package";
                     if ($@) {
-                        warn "WF_PROFILER is set but failed to use $package: disabling profiling: $!";
+                        warn "WF_PROFILER is set to '$package' but failed to 'use $package': disabling profiling: $!";
+                        delete $ENV{'WF_PROFILER'};
                         $profiler = undef;
+                    } else {
+                        $profiler = $package->new($instance->{current_execution_id},$tempdir,$outdir);
                     }
-                    $profiler = $package->new($instance->{current_execution_id},$tempdir,$outdir);
                 }
 
                 $profiler->pre_run() if ($profiler);
