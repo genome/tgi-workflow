@@ -20,7 +20,7 @@ sub _sleep {
 sub pre_run {
     my $self = shift;
     #my $cmd = "/usr/bin/dstat";
-    my $cmd = "/gsc/var/tmp/blades/dstat/dstat";
+    my $cmd = "/gsc/var/gsc/systems/blades/dstat/dstat";
     if (! -x $cmd) {
         warn "comand not found: $cmd: NOT profiling";
         return;
