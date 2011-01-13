@@ -224,17 +224,23 @@ sub call {
         $commit_rv = UR::Context->commit();
     };
     if ($@ || !$commit_rv) {
-        UR::Context->rollback();
+        if ($rethrow) {
+            $rethrow .= "\n Failed to commit: " . $@;
+        } else {
+            $rethrow = $@;
+        }
+
+        eval {
+            UR::Context->rollback();
+        };
+    
+        if ($@) {
+            $rethrow .= "\n Plus this error from attempting to rollback: " . $@;
+        }
 
         $command_obj->event_status('Failed');
         $command_obj->date_completed(UR::Time->now());
         UR::Context->commit();
-
-        if ($rethrow) {
-            $rethrow .= "\n" . $@;
-        } else {
-            $rethrow = $@;
-        }
     }
 
     die $rethrow if defined $rethrow;
