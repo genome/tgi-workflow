@@ -671,7 +671,7 @@ sub setup {
                 evTRACE and print "dispatch lsf_cmd $bsub_output";
 
                 # Job <8833909> is submitted to queue <long>.
-                if ($bsub_output =~ /^Job <(\d+)> is submitted to queue <(\w+)>\./) {
+                if ($bsub_output =~ /^Job <([^>]+)> is submitted to queue <([^>]+)>\./) {
                     my $lsf_job_id = $1;                
                     return $lsf_job_id;
                 } else {
