@@ -72,7 +72,8 @@ sub _add_properties {
     };
     
     while (my ($property_name, $old_property) = each(%$has)) {
-        my %new = $class->get_class_object->_normalize_property_description($property_name, $old_property, $desc);
+        my %new1 = $class->get_class_object->_normalize_property_description1($property_name, $old_property, $desc);
+        my %new = $class->get_class_object->_normalize_property_description2(\%new1, $desc);
         $desc->{has}->{$property_name} = \%new;
     }
     
