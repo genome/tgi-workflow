@@ -156,7 +156,7 @@ sub call {
     $command_obj->revert;
 
     $command_obj->lsf_job_id($ENV{'LSB_JOBID'});
-    $command_obj->date_scheduled(UR::Time->now());
+    $command_obj->date_scheduled(Workflow::Time->now());
     $command_obj->date_completed(undef);
     $command_obj->event_status('Running');
     $command_obj->user_name($ENV{'USER'});
@@ -216,7 +216,7 @@ sub call {
         $command_obj->event_status('Succeeded');
     }
 
-    $command_obj->date_completed(UR::Time->now());
+    $command_obj->date_completed(Workflow::Time->now());
 
 
     my $commit_rv;
@@ -239,7 +239,7 @@ sub call {
         }
 
         $command_obj->event_status('Failed');
-        $command_obj->date_completed(UR::Time->now());
+        $command_obj->date_completed(Workflow::Time->now());
         UR::Context->commit();
     }
 

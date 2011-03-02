@@ -1093,7 +1093,7 @@ sub create_peers {
 
         $peer->is_running( $self->is_running );
         $peer->current->status( $self->status );
-        $peer->current->start_time( UR::Time->now );
+        $peer->current->start_time( Workflow::Time->now );
 
         $peer->current->fix_logs;
         if (UNIVERSAL::isa($peer, 'Workflow::Model::Instance')) {

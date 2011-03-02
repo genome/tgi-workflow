@@ -41,7 +41,7 @@ sub create {
         username => (getpwuid($<))[0],
         process_id => $$,
         port => $args{port} || $Workflow::Server::UR::port_number,
-        start_time => UR::Time->now
+        start_time => Workflow::Time->now
     );
 
     return $self;
