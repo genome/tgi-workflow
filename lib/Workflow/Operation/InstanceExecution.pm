@@ -26,9 +26,9 @@ class Workflow::Operation::InstanceExecution {
                 return unless $start_time;
                 my $diff;
                 if ($end_time) {
-                    $diff = UR::Time->datetime_to_time($end_time) - UR::Time->datetime_to_time($start_time);
+                    $diff = Workflow::Time->datetime_to_time($end_time) - Workflow::Time->datetime_to_time($start_time);
                 } else {
-                    $diff = time - UR::Time->datetime_to_time($start_time);
+                    $diff = time - Workflow::Time->datetime_to_time($start_time);
                 }
 
                 my $seconds = $diff;

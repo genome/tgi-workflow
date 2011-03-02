@@ -59,7 +59,7 @@ sub execute {
     $self->acquire_rowlock($opi->id);
     $self->status_message("Set status = Running");
     $opi->current->status('running');
-    $opi->current->start_time(UR::Time->now);
+    $opi->current->start_time(Workflow::Time->now);
     UR::Context->commit;
 
     my $t = $opi->operation->operation_type;
@@ -80,7 +80,7 @@ sub execute {
         $opi->output({ %{ $opi->output }, %{ $outputs }});
     }
     $opi->current->status($status);
-    $opi->current->end_time(UR::Time->now);
+    $opi->current->end_time(Workflow::Time->now);
     UR::Context->commit();
 
     if ($status eq 'crashed') {

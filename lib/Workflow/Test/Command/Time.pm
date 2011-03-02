@@ -11,12 +11,12 @@ class Workflow::Test::Command::Time {
     has_output => [
         today => { 
             calculate => q|
-                return UR::Time->today;
+                return Workflow::Time->today;
             |,
         },
         now => {
             calculate => q|
-                return UR::Time->now;
+                return Workflow::Time->now;
             |,
         },
     ],

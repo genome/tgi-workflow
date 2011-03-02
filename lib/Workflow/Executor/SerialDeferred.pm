@@ -44,7 +44,7 @@ sub wait {
             $self->count($self->count + 1);
 
             $opdata->current->status('running');
-            $opdata->current->start_time(UR::Time->now);
+            $opdata->current->start_time(Workflow::Time->now);
 #            $self->status_message('exec/' . $opdata->id . '/' . $opdata->operation->name);
             my $outputs;
             eval {
@@ -63,7 +63,7 @@ sub wait {
                 $opdata->output({ %{ $opdata->output }, %{ $outputs } });        
                 $opdata->current->status('done');
             }
-            $opdata->current->end_time(UR::Time->now);
+            $opdata->current->end_time(Workflow::Time->now);
         }
 
         $opdata->completion;
