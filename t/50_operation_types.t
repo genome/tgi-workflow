@@ -130,7 +130,7 @@ foreach my $operationtype (@operationtypes) {
 
             is_deeply($out,{
                 'model output string' => 'abracadabra',
-                'today' => Workflow::Time->today,
+                'today' => Cord::Time->today,
                 'result' => 1
             },'check output ' . $operationtype);
             }
