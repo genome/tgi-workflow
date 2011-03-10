@@ -1087,9 +1087,15 @@ sub create_peers {
 
         $peer->is_running( $self->is_running );
         $peer->current->status( $self->status );
-        $peer->current->start_time( UR::Time->now );
+        $peer->current->start_time( Cord::Time->now );
 
         $peer->current->fix_logs;
+        if (UNIVERSAL::isa($peer, 'Cord::Model::Instance')) {
+            for my $child_instance ($peer->child_instances) {
+                $child_instance->current->fix_logs;
+            }
+        }
+
         $peer->fix_parallel_input_links;
 
         foreach my $dep (@deps) {

@@ -59,7 +59,7 @@ sub execute {
     #  repeat for parents
 
     # if actually running
-    my $running = scalar @running > 0; #!-e "/gscuser/eclark/stop"; 
+    my $running = scalar @running > 0;
     if ( $running ) {
 
         print "resched $jobid\n";

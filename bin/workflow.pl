@@ -6,14 +6,14 @@ use warnings;
 
 BEGIN {
     # This allows the workflow command to self-serve as a tab completer for the bash shell.
-    # Configure it with:
-    #    complete -C `which workflow` workflow
-    #
     # When "workflow" is run by bash as a tab completer, the code below will service the
     # tab-completion request and then exit before doing any real work.
     # The code is in an eval to prevent problems on systems which do no have Getopt::Complete 
     # installed.  The code is in a BEGIN block to ensure it still runs before anything else.
-    eval "use Getopt::Complete::Cache class => 'Cord::Command', above => 1;";
+    if ($ENV{COMP_LINE}) {
+        eval "use Getopt::Complete::Cache class => 'Cord::Command', above => 1;";
+        exit if ($@);
+    }
 };
 
 

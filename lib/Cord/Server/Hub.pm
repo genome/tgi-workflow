@@ -528,6 +528,7 @@ sub setup {
                             $lsf_job_id = $kernel->call($_[SESSION],'lsf_bsub',
                                 $payload->{operation_type}->lsf_queue,
                                 $payload->{operation_type}->lsf_resource,
+                                $payload->{operation_type}->lsf_project,
                                 $payload->{operation_type}->command_class_name,
                                 $payload->{out_log},
                                 $payload->{err_log},
@@ -582,7 +583,7 @@ sub setup {
 
                 my @cmd = (
                     'annotate-log',
-                    'perl',
+                    $^X,
                     '-e',
                     $libstring . 'use ' . $namespace . '; use ' . $command_class . '; use Cord::Server::Worker; Cord::Server::Worker->start("' . $hostname . '",' . $port . ',2)'
                 );
@@ -613,7 +614,7 @@ sub setup {
                 }
             },
             lsf_bsub => sub {
-                my ($kernel, $queue, $rusage, $command_class, $stdout_file, $stderr_file, $name, $pindex) = @_[KERNEL, ARG0, ARG1, ARG2, ARG3, ARG4, ARG5, ARG6];
+                my ($kernel, $queue, $rusage, $project, $command_class, $stdout_file, $stderr_file, $name, $pindex) = @_[KERNEL, ARG0, ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7];
                 evTRACE and print "dispatch lsf_cmd $queue $rusage $stdout_file $stderr_file $name\n";
 
                 $queue ||= 'long';
@@ -645,6 +646,10 @@ sub setup {
                     }
                 }
 
+                if ($project) {
+                        $lsf_opts .= ' -P ' . $project;
+                }
+
                 my $hostname = hostname;
                 my $port = $port_number;
 
@@ -657,7 +662,7 @@ sub setup {
                 }
 
                 my $cmd = 'bsub -g /workflow-worker2 -q ' . $queue . ' ' . $lsf_opts .
-                    ' -J "' . $name . '" annotate-log perl -e \'' . $libstring . 'use ' . $namespace . '; use ' . $command_class . '; use Cord::Server::Worker; Cord::Server::Worker->start("' . $hostname . '",' . $port . ')\'';
+                    ' -J "' . $name . '" annotate-log '. $^X .' -e \'' . $libstring . 'use ' . $namespace . '; use ' . $command_class . '; use Cord::Server::Worker; Cord::Server::Worker->start("' . $hostname . '",' . $port . ')\'';
 
                 evTRACE and print "dispatch lsf_cmd $cmd\n";
 
@@ -666,7 +671,7 @@ sub setup {
                 evTRACE and print "dispatch lsf_cmd $bsub_output";
 
                 # Job <8833909> is submitted to queue <long>.
-                if ($bsub_output =~ /^Job <(\d+)> is submitted to queue <(\w+)>\./) {
+                if ($bsub_output =~ /^Job <([^>]+)> is submitted to queue <([^>]+)>\./) {
                     my $lsf_job_id = $1;                
                     return $lsf_job_id;
                 } else {

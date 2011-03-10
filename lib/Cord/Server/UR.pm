@@ -307,7 +307,7 @@ evTRACE and print "workflow begin_instance\n";
                 my $instance = Cord::Operation::Instance->get($id);
 
                 $instance->status('running');
-                $instance->current->start_time(UR::Time->now);
+                $instance->current->start_time(Cord::Time->now);
                 $instance->current->dispatch_identifier($dispatch_id);
             },
             end_instance => sub {
@@ -319,7 +319,7 @@ evTRACE and print "workflow end_instance\n";
 
                 my $instance = Cord::Operation::Instance->get($id);
                 $instance->status($status);
-                $instance->current->end_time(UR::Time->now);
+                $instance->current->end_time(Cord::Time->now);
 
                 while (my ($k,$v) = each(%$metrics)) {
                     $instance->current->add_metric(name => $k, value => $v);

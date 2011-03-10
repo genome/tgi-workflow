@@ -120,7 +120,7 @@ sub resume {
 sub execute {
     my $self = shift;
 
-    $self->current->start_time( UR::Time->now );
+    $self->current->start_time( Cord::Time->now );
     $self->current->status('running');
     $self->is_running(1);
 
@@ -191,7 +191,7 @@ sub completion {
     }
     $self->output( \%newoutputs );
 
-    $self->current->end_time( UR::Time->now );
+    $self->current->end_time( Cord::Time->now );
     $self->current->status('done') if ( $oc->current->status eq 'done' );
 
     $self->SUPER::completion;

@@ -11,12 +11,12 @@ class Cord::Test::Command::Time {
     has_output => [
         today => { 
             calculate => q|
-                return UR::Time->today;
+                return Cord::Time->today;
             |,
         },
         now => {
             calculate => q|
-                return UR::Time->now;
+                return Cord::Time->now;
             |,
         },
     ],

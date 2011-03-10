@@ -14,6 +14,7 @@ class Cord::OperationType::Event {
         command_class_name => { is => 'String', value => 'Genome::Model::Event' },
         lsf_resource => { is => 'String', is_optional=>1 },
         lsf_queue => { is => 'String', is_optional=>1 },
+        lsf_project => { is => 'String', is_optional=>1 },
     ],
 };
 
@@ -25,14 +26,14 @@ sub get {
 sub create {
     my $class = shift;
     my $params = { $class->define_boolexpr(@_)->normalize->params_list };
-    
+
     die 'missing command class' unless $params->{event_id};
 
     my $self = $class->SUPER::create(@_);
 
     $self->input_properties(['prior_result']);
     $self->output_properties(['result']);    
-    
+
     return $self;
 }
 
@@ -41,9 +42,10 @@ sub create_from_xml_simple_structure {
 
     my $id = delete $struct->{eventId};
     my $self = $class->get($id);
-    
+
     $self->lsf_resource(delete $struct->{lsfResource}) if (exists $struct->{lsfResource});
     $self->lsf_queue(delete $struct->{lsfQueue}) if (exists $struct->{lsfQueue});
+    $self->lsf_project(delete $struct->{lsfProject}) if (exists $struct->{lsfProject});
 
     return $self;
 }
@@ -53,9 +55,10 @@ sub as_xml_simple_structure {
 
     my $struct = $self->SUPER::as_xml_simple_structure;
     $struct->{eventId} = $self->event_id;
-    
+
     $struct->{lsfResource} = $self->lsf_resource if ($self->lsf_resource);
     $struct->{lsfQueue} = $self->lsf_queue if($self->lsf_queue);
+    $struct->{lsfProject} = $self->lsf_project if($self->lsf_project);
 
     # command classes have theirs defined in source code
     delete $struct->{inputproperty};
@@ -153,7 +156,7 @@ sub call {
     $command_obj->revert;
 
     $command_obj->lsf_job_id($ENV{'LSB_JOBID'});
-    $command_obj->date_scheduled(UR::Time->now());
+    $command_obj->date_scheduled(Cord::Time->now());
     $command_obj->date_completed(undef);
     $command_obj->event_status('Running');
     $command_obj->user_name($ENV{'USER'});
@@ -213,7 +216,7 @@ sub call {
         $command_obj->event_status('Succeeded');
     }
 
-    $command_obj->date_completed(UR::Time->now());
+    $command_obj->date_completed(Cord::Time->now());
 
 
     my $commit_rv;
@@ -221,17 +224,23 @@ sub call {
         $commit_rv = UR::Context->commit();
     };
     if ($@ || !$commit_rv) {
-        UR::Context->rollback();
-        
-        $command_obj->event_status('Failed');
-        $command_obj->date_completed(UR::Time->now());
-        UR::Context->commit();
-
         if ($rethrow) {
-            $rethrow .= "\n" . $@;
+            $rethrow .= "\n Failed to commit: " . $@;
         } else {
             $rethrow = $@;
         }
+
+        eval {
+            UR::Context->rollback();
+        };
+    
+        if ($@) {
+            $rethrow .= "\n Plus this error from attempting to rollback: " . $@;
+        }
+
+        $command_obj->event_status('Failed');
+        $command_obj->date_completed(Cord::Time->now());
+        UR::Context->commit();
     }
 
     die $rethrow if defined $rethrow;

@@ -157,7 +157,7 @@ sub setup {
                 $heap->{run_results} = {};
 
                 my @servers = Cord::Service->load();
-                foreach my $s (sort { UR::Time->compare_dates($a->start_time,$b->start_time) }@servers) {
+                foreach my $s (sort { Cord::Time->compare_dates($a->start_time,$b->start_time) }@servers) {
                     my $hostname = $s->hostname;
                     my $port = $s->port;
 

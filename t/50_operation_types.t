@@ -102,9 +102,10 @@ foreach my $operationtype (@operationtypes) {
             ),'create ' . $operationtype);
 
             my $out;
+            my $user = $ENV{USER};
             ok($out = $o->execute(
                 template_file => $dir . '/50_operation_types.txt',
-                email_address => 'eclark@genome.wustl.edu',
+                email_address => $user . '@genome.wustl.edu',
                 subject => 'workflow unit test',
                 fruit => 'Apple',
                 vegetable => 'Tomato',
@@ -129,7 +130,7 @@ foreach my $operationtype (@operationtypes) {
 
             is_deeply($out,{
                 'model output string' => 'abracadabra',
-                'today' => UR::Time->today,
+                'today' => Workflow::Time->today,
                 'result' => 1
             },'check output ' . $operationtype);
             }

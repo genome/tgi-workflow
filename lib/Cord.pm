@@ -7,6 +7,7 @@ our $VERSION = '0.00_01';
 
 use UR;
 use Cord::Config ();
+use Cord::Time; # a copy of the old UR::Time
 
 # this keeps around old parts of the UR::Object API we removed in the 0.01 release
 use UR::ObjectV001removed;
