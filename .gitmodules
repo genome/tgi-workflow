@@ -1,0 +1,3 @@
+[submodule "ur"]
+	path = ur
+	url = https://github.com/genome/UR.git
