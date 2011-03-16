@@ -142,7 +142,7 @@ is_deeply(
     $output,
     {
         'model output string' => 'abracadabra321',
-        'today' => UR::Time->today,
+        'today' => Workflow::Time->today,
         'result' => 1
     },
     'check output'
@@ -163,7 +163,7 @@ is_deeply(
     $output2,
     {
         'model output string' => 'abracadabra5321',
-        'today' => UR::Time->today,
+        'today' => Workflow::Time->today,
         'result' => 1
     },
     'check output'
