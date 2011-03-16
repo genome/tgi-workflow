@@ -54,8 +54,8 @@ class Workflow::Operation::InstanceExecution {
             }
         },
         exit_code  => { is => 'NUMBER',   len => 5,   is_optional => 1 },
-        stdout     => { is => 'VARCHAR2', len => 255, is_optional => 1 },
-        stderr     => { is => 'VARCHAR2', len => 255, is_optional => 1 },
+        stdout     => { is => 'VARCHAR2', len => 512, is_optional => 1 },
+        stderr     => { is => 'VARCHAR2', len => 512, is_optional => 1 },
         is_done    => { is => 'NUMBER',   len => 2,   is_optional => 1 },
         is_running => { is => 'NUMBER',   len => 2,   is_optional => 1 },
         dispatch_identifier => {
