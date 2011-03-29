@@ -33,4 +33,16 @@ sub related_instances {
     };
 }
 
+sub _generate_content {
+    my $self = shift;
+
+    #preload the child instances
+    my $subject = $self->subject;
+    if($subject) {
+        $subject->ordered_child_instances;
+    }
+
+    return $self->SUPER::_generate_content(@_);
+}
+
 1;
