@@ -8,7 +8,7 @@ BEGIN {
 use strict;
 use warnings;
 
-use Test::More tests => 4;
+use Test::More tests => 5;
 
 use above 'Workflow';
 
@@ -22,6 +22,10 @@ my $job = Workflow::Dispatcher::Job->create(
     resource => $resource,
     command => 'echo "Hello world"'
 );
+
+my $cmd = $lsf->get_command($job);
+
+ok($cmd eq 'bsub -R \'select[ncpus >= 1 && mem >= 100 && gtmp >= 1] span[hosts=1] rusage[mem=100, gtmp=1]\' -M 102400 -n 1 echo "Hello world"');
 
 my $job_id = $lsf->execute($job);
 print $job_id . "\n";

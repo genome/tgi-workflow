@@ -19,6 +19,19 @@ sub execute {
 sub get_command {
     my $self = shift;
     my $job = shift;
-    my $cmd = "bsub " . $job->command;
+    my $cmd = "bsub ";
+    my $rusage = sprintf("-R 'select[ncpus >= %s && mem >= %s && gtmp >= %s] span[hosts=1] rusage[mem=%s, gtmp=%s]' ", 
+        $job->resource->min_proc,
+        $job->resource->mem_limit,
+        $job->resource->tmp_space,
+        $job->resource->mem_limit,
+        $job->resource->tmp_space
+        );
+    $cmd .= $rusage;
+    $cmd .= sprintf("-M %s -n %s ", 
+        $job->resource->mem_limit * 1024,
+        $job->resource->min_proc
+        );
+    $cmd .= $job->command;
     return $cmd;
 }

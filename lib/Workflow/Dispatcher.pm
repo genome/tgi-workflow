@@ -12,7 +12,7 @@ BEGIN {
 class Workflow::Dispatcher {
     has => [
         cluster => { is => 'Text' },
-        queue => { is => 'Text', is_optional => 1 }
+        queue => { is => 'Text', default_value => 'long', is_optional => 1 }
     ]
 };
 
@@ -24,9 +24,9 @@ sub get_or_create {
     my $class = shift;
     my $engine = shift;
     my $cluster = shift;
-    print $engine;
+    my $queue = shift;
     return "Workflow::Dispatcher::$engine"->create(
-        engine => $engine,
-        cluster => $cluster
+        cluster => $cluster,
+        queue => $queue
     );
 }
