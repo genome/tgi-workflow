@@ -14,9 +14,6 @@ plan tests => 2;
 use above 'Workflow';
 use Workflow::Simple;
 
-#$Workflow::Simple::override_lsf_use = 1;
-$Workflow::Simple::store_db = 0;
-
 my $op = Workflow::Operation->create(
     name => 'watchdog',
     operation_type => Workflow::OperationType::Command->get('Workflow::Test::Command::Watchdog')
