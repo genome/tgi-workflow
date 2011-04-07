@@ -18,8 +18,6 @@ use Workflow::Simple;
 
 $ENV{WF_TESTDIR} = File::Temp::tempdir('WorkflowXXXXX', DIR => '/gsc/var/cache/testsuite/running_testsuites', CLEANUP => 1);
 
-$Workflow::Simple::store_db = 0;
-
 my $op = Workflow::Operation->create(
     name => 'ls',
     operation_type => Workflow::OperationType::Command->get('Workflow::Test::Command::Ls')
