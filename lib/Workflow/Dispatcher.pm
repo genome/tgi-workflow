@@ -12,6 +12,7 @@ BEGIN {
 class Workflow::Dispatcher {
     has => [
         cluster => { is => 'Text' },
+        queue => { is => 'Text', is_optional => 1 }
     ]
 };
 
