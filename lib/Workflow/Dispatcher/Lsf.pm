@@ -11,8 +11,7 @@ sub execute {
     my $self = shift;
     my $job = shift;
     my $cmd = $self->get_command($job);
-    my $bsub_output = system $cmd;
-    print $bsub_output . "\n";
+    my $bsub_output = `$cmd`;
     my ($job_id, $queue) = ($bsub_output =~ /^Job <([^>]+)> is submitted to\s[^<]*queue <([^>]+)>\..*/);
     return $job_id;
 }
