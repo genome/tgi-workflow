@@ -1,7 +1,5 @@
 package Workflow::Resource;
 
-# -R 'select[ncpus >= $ && mem >= $, gtmp >= $] span[hosts=1] rusage[mem=$, gtmp=$]' -M $kb -n $cpus -q $queue
-
 class Workflow::Resource {
     has => [
         mem_limit => { is => 'Number', doc => 'Memory limit of executing job. (MB)' },
