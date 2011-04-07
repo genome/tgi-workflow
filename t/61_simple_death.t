@@ -14,9 +14,6 @@ plan tests => 11;
 use above 'Workflow';
 use Workflow::Simple;
 
-#$Workflow::Simple::override_lsf_use = 1;
-$Workflow::Simple::store_db = 0;
-
 my $output;
 
 $output = run_workflow_lsf(
