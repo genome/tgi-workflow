@@ -26,4 +26,3 @@ my $job = Workflow::Dispatcher::Job->create(
 my $job_id = $lsf->execute($job);
 print $job_id . "\n";
 ok($job_id, "Job id exists");
-
