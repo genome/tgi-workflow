@@ -20,6 +20,7 @@ sub get_command {
     my $self = shift;
     my $job = shift;
     my $cmd = "bsub ";
+    # set LSF rusage
     my $rusage = sprintf("-R 'select[ncpus >= %s && mem >= %s && gtmp >= %s] span[hosts=1] rusage[mem=%s, gtmp=%s]' ", 
         $job->resource->min_proc,
         $job->resource->mem_limit,
@@ -28,10 +29,18 @@ sub get_command {
         $job->resource->tmp_space
         );
     $cmd .= $rusage;
+    # add memory & number of cores requirements
     $cmd .= sprintf("-M %s -n %s ", 
         $job->resource->mem_limit * 1024,
         $job->resource->min_proc
         );
+    # set queue
+    if (defined $job->queue) {
+        $cmd .= sprintf("-q %s ", $job->queue);
+    }
+    elsif (defined $self->default_queue) {
+        $cmd .= sprintf("-q %s ", $job->default_queue);
+    }
     $cmd .= $job->command;
     return $cmd;
 }
