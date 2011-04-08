@@ -8,7 +8,7 @@ BEGIN {
 use strict;
 use warnings;
 
-use Test::More tests => 5;
+use Test::More tests => 6;
 
 use above 'Workflow';
 
@@ -25,8 +25,21 @@ my $job = Workflow::Dispatcher::Job->create(
 
 my $cmd = $lsf->get_command($job);
 
-ok($cmd eq 'bsub -R \'select[ncpus >= 1 && mem >= 100 && gtmp >= 1] span[hosts=1] rusage[mem=100, gtmp=1]\' -M 102400 -n 1 echo "Hello world"');
+ok($cmd eq 'bsub -R \'select[ncpus >= 1 && mem >= 100 && gtmp >= 1] span[hosts=1] rusage[mem=100, gtmp=1]\' -M 102400 -n 1 echo "Hello world"',
+    "LSF bsub command format"
+);
 
 my $job_id = $lsf->execute($job);
 print $job_id . "\n";
 ok($job_id, "Job id exists");
+
+my $job2 = Workflow::Dispatcher::Job->create(
+    resource => $resource,
+    command => 'echo "Hello world"',
+    queue => 'long'
+);
+
+$cmd = $lsf->get_command($job2);
+ok($cmd eq 'bsub -R \'select[ncpus >= 1 && mem >= 100 && gtmp >= 1] span[hosts=1] rusage[mem=100, gtmp=1]\' -M 102400 -n 1 -q long echo "Hello world"',
+    "Job queue attribute sets queue"
+);
