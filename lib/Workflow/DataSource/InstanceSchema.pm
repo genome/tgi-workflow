@@ -26,6 +26,8 @@ sub owner {
     "WORKFLOW";
 }
 
+sub table_and_column_names_are_upper_case { 1; }
+
 sub _get_next_value_from_sequence {
 my($self,$sequence_name) = @_;
 
