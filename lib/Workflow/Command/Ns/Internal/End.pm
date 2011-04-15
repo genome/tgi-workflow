@@ -5,6 +5,7 @@ use warnings;
 
 use Workflow ();
 use Workflow::Command::Ns::Start ();
+use Workflow::LogLsfUsage;
 
 class Workflow::Command::Ns::Internal::End {
     is  => ['Workflow::Command'],
@@ -68,7 +69,7 @@ sub execute {
           localtime( time + 15 * 60 );
         $year += 1900;    ## i hate you perl
         $mon++;
-
+        Workflow::LogLsfUsage->write_to_log();
         my $cmd = "bsub -q short -b $year:$mon:$day:$hour:$min -g $jobgroup workflow ns internal end " . $self->instance_id;
         if (my $did = $self->done_instance_id) {
             $cmd .= ' ' . $did;

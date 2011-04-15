@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Workflow ();
+use Workflow::LogLsfUsage;
 
 class Workflow::Command::Ns::Start {
     is  => ['Workflow::Command'],
@@ -284,6 +285,7 @@ sub bsub_runner {
     }
 
     my $mail_user = $ENV{USER} || 'apipe-run';
+    Workflow::LogLsfUsage->write_to_log();
     my $cmd =
       sprintf( "bsub -H -u \"$mail_user\@genome.wustl.edu\" -q %s %s %s %s -Q \"5 88\" workflow ns internal run%s %s %s",
         $queue, $resource, $job_group, $dep_expr, $dstr, $top->id, $op->id );
@@ -334,7 +336,7 @@ sub bsub_end_handler {
     my $dep_expr = ' -w "(' .
         join(' && ', @d) . ') || (' . 
         join(' || ', @e) . ')"';
-
+    Workflow::LogLsfUsage->write_to_log();
     my $cmd = sprintf("bsub -H -u \"eclark\@genome.wustl.edu\" -Q 5 -q %s %s %s workflow ns internal end %s",
         'long', $job_group, $dep_expr, $id);
 
