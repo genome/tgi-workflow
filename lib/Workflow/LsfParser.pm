@@ -35,12 +35,14 @@ sub get_resource_from_lsf_resource {
     my ($gtmp) = ($rusage =~ /gtmp=(\d+)/);
     if (defined $gtmp) {
         $resource->tmp_space($gtmp);
+        $resource->use_gtmp(1);
     }
     # if gtmp didnt do it, there should be info in
     # tmp. gtmp is genome center specific and avoids
     # a problem with lsfs tmp disk allocation sys
     my ($tmp) = ($rusage =~ /tmp=(\d+)/);
     if (defined $tmp) {
+        $tmp = $tmp / 1024;
         $resource->tmp_space($tmp);
     }
 }
