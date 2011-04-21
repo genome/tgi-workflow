@@ -3,6 +3,8 @@ package Workflow::LsfParser;
 use strict;
 use warnings;
 
+use POSIX;
+
 class Workflow::LsfParser {
     has => [
         resource => { is => 'Workflow::Resource' },
@@ -16,7 +18,6 @@ sub get_resource_from_lsf_resource {
     # parse mem limit -M ###kb
     my ($mem_limit) = ($lsf_resource =~ /-M\s(\d+)/);
     if (defined $mem_limit) {
-        $mem_limit = $mem_limit / 1024;
         $resource->mem_limit($mem_limit);
     }
     # parse cpucs -n cpus
@@ -24,8 +25,10 @@ sub get_resource_from_lsf_resource {
     if (defined $min_proc) {
         $resource->min_proc($min_proc);
     }
+
     # handle rusage section
     my ($rusage) = ($lsf_resource =~ /rusage\[([^\]]*)/);
+    
     # parse mem request rusage[mem=###mb, ...]
     my ($mem_request) = ($rusage =~ /mem=(\d+)/); 
     if (defined $mem_request) {
@@ -43,6 +46,9 @@ sub get_resource_from_lsf_resource {
     my ($tmp) = ($rusage =~ /tmp=(\d+)/);
     if (defined $tmp) {
         $tmp = $tmp / 1024;
+        $tmp = ceil($tmp);
+        # round up, better safe than sorry
         $resource->tmp_space($tmp);
     }
+    return $resource;
 }
