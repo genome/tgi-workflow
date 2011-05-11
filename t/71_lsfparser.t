@@ -24,7 +24,6 @@ ok($resource1->mem_request == 10000, "mem_request parsed successfully (1)");
 ok($resource1->min_proc == 4, "min_proc parsed successfully (1)");
 ok($resource1->tmp_space == 88, "tmp_space parsed successfully (1)");
 
-
 # test 2
 my $lsfresource2 = "-R 'select[model!=Opteron250 && type==LINUX64] span[hosts=1] rusage[mem=12000]' -M 1610612736 -o /gscmnt/sata919/info/model_data/2857040877/build102360021/logs/all_sequences/102360057.out -e /gscmnt/sata919/info/model_data/2857040877/build102360021/logs/all_sequences/102360057.err";
 my $resource2 = Workflow::LsfParser::get_resource_from_lsf_resource($lsfresource2);
