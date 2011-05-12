@@ -8,7 +8,7 @@ BEGIN {
 use strict;
 use warnings;
 
-use Test::More tests => 14;
+use Test::More tests => 17;
 
 use above 'Workflow';
 use Workflow;
@@ -39,3 +39,9 @@ ok($resource3->mem_limit == 16000000, "mem_limit parsed successfully (3)");
 ok($resource3->mem_request == 16000, "mem_request parsed successfully (3)");
 ok(!defined $resource3->min_proc, "min_proc is undefined (3)");
 ok($resource3->tmp_space == 88, "tmp_space parsed successfully (3)");
+
+my $lsfresource4 = "rusage[mem=8000, tmp=2000] select[type==LINUX64 && mem > 8000 && tmp > 2000] span[hosts=1] -M 8000000";
+my $resource4 = Workflow::LsfParser::get_resource_from_lsf_resource($lsfresource4);
+ok($resource4->mem_request == 8000, "mem_request parsed successfully (4)");
+ok($resource4->tmp_space == 2, "tmp_space parsed successfully (4)");
+ok($resource4->mem_limit == 8000000, "mem_limit parsed successfully (4)");

@@ -21,14 +21,66 @@ sub get_command {
     my $job = shift;
     my $cmd = "bsub ";
     # set LSF rusage
-    my $rusage = sprintf("-R 'select[ncpus >= %s && mem >= %s && gtmp >= %s] span[hosts=1] rusage[mem=%s, gtmp=%s]' ", 
-        $job->resource->min_proc,
-        $job->resource->mem_limit,
-        $job->resource->tmp_space,
-        $job->resource->mem_limit,
-        $job->resource->tmp_space
-        );
-    $cmd .= $rusage;
+    
+    # select string consists of a series of args
+    # of RESOURCE >= NUMBER && together
+    my $select = "";
+
+    my $num_selects = 1;
+
+    $num_selects++ if (defined $job->resource->mem_request);
+    $num_selects++ if (defined $job->resource->tmp_space);
+
+    $select .= sprintf("ncpus>=%s", $job->resource->min_proc);
+    $num_selects--;
+    $select .= " && " if ($num_selects > 0);
+
+    if (defined $job->resource->mem_request) {
+        $select .= sprintf("mem>=%s", $job->resource->mem_request);
+        $num_selects--;
+    }
+    $select .= " && " if ($num_selects > 0);
+
+    if (defined $job->resource->tmp_space) {
+        if ($job->resource->use_gtmp) {
+            $select .= sprintf("gtmp>=%s", $job->resource->tmp_space);
+        } else {
+            $select .= sprintf("tmp>=%s", $job->resource->tmp_space * 1024);
+        }
+    }
+
+    $cmd .= sprintf("-R 'select[%s] span[hosts=1]", $select);
+
+    my $num_rusages = 0;
+    my $rusage = "";
+
+    $num_rusages++ if (defined $job->resource->mem_request);
+    $num_rusages++ if (defined $job->resource->tmp_space);
+
+    # if there is going to be
+
+    if (defined $job->resource->mem_request) {
+        $rusage .= sprintf("mem=%s", $job->resource->mem_request);
+        $num_rusages--;
+    }
+    $rusage .= ", " if ($num_rusages > 0);
+
+    if (defined $job->resource->tmp_space) {
+        if ($job->resource->use_gtmp) {
+            $rusage .= sprintf("gtmp=%s", $job->resource->tmp_space);
+        } else {
+            $rusage .= sprintf("tmp=%s", $job->resource->tmp_space*1024);
+        }
+    }
+
+    if ($rusage ne "") {
+        $cmd .= sprintf(" rusage[%s]' ", $rusage);
+    } else {
+        $cmd .= "' ";
+    }
+
+
+
     # add memory & number of cores requirements
     if (defined $job->resource->mem_limit) {
         $cmd .= sprintf("-M %s ", $job->resource->mem_limit * 1024);
@@ -43,6 +95,9 @@ sub get_command {
     elsif (defined $self->default_queue) {
         $cmd .= sprintf("-q %s ", $job->default_queue);
     }
+    
+    $cmd .= sprintf("-o %s ", $job->stdout) if (defined $job->stdout); 
+    $cmd .= sprintf("-e %s ", $job->stderr) if (defined $job->stderr);
     $cmd .= $job->command;
     return $cmd;
 }

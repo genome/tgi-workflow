@@ -8,7 +8,7 @@ BEGIN {
 use strict;
 use warnings;
 
-use Test::More tests => 6;
+use Test::More tests => 7;
 
 use above 'Workflow';
 
@@ -20,26 +20,35 @@ my $resource = Workflow::Resource->create(mem_limit => 100);
 my $lsf = Workflow::Dispatcher::Lsf->create(cluster => "default");
 my $job = Workflow::Dispatcher::Job->create(
     resource => $resource,
-    command => 'echo "Hello world"'
+    command => 'echo "Hello world"',
 );
 
 my $cmd = $lsf->get_command($job);
-ok($cmd eq 'bsub -R \'select[ncpus >= 1 && mem >= 100 && gtmp >= 1] span[hosts=1] rusage[mem=100, gtmp=1]\' -M 102400 echo "Hello world"',
+ok($cmd eq 'bsub -R \'select[ncpus>=1] span[hosts=1]\' -M 102400 -n 1 echo "Hello world"',
     "LSF bsub command format"
 );
 
 my $job_id = $lsf->execute($job);
-print $job_id . "\n";
-ok($job_id, "Job id exists");
+#print $job_id . "\n";
+ok(int($job_id), "Job id exists");
+
+my $resource2 = Workflow::Resource->create(
+    mem_request => 100,
+    mem_limit => 1000,
+    use_gtmp => 1,
+    tmp_space => 1
+);
 
 my $job2 = Workflow::Dispatcher::Job->create(
-    resource => $resource,
+    resource => $resource2,
     command => 'echo "Hello world"',
-    queue => 'long'
+    queue => 'long',
+    stdout => '/gscmnt/1234/4567/output.out',
+    stderr => '/gscmnt/1234/4567/output.err'
 );
 
 $cmd = $lsf->get_command($job2);
-ok($cmd eq 'bsub -R \'select[ncpus >= 1 && mem >= 100 && gtmp >= 1] span[hosts=1] rusage[mem=100, gtmp=1]\' -M 102400 -n 1 -q long echo "Hello world"',
+ok($cmd eq 'bsub -R \'select[ncpus>=1 && mem>=100 && gtmp>=1] span[hosts=1] rusage[mem=100, gtmp=1]\' -M 1024000 -n 1 -q long -o /gscmnt/1234/4567/output.out -e /gscmnt/1234/4567/output.err echo "Hello world"',
     "Job queue attribute sets queue"
 );
 
@@ -49,10 +58,12 @@ my $resource3 = Workflow::Resource->create(
     min_proc => 4,
     tmp_space => 88);
 my $job3 = Workflow::Dispatcher::Job->create(
-    resource => $resource,
+    resource => $resource3,
     command => 'echo "Hello world"',
-    queue => 'long'
+    queue => 'long',
+    stdout => '/gscmnt/1234/4567/output.out',
+    stderr => '/gscmnt/1234/4567/output.err'
 );
 
 $cmd = $lsf->get_command($job3);
-ok($cmd eq 'bsub -R \'select[ncpus>= 4 && mem>1000 && tmp>90000] span[hosts=1] rusage[tmp=90000, mem=1000]' -M 10000 -n 4 -o TODO FIXME 
+ok($cmd eq 'bsub -R \'select[ncpus>=4 && mem>=1000 && tmp>=90112] span[hosts=1] rusage[mem=1000, tmp=90112]\' -M 10240000 -n 4 -q long -o /gscmnt/1234/4567/output.out -e /gscmnt/1234/4567/output.err echo "Hello world"', "Example from apipe-test-2 works")
