@@ -18,8 +18,8 @@ class Workflow::Operation::InstanceExecution {
         operation_instance =>
           { is => 'Workflow::Operation::Instance', id_by => 'instance_id' },
         status       => { is => 'VARCHAR2',  len => 15, value       => 'new' },
-        start_time   => { is => 'TIMESTAMP', len => 20, is_optional => 1 },
-        end_time     => { is => 'TIMESTAMP', len => 20, is_optional => 1 },
+        start_time   => { is => 'TIMESTAMP', is_optional => 1 },
+        end_time     => { is => 'TIMESTAMP', is_optional => 1 },
         elapsed_time => {
             calculate_from => [ 'start_time', 'end_time' ],
             calculate      => q{

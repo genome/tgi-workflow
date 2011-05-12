@@ -130,7 +130,11 @@ sub __build {
                     }
                     $status = 'crashed';
                 } else {
-                    UR::Context->commit();
+                    my $result = UR::Context->commit();
+                    unless($result) {
+                        $error_string = 'Commit failed.';
+                        $status = 'crashed';
+                    }
                 }
 
                 ## metrics should only contain plain key value pairs
