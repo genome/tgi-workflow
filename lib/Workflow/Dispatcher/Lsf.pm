@@ -30,10 +30,12 @@ sub get_command {
         );
     $cmd .= $rusage;
     # add memory & number of cores requirements
-    $cmd .= sprintf("-M %s -n %s ", 
-        $job->resource->mem_limit * 1024,
-        $job->resource->min_proc
-        );
+    if (defined $job->resource->mem_limit) {
+        $cmd .= sprintf("-M %s ", $job->resource->mem_limit * 1024);
+    }
+    if (defined $job->resource->min_proc) {
+        $cmd .= sprintf("-n %s ", $job->resource->min_proc);
+    }
     # set queue
     if (defined $job->queue) {
         $cmd .= sprintf("-q %s ", $job->queue);

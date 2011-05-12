@@ -5,5 +5,7 @@ class Workflow::Dispatcher::Job {
         resource => { is => 'Workflow::Resource' },
         command => { is => 'Text' },
         queue => { is => 'Text', is_optional => 1 }
+        stdout => { is => 'Text' },
+        stderr => { is => 'Text' },
     ]
 }
