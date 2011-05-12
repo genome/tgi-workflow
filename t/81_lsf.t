@@ -24,8 +24,7 @@ my $job = Workflow::Dispatcher::Job->create(
 );
 
 my $cmd = $lsf->get_command($job);
-
-ok($cmd eq 'bsub -R \'select[ncpus >= 1 && mem >= 100 && gtmp >= 1] span[hosts=1] rusage[mem=100, gtmp=1]\' -M 102400 -n 1 echo "Hello world"',
+ok($cmd eq 'bsub -R \'select[ncpus >= 1 && mem >= 100 && gtmp >= 1] span[hosts=1] rusage[mem=100, gtmp=1]\' -M 102400 echo "Hello world"',
     "LSF bsub command format"
 );
 
@@ -43,3 +42,17 @@ $cmd = $lsf->get_command($job2);
 ok($cmd eq 'bsub -R \'select[ncpus >= 1 && mem >= 100 && gtmp >= 1] span[hosts=1] rusage[mem=100, gtmp=1]\' -M 102400 -n 1 -q long echo "Hello world"',
     "Job queue attribute sets queue"
 );
+
+my $resource3 = Workflow::Resource->create(
+    mem_limit => 10000,
+    mem_request => 1000,
+    min_proc => 4,
+    tmp_space => 88);
+my $job3 = Workflow::Dispatcher::Job->create(
+    resource => $resource,
+    command => 'echo "Hello world"',
+    queue => 'long'
+);
+
+$cmd = $lsf->get_command($job3);
+ok($cmd eq 'bsub -R \'select[ncpus>= 4 && mem>1000 && tmp>90000] span[hosts=1] rusage[tmp=90000, mem=1000]' -M 10000 -n 4 -o TODO FIXME 
