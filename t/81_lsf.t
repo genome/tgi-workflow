@@ -29,7 +29,6 @@ ok($cmd eq 'bsub -R \'select[ncpus>=1] span[hosts=1]\' -M 102400 -n 1 echo "Hell
 );
 
 my $job_id = $lsf->execute($job);
-#print $job_id . "\n";
 ok(int($job_id), "Job id exists");
 
 my $resource2 = Workflow::Resource->create(
