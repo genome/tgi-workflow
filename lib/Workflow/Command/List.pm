@@ -55,9 +55,5 @@ sub help_synopsis {
     workflow list 
 EOS
 }
-
-#sub _base_filter {
-#    'parent_instance_id=,peer_instance_id='
-#}
  
 1;
