@@ -8,7 +8,8 @@ BEGIN {
 use strict;
 use warnings;
 
-use Test::More tests => 17;
+use Test::More tests => 20;
+use Test::Exception;
 
 use above 'Workflow';
 use Workflow;
@@ -33,15 +34,23 @@ ok($resource2->min_proc == 1, "min_proc defaults to 1 (2)");
 ok(!defined $resource2->tmp_space, "tmp_space is undefined (2)");
 
 # test 3
-my $lsfresource3 = "-R 'select[model!=Opteron250 && type==LINUX64] span[hosts=1] rusage[tmp=90000:mem=16000]' -M 16000000 -o /gscmnt/sata897/info/model_data/2860752101/build104181182/logs//104181190.out -e /gscmnt/sata897/info/model_data/2860752101/build104181182/logs//104181190.err";
+my $lsfresource3 = "-R 'select[model!=Opteron250 && type==LINUX64 && maxtmp>=90000] span[hosts=1] rusage[tmp=90000:mem=16000]' -M 16000000 -o /gscmnt/sata897/info/model_data/2860752101/build104181182/logs//104181190.out -e /gscmnt/sata897/info/model_data/2860752101/build104181182/logs//104181190.err";
 my $resource3 = Workflow::LsfParser::get_resource_from_lsf_resource($lsfresource3);
 ok($resource3->mem_limit == 15625, "mem_limit parsed successfully (3)");
 ok($resource3->mem_request == 16000, "mem_request parsed successfully (3)");
 ok($resource3->min_proc == 1, "min_proc defaults to 1 (3)");
 ok($resource3->tmp_space == 88, "tmp_space parsed successfully (3)");
+print $resource3->max_tmp . "\n";
+ok($resource3->max_tmp == 88, "max_tmp parsed successfully (3)");
 
 my $lsfresource4 = "rusage[mem=8000, tmp=2000] select[type==LINUX64 && mem > 8000 && tmp > 2000] span[hosts=1] -M 8000000";
 my $resource4 = Workflow::LsfParser::get_resource_from_lsf_resource($lsfresource4);
 ok($resource4->mem_request == 8000, "mem_request parsed successfully (4)");
 ok($resource4->tmp_space == 2, "tmp_space parsed successfully (4)");
 ok($resource4->mem_limit == 7813, "mem_limit parsed successfully (4)");
+
+my $lsfresource5 = "rusage[badpred=14, mem=8000, tmp=2000] select[type==LINUX64 && mem > 8000 && tmp > 2000] span[hosts=1] -M 8000000";
+dies_ok { Workflow::LsfParser::get_resource_from_lsf_resource($lsfresource5) } 'fails on bad rusage predicate';
+
+my $lsfresource6 = "rusage[mem=8000, tmp=2000] select[badpredr>=142 && type==LINUX64 && mem > 8000 && tmp > 2000] span[hosts=1] -M 8000000";
+dies_ok { Workflow::LsfParser::get_resource_from_lsf_resource($lsfresource6) } 'fails on bad rusage predicate';

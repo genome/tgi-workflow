@@ -55,7 +55,9 @@ my $resource3 = Workflow::Resource->create(
     mem_limit => 10000,
     mem_request => 1000,
     min_proc => 4,
-    tmp_space => 88);
+    tmp_space => 88,
+    max_tmp => 88
+    );
 my $job3 = Workflow::Dispatcher::Job->create(
     resource => $resource3,
     command => 'echo "Hello world"',
@@ -65,4 +67,4 @@ my $job3 = Workflow::Dispatcher::Job->create(
 );
 
 $cmd = $lsf->get_command($job3);
-ok($cmd eq 'bsub -R \'select[ncpus>=4 && mem>=1000 && tmp>=90112] span[hosts=1] rusage[mem=1000, tmp=90112]\' -M 10240000 -n 4 -q long -o /gscmnt/1234/4567/output.out -e /gscmnt/1234/4567/output.err echo "Hello world"', "Example from apipe-test-2 works")
+ok($cmd eq 'bsub -R \'select[ncpus>=4 && mem>=1000 && maxtmp>=90112 && tmp>=90112] span[hosts=1] rusage[mem=1000, tmp=90112]\' -M 10240000 -n 4 -q long -o /gscmnt/1234/4567/output.out -e /gscmnt/1234/4567/output.err echo "Hello world"', "Example from apipe-test-2 works")

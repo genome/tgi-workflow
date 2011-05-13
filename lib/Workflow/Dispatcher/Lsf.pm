@@ -24,62 +24,48 @@ sub get_command {
     
     # select string consists of a series of args
     # of RESOURCE >= NUMBER && together
-    my $select = "";
-
-    my $num_selects = 1;
-
-    $num_selects++ if (defined $job->resource->mem_request);
-    $num_selects++ if (defined $job->resource->tmp_space);
-
-    $select .= sprintf("ncpus>=%s", $job->resource->min_proc);
-    $num_selects--;
-    $select .= " && " if ($num_selects > 0);
+    my @selects;
+    
+    push (@selects, sprintf("ncpus>=%s", $job->resource->min_proc));
 
     if (defined $job->resource->mem_request) {
-        $select .= sprintf("mem>=%s", $job->resource->mem_request);
-        $num_selects--;
+        push (@selects, sprintf("mem>=%s", $job->resource->mem_request));
     }
-    $select .= " && " if ($num_selects > 0);
+
+    if (defined $job->resource->max_tmp) {
+        push (@selects, sprintf("maxtmp>=%s", $job->resource->max_tmp * 1024));
+    }
 
     if (defined $job->resource->tmp_space) {
         if ($job->resource->use_gtmp) {
-            $select .= sprintf("gtmp>=%s", $job->resource->tmp_space);
+            push (@selects, sprintf("gtmp>=%s", $job->resource->tmp_space));
         } else {
-            $select .= sprintf("tmp>=%s", $job->resource->tmp_space * 1024);
+            push (@selects, sprintf("tmp>=%s", $job->resource->tmp_space * 1024));
         }
     }
-
+    my $select = join(" && ", @selects);
     $cmd .= sprintf("-R 'select[%s] span[hosts=1]", $select);
 
-    my $num_rusages = 0;
-    my $rusage = "";
-
-    $num_rusages++ if (defined $job->resource->mem_request);
-    $num_rusages++ if (defined $job->resource->tmp_space);
-
-    # if there is going to be
+    my @rusages;
 
     if (defined $job->resource->mem_request) {
-        $rusage .= sprintf("mem=%s", $job->resource->mem_request);
-        $num_rusages--;
+        push (@rusages, sprintf("mem=%s", $job->resource->mem_request));
     }
-    $rusage .= ", " if ($num_rusages > 0);
 
     if (defined $job->resource->tmp_space) {
         if ($job->resource->use_gtmp) {
-            $rusage .= sprintf("gtmp=%s", $job->resource->tmp_space);
+            push(@rusages, sprintf("gtmp=%s", $job->resource->tmp_space));
         } else {
-            $rusage .= sprintf("tmp=%s", $job->resource->tmp_space*1024);
+            push(@rusages, sprintf("tmp=%s", $job->resource->tmp_space*1024));
         }
     }
-
+    
+    my $rusage = join(", ", @rusages);
     if ($rusage ne "") {
         $cmd .= sprintf(" rusage[%s]' ", $rusage);
     } else {
         $cmd .= "' ";
     }
-
-
 
     # add memory & number of cores requirements
     if (defined $job->resource->mem_limit) {
@@ -98,6 +84,24 @@ sub get_command {
     
     $cmd .= sprintf("-o %s ", $job->stdout) if (defined $job->stdout); 
     $cmd .= sprintf("-e %s ", $job->stderr) if (defined $job->stderr);
+    
+    $cmd .= sprintf("-g %s ", $job->group) if (defined $job->group);
+    
+    if (defined $job->name) {
+        if ($job->name =~ /\s/) {
+            $cmd .= sprintf('-J "%s" ', $job->name);
+        } else {
+            $cmd .= sprintf('-J %s ', $job->name);
+        }
+    }
+    if (defined $job->project) {
+        if ($job->project =~ /\s/) {
+            $cmd .= sprintf('-P "%s" ', $job->project);
+        } else {
+            $cmd .= sprintf('-P %s ', $job->project);
+        }
+    }
+
     $cmd .= $job->command;
     return $cmd;
 }
