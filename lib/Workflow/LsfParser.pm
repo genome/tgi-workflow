@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use POSIX;
+use Carp;
 
 class Workflow::LsfParser {
     has => [
@@ -29,23 +30,26 @@ sub get_resource_from_lsf_resource {
     
     my ($select) = ($lsf_resource =~ /select\[([^\]]*)/);
     if (defined $select) {
-        my @select_preds = ($select =~ /([a-z]+)\s*[=><]/g);
+        my @select_preds = ($select =~ /([a-z]+)\s*[!=><]+/g);
         foreach (@select_preds) {
-            die("Unknown select predicate: " . $_) unless ($_ =~ /type|gtmp|tmp|mem/);
+            confess("Unknown select predicate: " . $_) unless ($_ =~ /^(type|gtmp|tmp|mem)$/);
         }
     } else {
-        die("No select statement included in LSF pattern");
+        warn("No select statement included in LSF pattern");
     }
 
-
+    
     # handle rusage section
     my ($rusage) = ($lsf_resource =~ /rusage\[([^\]]*)/);
-    
-    # check there isn't something we haven't seen
-    my @rusage_preds = ($rusage =~ /([a-z]+)\s*[=><]/g);
+    if (defined $rusage) { 
+        # check there isn't something we haven't seen
+        my @rusage_preds = ($rusage =~ /([a-z]+)\s*[!=><]/g);
 
-    foreach (@rusage_preds) {
-        die("Unknown rusage predicate: " . $_) unless ($_ =~ /type|gtmp|tmp|mem/);
+        foreach (@rusage_preds) {
+            confess("Unknown rusage predicate: " . $_) unless ($_ =~ /^(type|gtmp|tmp|mem)$/);
+        }
+    } else {
+        warn("No rusage statement included in LSF pattern");
     }
     
     # parse mem request rusage[mem=###mb, ...]
