@@ -6,6 +6,24 @@ use warnings;
 use POSIX;
 use Carp;
 
+=pod
+
+=head1 NAME
+
+Workflow::LsfParser - Parse LSF rusage into a Workflow::Resource object
+
+=head1 SYNOPSIS
+
+Should be called statically e.g.:
+
+my $resource = Workflow::LsfParser::get_resource_from_lsf_resource("-R 'select[tmp>1040]...");
+
+=head1 DESCRIPTION
+
+This module is a temporary measure to bridge between LSF and generic job dispatching on LSF, SGE and other job dispatchers.
+
+=cut
+
 class Workflow::LsfParser {
     has => [
         resource => { is => 'Workflow::Resource' },
