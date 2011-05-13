@@ -2,8 +2,6 @@
 package Workflow::Server;
 
 use strict;
-#use POE;
-#use POE qw(Component::IKC::Server);
 
 sub setup {
     my $class = shift;
@@ -13,37 +11,15 @@ sub setup {
 sub start {
     my $class = shift;
     
-    #perlio is frustrating
     select STDERR; $| = 1;
     select STDOUT; $| = 1;
 
-    ## non-portable, causes linux kernel to send HUP if our parent process ends.
+    # linux kernel to sends HUP if our parent process ends.
+    # non-portable
     syscall 172, 1, 1;
 
     $class->setup(@_);
     POE::Kernel->run();
-}
-
-sub check_leaks {
-=pod
-    my($kernel)=@_[KERNEL];
-    if(ref $kernel) {
-        my $kr_queue = $kernel->[5];
-
-        warn(
-    "\n<rc> ,----- Kernel Activity -----\n",
-      "<rc> | Events : ", $kr_queue->get_item_count(), "\n",
-      "<rc> | Files  : ", $kernel->_data_handle_count(), "\n",
-      "<rc> | Extra  : ", $kernel->_data_extref_count(), "\n",
-      "<rc> | Procs  : ", $kernel->_data_sig_child_procs(), "\n",
-      "<rc> `---------------------------\n",
-      "<rc> ..."
-        );
-$kernel->_dump_kr_extra_refs;
-    } else {
-        warn "$kernel isn't a reference";
-    }
-=cut
 }
 
 sub lockname {
@@ -103,7 +79,6 @@ sub wait_for_lock {
         sleep 5;
         $handle->pump_nb if (defined $handle);
         $waited += 5;
-#        print "$service wait: $waited\n";
     }
 }
 
