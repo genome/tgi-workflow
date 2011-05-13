@@ -5,6 +5,7 @@ use File::Copy qw/move/;
 
 use strict;
 use warnings;
+die("This module is unused and will be removed 5/16/2011 unless I hear otherwise pkimmey@genome.wustl.edu");
 
 sub _sleep {
   # Use an event timer to sleep within the event loop
