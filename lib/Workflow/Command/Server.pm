@@ -55,11 +55,6 @@ EOS
 sub execute {
     my $self = shift;
 
-#    $Workflow::Server::UR::port_number = $self->ur_port
-#        if $self->ur_port;
-#    $Workflow::Server::Hub::port_number = $self->hub_port
-#        if $self->hub_port;
-
     my $type = lc($self->type);
 
     if ($type eq 'both') {
@@ -79,16 +74,11 @@ sub execute {
             die "no child?";
         }
     } elsif ($type eq 'ur') {
-#        if (defined $self->hub_host) {
-            # start a UR server and connect to hub_host for dispatch 
 
             $0 = 'workflow urd ' . $self->ur_port;
 
             Workflow::Server::UR->start(ur_port => $self->ur_port, hub_port => $self->hub_port);
 
-#        } else {
-#            die 'must define a hub_host to start this server';
-#        }
     } elsif ($type eq 'hub') {
         # start a hub server and connect 
 
