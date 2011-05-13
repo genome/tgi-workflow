@@ -625,34 +625,6 @@ sub setup {
                     $name .= '{' . $pindex . '}';
                 }
 
-                my $lsf_opts;
-
-                $rusage =~ s/^\s+//;
-                if ($rusage =~ /^-/) {
-                    $lsf_opts = $rusage;
-                    if ($rusage !~ /-o/i && defined $stdout_file && $stdout_file ne '') {
-                        $lsf_opts .= ' -o ' . $stdout_file;
-                    }
-                    if ($rusage !~ /-e/i && defined $stderr_file && $stderr_file ne '') {
-                        $lsf_opts .= ' -e ' . $stderr_file;
-                    }
-                } else {
-                    $lsf_opts = '-R "' . $rusage . '"';
-                    if ($stdout_file) {
-                        $lsf_opts .= ' -o ' . $stdout_file;
-                    }
-                    if ($stderr_file) {
-                        $lsf_opts .= ' -e ' . $stderr_file;
-                    }
-                }
-
-                if ($project) {
-                        $lsf_opts .= ' -P ' . $project;
-                }
-
-                my $hostname = hostname;
-                my $port = $port_number;
-
                 my $namespace = (split(/::/,$command_class))[0];
 
                 my @libs = UR::Util::used_libs();
@@ -661,22 +633,35 @@ sub setup {
                     $libstring .= 'use lib "' . $lib . '"; ';
                 }
 
-                my $cmd = 'bsub -g /workflow-worker2 -q ' . $queue . ' ' . $lsf_opts .
-                    ' -J "' . $name . '" annotate-log '. $^X .' -e \'' . $libstring . 'use ' . $namespace . '; use ' . $command_class . '; use Workflow::Server::Worker; Workflow::Server::Worker->start("' . $hostname . '",' . $port . ')\'';
+                my $command = sprintf("annotate-log %s -e '%s use %s; use %s; use Workflow::Server::Worker; Workflow::Server::Worker->start(\"%s\",%s)'", $^X, $libstring, $namespace, $command_class, hostname, $port_number);
 
-                evTRACE and print "dispatch lsf_cmd $cmd\n";
-
-                my $bsub_output = `$cmd`;
-
-                evTRACE and print "dispatch lsf_cmd $bsub_output";
-
-                # Job <8833909> is submitted to queue <long>.
-                if ($bsub_output =~ /^Job <([^>]+)> is submitted to queue <([^>]+)>\./) {
-                    my $lsf_job_id = $1;                
-                    return $lsf_job_id;
-                } else {
-                    return;
+                my $resource = Workflow::LsfParser::get_resource_from_lsf_resource($rusage);
+                if ($rusage =~ /-o/) {
+                    ($stdout_file) = ($rusage =~ /-o ([^\s]*)/); 
                 }
+                if ($rusage =~ /-e/) {
+                    ($stderr_file) = ($rusage =~ /-e ([^\s]*)/);
+                }
+                
+                my $job = Workflow::Dispatcher::Job->create(
+                    group => "/workflow-worker2",
+                    name => $name,
+                    resource => $resource,
+                    command => $command,
+                    queue => $queue
+                );
+                
+                $job->project($project) if (defined $project);
+                $job->stdout($stdout_file) if (defined $stdout_file);
+                $job->stderr($stderr_file) if (defined $stderr_file);
+
+                my $lsf_cluster = Workflow::Dispatcher::Lsf->create(cluster => "default");
+
+                evTRACE and print "workflow dispatch " . $lsf_cluster->get_command($job) . "\n";
+
+                my $lsf_job_id = $lsf_cluster->execute($job);
+
+                return $lsf_job_id;
             },
             periodic_check => sub {
                 my ($kernel, $heap) = @_[KERNEL, HEAP];
