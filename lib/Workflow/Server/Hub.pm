@@ -5,8 +5,6 @@ use strict;
 use base 'Workflow::Server';
 use POE qw(Component::IKC::Server Wheel::FollowTail);
 
-#our $port_number = 13424;
-
 use Workflow ();
 use Sys::Hostname;
 use Text::CSV;
@@ -202,7 +200,6 @@ sub setup {
             },
             handle_input => sub {
                 my ($kernel, $heap, $line) = @_[KERNEL,HEAP,ARG0];
-#                print "Log: $line\n";
 
                 $heap->{csv}->parse($line);
                 my @fields = $heap->{csv}->fields();
@@ -210,7 +207,7 @@ sub setup {
                 $kernel->yield('event_' . $fields[0], $line, \@fields);
             },
             handle_reset => sub {
-#                print "Log rolled over.\n";
+
             },
             handle_error => sub {
                 my ($heap, $operation, $errnum, $errstr, $wheel_id) = @_[HEAP, ARG0..ARG3];
@@ -248,10 +245,6 @@ sub setup {
                             }
                         }
                     }
-
-#                    print sprintf("%10s %5s %5s ",$job_id, $job_status, $job_stat_code) . 
-#                        join(',',@{ $fields }[$offset+28,$offset+29,$offset+54,$offset+55]) . "\n";
-                    
                     
                     $heap->{watchers}{$job_id}->(
                         $job_id, $job_status, $job_stat_code,
@@ -405,7 +398,6 @@ sub setup {
                 
                 if (exists $heap->{claimed}->{$remote_kernel}) {
                     my $payload = delete $heap->{claimed}->{$remote_kernel};
-#                    my ($instance, $type, $input, $sc) = @$payload;
                     my $instance = $payload->{instance};
                     my $sc = $payload->{shortcut_flag};
                     
@@ -509,56 +501,51 @@ sub setup {
                 my @requeue = ();
                 while ($heap->{job_count} < $heap->{job_limit}) {
                     my ($priority, $queue_id, $payload) = $heap->{queue}->dequeue_next();
-                    if (defined $priority) {
-#                        my ($instance, $type, $input, $sc) = @$payload;
-
-                        my $lsf_job_id;
-                        if ($payload->{shortcut_flag}) {
-                            if ($heap->{fork_count} >= $heap->{fork_limit}) {
-                                push @requeue, $payload;
-                                next;
-                            }
-                            
-                            $lsf_job_id = $kernel->call($_[SESSION],'fork_worker',
-                                $payload->{operation_type}->command_class_name, $payload->{out_log}, $payload->{err_log}
-                            );
-                            $heap->{fork_count}++;
-                            $heap->{job_count}++;
-                        } else {
-                            $lsf_job_id = $kernel->call($_[SESSION],'lsf_bsub',
-                                $payload->{operation_type}->lsf_queue,
-                                $payload->{operation_type}->lsf_resource,
-                                $payload->{operation_type}->lsf_project,
-                                $payload->{operation_type}->command_class_name,
-                                $payload->{out_log},
-                                $payload->{err_log},
-                                $payload->{instance}->name,
-                                $payload->{instance}->parallel_index
-                            );
-                            
-                            if ($lsf_job_id) {
-                                $heap->{job_count}++;
-                            
-                                my $cb = $session->postback(
-                                    'finalize_work', $payload->{instance}->id
-                                );
-
-                                $kernel->post('lsftail','add_watcher',{job_id => $lsf_job_id, action => $cb});
-                            }
-
+                    last unless (defined $priority);
+                    my $lsf_job_id;
+                    if ($payload->{shortcut_flag}) {
+                        if ($heap->{fork_count} >= $heap->{fork_limit}) {
+                            push @requeue, $payload;
+                            next;
                         }
-
-                        if ($lsf_job_id) {
-                            $heap->{dispatched}->{$lsf_job_id} = $payload;
-
-                            $kernel->post('IKC','post','poe://UR/workflow/schedule_instance',[$payload->{instance}->id,$lsf_job_id]);
-
-                            evTRACE and print "dispatch start_jobs submitted $lsf_job_id " . $payload->{shortcut_flag} . "\n";
-                        } else {
-                            evTRACE and print "dispatch failed to start job, will retry on next cycle\n";
-                        }
+                        
+                        $lsf_job_id = $kernel->call($_[SESSION],'fork_worker',
+                            $payload->{operation_type}->command_class_name, $payload->{out_log}, $payload->{err_log}
+                        );
+                        $heap->{fork_count}++;
+                        $heap->{job_count}++;
                     } else {
-                        last;
+                        $lsf_job_id = $kernel->call($_[SESSION],'lsf_bsub',
+                            $payload->{operation_type}->lsf_queue,
+                            $payload->{operation_type}->lsf_resource,
+                            $payload->{operation_type}->lsf_project,
+                            $payload->{operation_type}->command_class_name,
+                            $payload->{out_log},
+                            $payload->{err_log},
+                            $payload->{instance}->name,
+                            $payload->{instance}->parallel_index
+                        );
+                        
+                        if ($lsf_job_id) {
+                            $heap->{job_count}++;
+                        
+                            my $cb = $session->postback(
+                                'finalize_work', $payload->{instance}->id
+                            );
+
+                            $kernel->post('lsftail','add_watcher',{job_id => $lsf_job_id, action => $cb});
+                        }
+
+                    }
+
+                    if ($lsf_job_id) {
+                        $heap->{dispatched}->{$lsf_job_id} = $payload;
+
+                        $kernel->post('IKC','post','poe://UR/workflow/schedule_instance',[$payload->{instance}->id,$lsf_job_id]);
+
+                        evTRACE and print "dispatch start_jobs submitted $lsf_job_id " . $payload->{shortcut_flag} . "\n";
+                    } else {
+                        evTRACE and print "dispatch failed to start job, will retry on next cycle\n";
                     }
                 }
                 
@@ -694,7 +681,6 @@ sub setup {
                     
                     if ($restart) {
                         my $payload = delete $heap->{dispatched}->{$lsf_job_id};
-#                        my ($instance, $type, $input) = @$payload;
                         my $instance = $payload->{instance};
 
                         $kernel->post('lsftail','delete_watcher',{job_id => $lsf_job_id});
