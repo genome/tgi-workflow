@@ -222,9 +222,7 @@ $DB::single=1;
                 $first_time = 0;
             }
                 
-#            $done_text .= $node->id . "; ";
         }
-#        $done_text .= "\n    }\n";
     }
         
     my $running_text = '';
@@ -445,7 +443,6 @@ sub _get_node_text {
         $node_type = "instance";
     }
 
-    #my $text = sprintf('"%d" [label="%s",URL="http://www.google.com/"%s];',
     my $text = sprintf('"%d" [label="%s"%s];',
                        $node->id, 
                        $node->name,

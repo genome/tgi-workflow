@@ -86,7 +86,6 @@ sub _print_child {
     my $i = shift;
     my $d = shift;
     
-#    print join("\t",$i->id,$i->name, $i->status) . "\n";
     print sprintf("%9s %-60s %9s\n",$i->id, (' 'x$d) . $i->name, $i->status);
     if ($i->can('sorted_child_instances')) {
         foreach my $c ($i->sorted_child_instances) {
