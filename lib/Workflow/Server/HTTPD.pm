@@ -370,7 +370,7 @@ sub setup {
                     
                         my %dump;
                         foreach my $object (@objects) {
-                            my $class = $object->get_class_object;
+                            my $class = $object->__meta__;
                             my $object_name = $class->class_name . '=' . $object->id;
                             
                             $dump{$object_name} ||= {

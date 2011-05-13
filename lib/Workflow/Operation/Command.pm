@@ -72,8 +72,8 @@ sub _add_properties {
     };
     
     while (my ($property_name, $old_property) = each(%$has)) {
-        my %new1 = $class->get_class_object->_normalize_property_description1($property_name, $old_property, $desc);
-        my %new = $class->get_class_object->_normalize_property_description2(\%new1, $desc);
+        my %new1 = $class->__meta__->_normalize_property_description1($property_name, $old_property, $desc);
+        my %new = $class->__meta__->_normalize_property_description2(\%new1, $desc);
         $desc->{has}->{$property_name} = \%new;
     }
     
@@ -82,7 +82,7 @@ sub _add_properties {
 
 sub input_property_names {
     my $self = shift;
-    my $class_meta = $self->get_class_object;
+    my $class_meta = $self->__meta__;
     
     my @props = map { 
         $_->property_name
@@ -95,7 +95,7 @@ sub input_property_names {
 
 sub output_property_names {
     my $self = shift;
-    my $class_meta = $self->get_class_object;
+    my $class_meta = $self->__meta__;
     
     my @props = map { 
         $_->property_name

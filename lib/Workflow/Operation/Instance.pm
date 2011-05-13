@@ -193,8 +193,8 @@ sub _resolve_subclass_name {
             $suffix = 'Model::Instance';
         }
     } elsif ( my $id =
-        $class->get_rule_for_params(@_)
-        ->specified_value_for_property_name('workflow_operation_id') )
+        $class->define_boolexpr(@_)
+        ->value_for('workflow_operation_id') )
     {
         my $operation = Workflow::Operation->get($id);
         if ( $operation->class eq 'Workflow::Model' ) {

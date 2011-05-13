@@ -35,11 +35,11 @@ sub _resolve_subclass_name {
     if ( $class ne __PACKAGE__ ) {
         $subclass_name = $class;
     } elsif ( my $job_class =
-        $class->get_rule_for_params(@_)
-        ->specified_value_for_property_name('job_class')
+        $class->define_boolexpr(@_)
+        ->value_for('job_class')
         and my $job_id =
-        $class->get_rule_for_params(@_)
-        ->specified_value_for_property_name('job_id') )
+        $class->define_boolexpr(@_)
+        ->value_for('job_id') )
     {
         my $type = $job_class->get($job_id)->type;
         $subclass_name = __PACKAGE__ . '::' . ucfirst( $type );

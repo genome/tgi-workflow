@@ -80,7 +80,7 @@ our @observers = (
         callback => sub {
             my $self = shift;
 
-            my $class_meta = $self->get_class_object;
+            my $class_meta = $self->__meta__;
             my @property_meta = $class_meta->all_property_metas();
             
             foreach my $property (grep { defined $_->{copy_on_create} } @property_meta) {

@@ -34,7 +34,7 @@ sub __populate {
 
     return if $self->__populated;
 
-    my @property_meta = $self->get_class_object->all_property_metas();
+    my @property_meta = $self->__meta__->all_property_metas();
     my %map = map { $_->property_name => $_->{'populate_from'} } @property_meta;
     
     while (my ($prop,$key) = each %map) {

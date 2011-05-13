@@ -66,8 +66,8 @@ sub _resolve_subclass_name {
     if ( $class ne __PACKAGE__ ) {
         $subclass_name = $class;
     } elsif ( my $type =
-        $class->get_rule_for_params(@_)
-        ->specified_value_for_property_name('type') )
+        $class->define_boolexpr(@_)
+        ->value_for('type') )
     {
         $subclass_name = __PACKAGE__ . '::' . ucfirst( $type );
     } else {
