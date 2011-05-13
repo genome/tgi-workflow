@@ -18,6 +18,7 @@ sub get_resource_from_lsf_resource {
     # parse mem limit -M ###kb
     my ($mem_limit) = ($lsf_resource =~ /-M\s(\d+)/);
     if (defined $mem_limit) {
+        $mem_limit = ceil($mem_limit / 1024);
         $resource->mem_limit($mem_limit);
     }
     # parse cpucs -n cpus
@@ -25,9 +26,27 @@ sub get_resource_from_lsf_resource {
     if (defined $min_proc) {
         $resource->min_proc($min_proc);
     }
+    
+    my ($select) = ($lsf_resource =~ /select\[([^\]]*)/);
+    if (defined $select) {
+        my @select_preds = ($select =~ /([a-z]+)\s*[=><]/g);
+        foreach (@select_preds) {
+            die("Unknown select predicate: " . $_) unless ($_ =~ /type|gtmp|tmp|mem/);
+        }
+    } else {
+        die("No select statement included in LSF pattern");
+    }
+
 
     # handle rusage section
     my ($rusage) = ($lsf_resource =~ /rusage\[([^\]]*)/);
+    
+    # check there isn't something we haven't seen
+    my @rusage_preds = ($rusage =~ /([a-z]+)\s*[=><]/g);
+
+    foreach (@rusage_preds) {
+        die("Unknown rusage predicate: " . $_) unless ($_ =~ /type|gtmp|tmp|mem/);
+    }
     
     # parse mem request rusage[mem=###mb, ...]
     my ($mem_request) = ($rusage =~ /mem=(\d+)/); 
