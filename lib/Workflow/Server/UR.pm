@@ -6,8 +6,6 @@ use base 'Workflow::Server';
 use POE qw(Component::IKC::Server Component::IKC::Client);
 use Workflow::Server::Hub;
 
-#our $port_number = 13425;
-
 use Workflow ();
 
 BEGIN {
@@ -157,9 +155,6 @@ evTRACE and print "workflow quit_stage_2\n";
                         if (Workflow::DataSource::InstanceSchema->has_default_handle) {
                             $heap->{unchanged_commits}++;
                             if ($heap->{unchanged_commits} > 2) {
-#                                evTRACE and print "workflow commit disconnecting " . $heap->{unchanged_commits} . "\n";
-                                ## its been 5 minutes and nothing has changed.  disconnect
-#                                Workflow::DataSource::InstanceSchema->disconnect_default_dbh;
                                 $heap->{unchanged_commits} = 0;
                             }
                         }
@@ -173,10 +168,6 @@ evTRACE and print "workflow conn ", ($real ? '' : 'alias '), "$name\n";
             disc => sub {
                 my ($kernel,$name,$real) = @_[KERNEL,ARG1,ARG2];
 evTRACE and print "workflow disc ", ($real ? '' : 'alias '), "$name\n";
-
-#                if ($name eq 'Hub') {
-#                    $kernel->post('IKC','shutdown');
-#                }
             },
             load => sub {
                 my ($kernel, $heap, $arg) = @_[KERNEL,HEAP,ARG0];
