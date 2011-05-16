@@ -600,6 +600,16 @@ sub setup {
                     }
                 }
             },
+            call_dispatch => sub {
+                my ($kernel, $job, $resource) = @_[KERNEL, ARG0];
+                # First argument is a $job which we have to rebless.
+                $job = bless($job, "Workflow::Dispatcher::Job");
+                $resource = bless($job->resource, "Workflow::Resource");
+                $job->resource($resource);
+                my $dispatcher = Workflow::Dispatcher::Lsf->create(cluster => "default");
+                my $job_id = $dispatcher->execute($job);
+                return $job_id;
+            },
             lsf_bsub => sub {
                 my ($kernel, $queue, $rusage, $project, $command_class, $stdout_file, $stderr_file, $name, $pindex) = @_[KERNEL, ARG0, ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7];
                 evTRACE and print "dispatch lsf_cmd $queue $rusage $stdout_file $stderr_file $name\n";
