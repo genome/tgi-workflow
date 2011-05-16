@@ -1,5 +1,5 @@
 
-die("Fork.pm is broken and will be removed 5/16/2011 if I don't hear otherwise: pkimmey@genome.wustl.edu");
+die("Fork.pm is broken and will be removed 5/16/2011 if I don't hear otherwise: pkimmey\@genome.wustl.edu");
 
 ## This module may be broken
 

@@ -4,7 +4,7 @@ use base qw/Workflow::Metrics/;
 
 use strict;
 use warnings;
-die("This module is unused and will be deleted 5/16/2011 unless I am told otherwise: pkimmey@genome.wustl.edu");
+die("This module is unused and will be deleted 5/16/2011 unless I am told otherwise: pkimmey\@genome.wustl.edu");
 sub _sleep {
   # Use an event timer to sleep within the event loop
   my $self = shift;

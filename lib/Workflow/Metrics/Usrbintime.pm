@@ -5,7 +5,7 @@ use base qw(Workflow::Metrics);
 use strict;
 use warnings;
 
-die("This module is broken and will be removed 5/16/2011 unless I hear otherwise: pkimmey@genome.wustl.edu");
+die("This module is broken and will be removed 5/16/2011 unless I hear otherwise: pkimmey\@genome.wustl.edu");
 
 sub run {
   my $self = shift;
