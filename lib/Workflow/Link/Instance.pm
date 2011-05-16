@@ -53,7 +53,7 @@ sub value {
     my $self = shift;
 
     my $val = $self->raw_value;
-    while (UNIVERSAL::isa($val,'Workflow::Link::Instance')) {
+    while (eval { $val->isa('Workflow::Link::Instance') }) {
         $val = $val->value;
     }
 
