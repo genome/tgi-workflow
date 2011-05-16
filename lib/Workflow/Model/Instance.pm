@@ -14,11 +14,13 @@ class Workflow::Model::Instance {
         },
         input_connector => {
             is    => 'Workflow::Operation::Instance',
-            id_by => 'input_connector_id'
+            id_by => 'input_connector_id',
+            is_optional => 1,
         },
         output_connector => {
             is    => 'Workflow::Operation::Instance',
-            id_by => 'output_connector_id'
+            id_by => 'output_connector_id',
+            is_optional => 1,
         },
         ordered_child_instances => {
             is        => 'Workflow::Operation::Instance',
