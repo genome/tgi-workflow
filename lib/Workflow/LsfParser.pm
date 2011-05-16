@@ -58,8 +58,6 @@ sub get_resource_from_lsf_resource {
             $max_tmp = ceil($max_tmp / 1024);
             $resource->max_tmp($max_tmp)
         }
-    } else {
-        warn("No select statement included in LSF pattern");
     }
 
     # handle rusage section
