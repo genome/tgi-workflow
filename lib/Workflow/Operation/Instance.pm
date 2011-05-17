@@ -571,7 +571,7 @@ sub unfinished_inputs {
                 $vallist = [ $current_inputs{$input_name} ];
             }
           VALCHECK: foreach my $v (@$vallist) {
-                if ( UNIVERSAL::isa( $v, 'Workflow::Link::Instance' ) ) {
+                if (eval { $v->isa('Workflow::Link::Instance') }) {
                     if ( $v->broken ) {
                         unless ( defined $self->input_value($input_name) ) {
                             push @unfinished_inputs, $input_name;
@@ -619,12 +619,11 @@ sub input_value {
 
     #    return $self->input->{$input_name}->value;
 
-    if (
-        UNIVERSAL::isa(
-            $self->input->{$input_name},
+    if (eval {
+          $self->input->{$input_name}->isa(
             'Workflow::Link::Instance'
-        )
-      )
+            )
+        })
     {
         return $self->input->{$input_name}->value;
     } else {
@@ -649,7 +648,7 @@ sub treeview_debug {
         my $vals = ref($v) eq 'ARRAY' ? $v : [$v];
         foreach my $dv (@$vals) {
             my $vc = $dv;
-            if ( UNIVERSAL::isa( $dv, 'Workflow::Link::Instance' ) ) {
+            if (eval { $dv->isa('Workflow::Link::Instance' ) }) {
                 $vc =
                     $dv->operation_instance->id . '->'
                   . $dv->property
@@ -665,7 +664,7 @@ sub treeview_debug {
         my $vals = ref($v) eq 'ARRAY' ? $v : [$v];
         foreach my $dv (@$vals) {
             my $vc = $dv;
-            if ( UNIVERSAL::isa( $dv, 'Workflow::Link::Instance' ) ) {
+            if (eval { $dv->isa('Workflow::Link::Instance' ) }) {
                 $vc =
                     $dv->operation_instance->id . '->'
                   . $dv->property
@@ -766,17 +765,16 @@ sub resolved_inputs {
 
     my %current_inputs = ();
     foreach my $input_name ( keys %{ $self->input } ) {
-        if (
-            UNIVERSAL::isa(
-                $self->input->{$input_name},
-                'Workflow::Link::Instance'
-            )
+        if (eval {
+                $self->input->{$input_name}->isa(
+                'Workflow::Link::Instance')
+            }
           )
         {
             $current_inputs{$input_name} = $self->input_value($input_name);
         } elsif ( ref( $self->input->{$input_name} ) eq 'ARRAY' ) {
             my @new = map {
-                UNIVERSAL::isa( $_, 'Workflow::Link::Instance' )
+                eval { $_->isa('Workflow::Link::Instance') }
                   ? $_->value
                   : $_
             } @{ $self->input->{$input_name} };
@@ -798,7 +796,7 @@ sub orphan {
     foreach my $dep (@deps) {
         if ( defined $dep->input ) {
             while ( my ( $k, $v ) = each( %{ $dep->input } ) ) {
-                if ( UNIVERSAL::isa( $v, 'Workflow::Link::Instance' ) ) {
+                if (eval { $v->isa('Workflow::Link::Instance') }) {
                     if ( $v->operation_instance == $self ) {
                         unless ( $v->broken ) {
                             my $break_val = $outputs{ $v->property };
@@ -826,7 +824,7 @@ sub is_orphan {
     foreach my $dep (@deps) {
         if ( defined $dep->input ) {
             while ( my ( $k, $v ) = each( %{ $dep->input } ) ) {
-                if ( UNIVERSAL::isa( $v, 'Workflow::Link::Instance' ) ) {
+                if (eval { $v->isa('Workflow::Link::Instance') }) {
                     if ( $v->operation_instance == $self ) {
                         unless ( $v->broken ) {
                             $broken = 0;
@@ -834,7 +832,7 @@ sub is_orphan {
                     }
                 } elsif ( ref($v) eq 'ARRAY' ) {
                     foreach my $vv (@$v) {
-                        if ( UNIVERSAL::isa( $vv, 'Workflow::Link::Instance' ) )
+                        if (eval { $vv->isa('Workflow::Link::Instance') })
                         {
                             if ( $vv->operation_instance == $self ) {
                                 unless ( $vv->broken ) {
@@ -1013,12 +1011,12 @@ sub dependent_operations {
         next if $sibling == $self;
 
         foreach my $v ( values %{ $sibling->input } ) {
-            if ( UNIVERSAL::isa( $v, 'Workflow::Link::Instance' ) ) {
+            if (eval { $v->isa('Workflow::Link::Instance') }) {
                 $instances{ $sibling->id } = $sibling
                   if ( $v->operation_instance == $self && !$v->broken );
             } elsif ( $self->is_parallel && ref($v) eq 'ARRAY' ) {
                 my $vv = $v->[ $self->parallel_index ];
-                if ( UNIVERSAL::isa( $vv, 'Workflow::Link::Instance' ) ) {
+                if (eval { $vv->isa('Workflow::Link::Instance') }) {
                     $instances{ $sibling->id } = $sibling
                       if ( $vv->operation_instance == $self && !$vv->broken );
                 }
@@ -1034,11 +1032,11 @@ sub depended_on_by {
 
     my %instances = ();
     foreach my $v ( values %{ $self->input } ) {
-        if ( UNIVERSAL::isa( $v, 'Workflow::Link::Instance' ) && !$v->broken ) {
+        if (eval { $v->isa('Workflow::Link::Instance') } && !$v->broken ) {
             $instances{ $v->operation_instance->id } = $v->operation_instance;
         } elsif ( ref($v) eq 'ARRAY' ) {
             foreach my $vv (@$v) {
-                if ( UNIVERSAL::isa( $v, 'Workflow::Link::Instance' )
+                if (eval { $v->isa('Workflow::Link::Instance') }
                     && !$v->broken )
                 {
                     $instances{ $vv->operation_instance->id } =
@@ -1062,7 +1060,7 @@ sub create_peers {
     foreach my $dep (@deps) {
         my %input = ();
         while ( my ( $k, $v ) = each( %{ $dep->input } ) ) {
-            if ( UNIVERSAL::isa( $v, 'Workflow::Link::Instance' )
+            if (eval { $v->isa('Workflow::Link::Instance') }
                 && $v->operation_instance == $self )
             {
                 $input{$k} = [$v];
@@ -1096,7 +1094,7 @@ sub create_peers {
         $peer->current->start_time( Workflow::Time->now );
 
         $peer->current->fix_logs;
-        if (UNIVERSAL::isa($peer, 'Workflow::Model::Instance')) {
+        if (eval { $peer->isa('Workflow::Model::Instance') }) {
             for my $child_instance ($peer->child_instances) {
                 $child_instance->current->fix_logs;
             }
@@ -1108,8 +1106,9 @@ sub create_peers {
             my @k = grep {
                 if (
                     ref( $dep->input->{$_} ) eq 'ARRAY'
-                    && UNIVERSAL::isa( $dep->input->{$_}->[0],
-                        'Workflow::Link::Instance' )
+                    && 
+                    eval { 
+                        $dep->input->{$_}->[0]->isa('Workflow::Link::Instance')                     }
                     && $dep->input->{$_}->[0]->operation_instance == $self
                   )
                 {
@@ -1147,7 +1146,7 @@ sub fix_parallel_input_links {
     while ( my ( $k, $v ) = each( %{ $self->input } ) ) {
         $input{$k} = $v;
         if ( $k eq $self->parallel_by ) {
-            if ( UNIVERSAL::isa( $v, 'Workflow::Link::Instance' ) ) {
+            if (eval { $v->isa('Workflow::Link::Instance') }) {
                 $input{$k} = $v->clone( index => $self->parallel_index );
             } else {
                 $input{$k} = $input{$k}->[ $self->parallel_index ];
