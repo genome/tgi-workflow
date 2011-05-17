@@ -166,7 +166,9 @@ sub call {
     $self->status_message('#################################################');
     $self->status_message('Date Scheduled:  '. $command_obj->date_scheduled);
     $self->status_message('Type:  ' . $type);
-    $self->status_message('LSF Job Id:  '. $command_obj->lsf_job_id);
+    if (defined $command_obj->lsf_job_id) {
+        $self->status_message('LSF Job Id:  '. $command_obj->lsf_job_id);
+    }
     $self->status_message('Pid:  ' . $$);
     $self->status_message('HOST:  '. hostname);
     $self->status_message('USER:  '. $command_obj->user_name);
