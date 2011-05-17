@@ -41,16 +41,14 @@ sub get_resource_from_lsf_resource {
         $resource->mem_limit($mem_limit);
     }
     # parse cpucs -n cpus
-    my ($min_proc) = ($lsf_resource =~ /-n\s(\d+)/);
-    if (defined $min_proc) {
-        $resource->min_proc($min_proc);
-    }
+    my $min_proc;
+    ($min_proc) = ($lsf_resource =~ /-n\s(\d+)/);
     
     my ($select) = ($lsf_resource =~ /select\[([^\]]*)/);
     if (defined $select) {
         my @select_preds = ($select =~ /([a-z]+)\s*[!=><]+/g);
         foreach (@select_preds) {
-            confess("Unknown select predicate: " . $_) unless ($_ =~ /^(model|type|maxtmp|gtmp|tmp|mem)$/);
+            confess("Unknown select predicate: " . $_ . " on input " . $lsf_resource) unless ($_ =~ /^(model|type|maxtmp|gtmp|tmp|mem|ncpus)$/);
         }
         # handle select only predicates
         my ($max_tmp) = ($select =~ /maxtmp\s?[>=]+\s?(\d+)/);
@@ -58,6 +56,17 @@ sub get_resource_from_lsf_resource {
             $max_tmp = ceil($max_tmp / 1024);
             $resource->max_tmp($max_tmp)
         }
+        my ($ncpus) = ($select =~ /ncpus\s?[>=]+\s?(\d+)/);
+        if (defined $ncpus && defined $min_proc && $min_proc != $ncpus) {
+            confess("Invalid clash between select statement and -n #numcpus command flag on input " . $lsf_resource);
+        }
+        if (defined $ncpus && !defined $min_proc) {
+            $min_proc = $ncpus;
+        }
+    }
+    
+    if (defined $min_proc) {
+        $resource->min_proc($min_proc);
     }
 
     # handle rusage section
