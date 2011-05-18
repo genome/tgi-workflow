@@ -111,8 +111,8 @@ sub call {
 
     #umask 0022;
 
-    # Give the add-reads top level step a chance to sync database so these events
-    # show up
+    # Give the add-reads top level step a chance to 
+    # sync database so these events show up
     my $try_count = 10;
     my $event;
     while($try_count--) {
