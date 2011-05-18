@@ -20,8 +20,6 @@ sub setup {
             _start => sub {
                 my ($kernel) = @_[KERNEL];
                 POE::Component::IKC::Responder->spawn();
-
-#                $kernel->post('IKC','monitor','*'=>{register=>'reg',unregister=>'unreg',subscribe=>'sub',unsubscribe=>'unsub'});
             },
             reg => sub {
                 my ($name,$real) = @_[ARG1,ARG2];
@@ -348,8 +346,6 @@ sub setup {
                 return $kernel->yield('not_found','class') unless $class;
 
                 my $object_id = ($uri->path_segments)[3] ? '"' . ($uri->path_segments)[3] . '"' : '';
-#                return $kernel->yield('not_found','object identifier') unless $object_id;
-                
                 
                 $kernel->post(
                     'IKC','call',
@@ -383,7 +379,6 @@ sub setup {
                                     $dump{$object_name}{via}{$prop->via} ||= {};
                                     $dump{$object_name}{via}{$prop->via}{$name} = $object->$name;
                                 } elsif ($prop->is_delegated) {
-#                                    $dump{$object_name}{delegated}{$name} = $object->$name;
                                     my $thing = $object->$name;
                                     if ($thing) {
                                         $dump{$object_name}{delegated}{$name} = $thing->class . '=' . $thing->id;
@@ -496,7 +491,6 @@ MARK
                 $response->add_content($html);
                 $response->add_content('</body></html>');
                 
-#                $response->content(Data::Dumper->new([\%h])->Useqq(1)->Dump);
                 $kernel->yield('finish_response');
 
             },
@@ -602,7 +596,6 @@ MARK
                 return $kernel->yield('exception',$result) unless $ok;
                 my %infos = (@$result);
                 
-#                while (my ($id,$info) = each (%infos)) {
                 foreach my $id ( sort { $a <=> $b } keys %infos ) {
                     my $info = $infos{$id};
                     my ($name, $status, $opresult, $dispatch_id) = @{ $info };
