@@ -33,6 +33,10 @@ class Workflow::LsfParser {
 
 sub get_resource_from_lsf_resource {
     my $lsf_resource = shift;
+    if (eval { $lsf_resource->isa("Workflow::LsfParser"); }) {
+        # called as method. shift again to get our lsf rusage
+        $lsf_resource = shift;
+    }
     my $resource = Workflow::Resource->create();
     # parse mem limit -M ###kb
     my ($mem_limit) = ($lsf_resource =~ /-M\s(\d+)/);

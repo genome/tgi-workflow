@@ -8,7 +8,7 @@ BEGIN {
 use strict;
 use warnings;
 
-use Test::More tests => 20;
+use Test::More tests => 23;
 use Test::Exception;
 
 use above 'Workflow';
@@ -54,3 +54,13 @@ dies_ok { Workflow::LsfParser::get_resource_from_lsf_resource($lsfresource5) } '
 
 my $lsfresource6 = "rusage[mem=8000, tmp=2000] select[badpredr>=142 && type==LINUX64 && mem > 8000 && tmp > 2000] span[hosts=1] -M 8000000";
 dies_ok { Workflow::LsfParser::get_resource_from_lsf_resource($lsfresource6) } 'fails on bad rusage predicate';
+
+my $lsfresource7 = "rusage[mem=8000, tmp=2000] select[ncpus >= 4 && type==LINUX64 && mem > 8000 && tmp > 2000] span[hosts=1] -M 80000 -n 2";
+dies_ok { Workflow::LsfParser::get_resource_from_lsf_resource($lsfresource7) } 'fails on -n # and select[ncpus >= #] mismatch';
+
+my $lsfresource8 = "rusage[mem=8000, tmp=2000] select[ncpus >= 4] span[hosts=1]";
+my $resource8 = Workflow::LsfParser::get_resource_from_lsf_resource($lsfresource8);
+ok($resource8->min_proc == 4, 'ncpus parsed properly');
+
+my $resource9 = Workflow::LsfParser->get_resource_from_lsf_resource($lsfresource8);
+ok($resource9->mem_request == 8000, "successfully called get_resource.. as method");
