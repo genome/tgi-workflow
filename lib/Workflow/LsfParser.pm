@@ -78,30 +78,31 @@ sub get_resource_from_lsf_resource {
         foreach (@rusage_preds) {
             confess("Unknown rusage predicate: " . $_) unless ($_ =~ /^(model|type|gtmp|tmp|mem)$/);
         }
+    
+        # parse mem request rusage[mem=###mb, ...]
+        my ($mem_request) = ($rusage =~ /mem=(\d+)/); 
+        if (defined $mem_request) {
+            $resource->mem_request($mem_request);
+        }
+        # parse tmp request rusage[gtmp=###gb ...]
+        my ($gtmp) = ($rusage =~ /gtmp=(\d+)/);
+        if (defined $gtmp) {
+            $resource->tmp_space($gtmp);
+            $resource->use_gtmp(1);
+        }
+        # if gtmp didnt do it, there should be info in
+        # tmp. gtmp is genome center specific and avoids
+        # a problem with lsfs tmp disk allocation sys
+        my ($tmp) = ($rusage =~ /tmp=(\d+)/);
+        if (defined $tmp) {
+            $tmp = $tmp / 1024;
+            $tmp = ceil($tmp);
+            # round up, better safe than sorry
+            $resource->tmp_space($tmp);
+        }
     } else {
         warn("No rusage statement included in LSF pattern");
     }
     
-    # parse mem request rusage[mem=###mb, ...]
-    my ($mem_request) = ($rusage =~ /mem=(\d+)/); 
-    if (defined $mem_request) {
-        $resource->mem_request($mem_request);
-    }
-    # parse tmp request rusage[gtmp=###gb ...]
-    my ($gtmp) = ($rusage =~ /gtmp=(\d+)/);
-    if (defined $gtmp) {
-        $resource->tmp_space($gtmp);
-        $resource->use_gtmp(1);
-    }
-    # if gtmp didnt do it, there should be info in
-    # tmp. gtmp is genome center specific and avoids
-    # a problem with lsfs tmp disk allocation sys
-    my ($tmp) = ($rusage =~ /tmp=(\d+)/);
-    if (defined $tmp) {
-        $tmp = $tmp / 1024;
-        $tmp = ceil($tmp);
-        # round up, better safe than sorry
-        $resource->tmp_space($tmp);
-    }
     return $resource;
 }
