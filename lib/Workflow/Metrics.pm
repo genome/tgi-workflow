@@ -3,8 +3,6 @@ package Workflow::Metrics;
 use Workflow;
 use AnyEvent;
 
-die("These metrics are unused and will be removed 5/16/2011 unless I hear otherwise: pkimmey@genome.wustl.edu");
-
 class Workflow::Metrics {
     is  => 'Command',
 };
