@@ -320,7 +320,10 @@ sub compare_dates
     # split up the date into parts
     my ($s1, $n1, $h1, $d1, $m1, $y1) = Workflow::Time->datetime_to_numbers($date1);
     my ($s2, $n2, $h2, $d2, $m2, $y2) = Workflow::Time->datetime_to_numbers($date2);
-    return undef unless $s1 && $s2; # error
+    unless (defined $s1 && defined $s2) {
+        $class->warning_message("Illegal input string: " . $date1 . " and/or " . $date2);
+        return undef;
+    }
 
     $class->debug_message("$y1,$m1,$d1,$h1,$n1,$s1 to $y2,$m2,$d2,$h2,$n2,$s2", 4);
 
@@ -355,6 +358,12 @@ sub datetime_to_numbers
     my @time = strptime($date);
     if (@time)
     {
+        #strptime sometimes returns elements as strings e.g. '07'
+        my @newtime;
+        foreach (@time) {
+            push (@newtime, int($_)) if (defined $_);
+        }
+        @time = @newtime;
         $class->debug_message("parse date $date", 4);
         # fix month
         ++$time[4];
