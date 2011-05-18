@@ -74,17 +74,6 @@ sub setup {
             
             my $query = $heap->{query} = $uri->query_form_hash;
 
-=pod
-            print $request->as_string;
-            print "scheme: " . $uri->scheme . "\n";
-            print "host: " . $uri->host . "\n";
-            print "path: " . $uri->path . "\n";
-            print "path_segments: " . join(',', $uri->path_segments) . "\n";
-            print "query: " . $uri->query . "\n";
-            print "query_form_hash:\n";
-            print Data::Dumper->new([$uri->query_form_hash])->Dump . "\n";
-=cut
-
             my $response = HTTP::Response->new(200);
             $heap->{response} = $response;
 
