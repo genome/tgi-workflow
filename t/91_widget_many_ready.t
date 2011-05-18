@@ -25,7 +25,3 @@ ok($cmd, 'created command object');
 
 my $rv = $cmd->execute();
 ok($rv > 0, 'command returned true');
-
-#print Data::Dumper->new([$cmd])->Dump;
-
-
