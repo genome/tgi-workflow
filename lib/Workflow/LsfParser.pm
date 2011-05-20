@@ -38,6 +38,9 @@ sub get_resource_from_lsf_resource {
         $lsf_resource = shift;
     }
     my $resource = Workflow::Resource->create();
+    if (!defined $lsf_resource) {
+        return $resource;
+    }
     # parse mem limit -M ###kb
     my ($mem_limit) = ($lsf_resource =~ /-M\s(\d+)/);
     if (defined $mem_limit) {
