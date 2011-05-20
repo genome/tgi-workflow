@@ -633,56 +633,6 @@ sub setup {
                     }
                 }
             },
-            lsf_bsub => sub {
-                my ($kernel, $queue, $rusage, $project, $command_class, $stdout_file, $stderr_file, $name, $pindex) = @_[KERNEL, ARG0, ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7];
-                evTRACE and print "dispatch lsf_cmd $queue $rusage $stdout_file $stderr_file $name\n";
-
-                $queue ||= 'long';
-                $rusage ||= 'rusage[tmp=100]';
-                $name ||= 'worker';
-
-                if (defined $pindex) {
-                    $name .= '{' . $pindex . '}';
-                }
-
-                my $namespace = (split(/::/,$command_class))[0];
-
-                my @libs = UR::Util::used_libs();
-                my $libstring = '';
-                foreach my $lib (reverse @libs) {
-                    $libstring .= 'use lib "' . $lib . '"; ';
-                }
-
-                my $command = sprintf("annotate-log %s -e '%s use %s; use %s; use Workflow::Server::Worker; Workflow::Server::Worker->start(\"%s\",%s)'", $^X, $libstring, $namespace, $command_class, hostname, $port_number);
-
-                my $resource = Workflow::LsfParser::get_resource_from_lsf_resource($rusage);
-                if ($rusage =~ /-o/) {
-                    ($stdout_file) = ($rusage =~ /-o ([^\s]*)/); 
-                }
-                if ($rusage =~ /-e/) {
-                    ($stderr_file) = ($rusage =~ /-e ([^\s]*)/);
-                }
-                
-                my $job = Workflow::Dispatcher::Job->create(
-                    group => "/workflow-worker2",
-                    name => $name,
-                    resource => $resource,
-                    command => $command,
-                    queue => $queue
-                );
-                
-                $job->project($project) if (defined $project);
-                $job->stdout($stdout_file) if (defined $stdout_file);
-                $job->stderr($stderr_file) if (defined $stderr_file);
-
-                my $lsf_cluster = Workflow::Dispatcher::Lsf->create(cluster => "default");
-
-                evTRACE and print "workflow dispatch " . $lsf_cluster->get_command($job) . "\n";
-
-                my $lsf_job_id = $lsf_cluster->execute($job);
-
-                return $lsf_job_id;
-            },
             periodic_check => sub {
                 my ($kernel, $heap) = @_[KERNEL, HEAP];
                 
