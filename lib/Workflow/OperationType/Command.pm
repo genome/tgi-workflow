@@ -13,6 +13,7 @@ class Workflow::OperationType::Command {
         lsf_resource => { is => 'String', is_optional=>1 },
         lsf_queue => { is => 'String', is_optional=>1 },
         lsf_project => { is => 'String', is_optional=>1 },
+        job => { is => 'Workflow::Dispatcher::Job', is_optional => 1 },
     ],
 };
 
@@ -25,7 +26,14 @@ __PACKAGE__->add_observer(
 });
 
 sub create {
-    shift->get(@_)
+    my $cls = shift;
+    my $self = $cls->get(@_);
+    return $self;
+}
+
+sub resource {
+    my $self = shift;
+    return Workflow::LsfParser->get_resource_from_lsf_resource($self->lsf_resource);
 }
 
 sub initialize {
@@ -40,10 +48,6 @@ sub initialize {
         if ($@) {
             die $@;
         }
-
-        # see if it got created
-#        my $self = $class->SUPER::get($command);
-#        return $self if $self;
     }
 
     my $class_meta = $command->__meta__;
@@ -102,7 +106,11 @@ sub create_from_xml_simple_structure {
     $self->lsf_resource(delete $struct->{lsfResource}) if (exists $struct->{lsfResource});
     $self->lsf_queue(delete $struct->{lsfQueue}) if (exists $struct->{lsfQueue});
     $self->lsf_project(delete $struct->{lsfProject}) if (exists $struct->{lsfProject});
-
+    # these warnings are useful while tracking lsf resource origins, but will be removed
+    # when that project is complete.
+    # warn "Create from xml lsf_resource " . ($self->lsf_resource || "undefined") . "\n";
+    # warn "lsf_queue " . ($self->lsf_queue || "undefined") . "\n";
+    # warn "lsf_project " . ($self->lsf_project || "undefined") . "\n";
     return $self;
 }
 
@@ -111,6 +119,10 @@ sub as_xml_simple_structure {
 
     my $struct = $self->SUPER::as_xml_simple_structure;
     $struct->{commandClass} = $self->command_class_name;
+
+    #warn "Simple XML Struct lsf_resource: " . ($self->lsf_resource || "undefined") . "\n";
+    #warn "queue: " . ($self->lsf_queue || "undefined") . "\n";
+    #warn "project: " . ($self->lsf_project || "undefined") . "\n";
 
     $struct->{lsfResource} = $self->lsf_resource if ($self->lsf_resource);
     $struct->{lsfQueue} = $self->lsf_queue if($self->lsf_queue);
@@ -143,7 +155,6 @@ sub create_from_command {
     my @valid_outputs = grep {
         $self->_validate_property( $command_class, output => $_ )
     } @{ $options->{output} }, 'result';
-
     $self->input_properties(\@valid_inputs);
     $self->output_properties(\@valid_outputs);
     $self->lsf_resource($options->{lsf_resource});
@@ -209,6 +220,10 @@ sub execute {
     $command_name->dump_warning_messages(1);
     $command_name->dump_error_messages(1);
     $command_name->dump_debug_messages(0);
+    #warn "Dispatching via OperationType::Command " . $command . "\n";
+    #warn "Our LSF settings: " . ($self->lsf_queue || "undefined") . "\n";
+    #warn "resource : " . ($self->lsf_resource || "undefined") . "\n";
+    #warn "project : " . ($self->lsf_project || "undefined") . "\n";
 
     my $retvalue = $command->execute;
     unless (defined $retvalue && $retvalue && $retvalue > 0) {

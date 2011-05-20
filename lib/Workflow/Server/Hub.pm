@@ -515,17 +515,50 @@ sub setup {
                         $heap->{fork_count}++;
                         $heap->{job_count}++;
                     } else {
-                        $lsf_job_id = $kernel->call($_[SESSION],'lsf_bsub',
-                            $payload->{operation_type}->lsf_queue,
-                            $payload->{operation_type}->lsf_resource,
-                            $payload->{operation_type}->lsf_project,
-                            $payload->{operation_type}->command_class_name,
-                            $payload->{out_log},
-                            $payload->{err_log},
-                            $payload->{instance}->name,
-                            $payload->{instance}->parallel_index
+                        # $resource is a Workflow::Resource object
+                        my $resource = $payload->{operation_type}->resource;
+                        my $queue = $payload->{operation_type}->lsf_queue || 'long';
+                        my $name = $payload->{instance}->name || 'worker';
+
+
+                        my $namespace = (split(/::/, $payload->{operation_type}->command_class_name))[0];
+
+                        my $libstring = '';
+                        foreach my $lib (reverse UR::Util::used_libs()) {
+                            $libstring .= 'use lib "' . $lib . '"; ';
+                        }
+
+                        my $command = sprintf("annotate-log perl -e '%s use %s; use %s; use Workflow::Server::Worker; Workflow::Server::Worker->start(\"%s\", %s)'", $libstring, $namespace, $payload->{operation_type}->command_class_name, hostname, $port_number);
+                        my $stdout = $payload->{out_log};
+                        my $stderr = $payload->{err_log};
+                       
+                        # parse the stdout & stderr paths out of a bare lsf resource requests if needed.
+                        my $lsf_resource = $payload->{operation_type}->lsf_resource;
+                        if ($lsf_resource =~ /-o/) {
+                            ($stdout) = ($lsf_resource =~ /-o ([^\s]*)/);
+                        }
+                        if ($lsf_resource =~ /-e/) {
+                            ($stderr) = ($lsf_resource =~ /-e ([^\s]*)/);
+                        }
+
+                        my $job = Workflow::Dispatcher::Job->create(
+                            resource => $resource,
+                            command => $command,
+                            group => "/workflow-worker2",
+                            queue => $queue,
+                            name => $name
                         );
-                        
+
+                        $job->project($payload->{operation_type}->lsf_project) if (defined $payload->{operation_type}->lsf_project);
+                        $job->stdout($stdout) if (defined $stdout);
+                        $job->stderr($stderr) if (defined $stderr);
+
+                        my $dispatcher = Workflow::Dispatcher->get();
+
+                        evTRACE and print "start_jobs calling command: " . $dispatcher->get_command($job);
+
+                        $lsf_job_id = $dispatcher->execute($job);
+
                         if ($lsf_job_id) {
                             $heap->{job_count}++;
                         
@@ -599,16 +632,6 @@ sub setup {
                     
                     }
                 }
-            },
-            call_dispatch => sub {
-                my ($kernel, $job, $resource) = @_[KERNEL, ARG0];
-                # First argument is a $job which we have to rebless.
-                $job = bless($job, "Workflow::Dispatcher::Job");
-                $resource = bless($job->resource, "Workflow::Resource");
-                $job->resource($resource);
-                my $dispatcher = Workflow::Dispatcher::Lsf->create(cluster => "default");
-                my $job_id = $dispatcher->execute($job);
-                return $job_id;
             },
             lsf_bsub => sub {
                 my ($kernel, $queue, $rusage, $project, $command_class, $stdout_file, $stderr_file, $name, $pindex) = @_[KERNEL, ARG0, ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7];
