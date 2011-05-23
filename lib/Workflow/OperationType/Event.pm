@@ -252,9 +252,8 @@ sub call {
 }
 
 sub resource {
-    # this sub will parse the lsf_resource and return a Resource object
     my $self = shift;
-    return Workflow::Resource::get_resource_from_lsf_resource($self->lsf_resource);
+    return Workflow::LsfParser->get_resource_from_lsf_resource($self->lsf_resource);
 }
 
 1;
