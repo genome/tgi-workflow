@@ -251,7 +251,7 @@ sub call {
     return { result => $rv };
 }
 
-sub get_resource {
+sub resource {
     # this sub will parse the lsf_resource and return a Resource object
     my $self = shift;
     return Workflow::Resource::get_resource_from_lsf_resource($self->lsf_resource);
