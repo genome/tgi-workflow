@@ -528,7 +528,7 @@ sub setup {
                             $libstring .= 'use lib "' . $lib . '"; ';
                         }
 
-                        my $command = sprintf("annotate-log perl -e '%s use %s; use %s; use Workflow::Server::Worker; Workflow::Server::Worker->start(\"%s\", %s)'", $libstring, $namespace, $payload->{operation_type}->command_class_name, hostname, $port_number);
+                        my $command = sprintf("annotate-log $^X -e '%s use %s; use %s; use Workflow::Server::Worker; Workflow::Server::Worker->start(\"%s\", %s)'", $libstring, $namespace, $payload->{operation_type}->command_class_name, hostname, $port_number);
                         my $stdout = $payload->{out_log};
                         my $stderr = $payload->{err_log};
                        
