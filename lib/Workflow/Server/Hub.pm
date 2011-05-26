@@ -517,7 +517,7 @@ sub setup {
                     } else {
                         # $resource is a Workflow::Resource object
                         my $resource = $payload->{operation_type}->resource;
-                        my $queue = $payload->{operation_type}->lsf_queue || 'long';
+                        my $queue = $resource->queue || $payload->{operation_type}->lsf_queue || 'long';
                         my $name = $payload->{instance}->name || 'worker';
 
 
