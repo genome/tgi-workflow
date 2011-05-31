@@ -115,12 +115,12 @@ sub get_resource_from_lsf_resource {
     # we could have -q foo -q bar -q baz and want "baz"
     # so this regex aims to find the LAST -q instance in the string 
     my ($queue) = $lsf_resource =~ m/.*-q\s*(\S*)/;
-    if (defined $queue) {
-        $resource->queue($queue);
-    } else {
+    if ($lsf_resource =~ /\b-q\b/ && not defined $queue) {
         warn("No LSF queue included in LSF resource pattern");
     }
-
+    if (defined $queue) {
+        $resource->queue($queue);
+    }
     
     return $resource;
 }
