@@ -390,7 +390,7 @@ sub operations_in_series {
     unless ($self->is_valid) {
         my @errors = $self->validate;
         unless (@errors == 0) {
-            die 'cannot build an operations series for invalid workflow';
+            die join("\n", 'Cannot build an operations series for invalid workflow. Errors:', @errors);
         }
     }
     
