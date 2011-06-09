@@ -518,6 +518,7 @@ sub setup {
                         # $resource is a Workflow::Resource object
                         my $resource = $payload->{operation_type}->resource;
                         my $queue = $resource->queue || $payload->{operation_type}->lsf_queue || 'long';
+                        my $group = $resource->group || "/workflow-worker2",
                         my $name = $payload->{instance}->name || 'worker';
 
 
@@ -544,7 +545,7 @@ sub setup {
                         my $job = Workflow::Dispatcher::Job->create(
                             resource => $resource,
                             command => $command,
-                            group => "/workflow-worker2",
+                            group => $group,
                             queue => $queue,
                             name => $name
                         );

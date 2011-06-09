@@ -14,7 +14,8 @@ class Workflow::Resource {
         max_proc => { is => 'Number', doc => 'Maximum number of processors.', is_optional => 1 },
         time_limit => { is => 'Number', doc => 'Maximum CPU time for job.', is_optional => 1 },
         mem_request => { is => 'Number', doc => 'Memory allocation request. (MB)', is_optional => 1 },
-        queue => { is => 'String', doc => 'Job queue in which to run', is_optional => 1 }
+        queue => { is => 'String', doc => 'Job queue in which to run', is_optional => 1 },
+        group => { is => 'String', doc => 'Job group in which to run', is_optional => 1 },
     ]
 };
 
@@ -32,6 +33,7 @@ sub as_xml_simple_structure {
     $struct->{timeLimit} = $self->time_limit if (defined $self->time_limit);
     $struct->{memRequest} = $self->mem_request if (defined $self->mem_request);
     $struct->{queue} = $self->queue if (defined $self->queue);
+    $struct->{group} = $self->group if (defined $self->group);
 
     return $struct;
 }
@@ -49,6 +51,7 @@ sub create_from_xml_simple_structure {
     $self->max_proc(delete $struct->{maxProc}) if (exists $struct->{maxProc});
     $self->time_limit(delete $struct->{timeLimit}) if (exists $struct->{timeLimit});
     $self->queue(delete $struct->{queue}) if (exists $struct->{queue});
+    $self->group(delete $struct->{group}) if (exists $struct->{group});
 
     return $self;
 }

@@ -121,6 +121,15 @@ sub get_resource_from_lsf_resource {
     if (defined $queue) {
         $resource->queue($queue);
     }
+
+    # do the same for job group
+    my ($group) = $lsf_resource =~ m/.*-g\s*(\S*)/;
+    if ($lsf_resource =~ /\b-g\b/ && not defined $group) {
+        warn("No LSF group included in LSF resource pattern");
+    }
+    if (defined $group) {
+        $resource->group($group);
+    }
     
     return $resource;
 }
