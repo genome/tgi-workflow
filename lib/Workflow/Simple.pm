@@ -92,6 +92,7 @@ sub resume_lsf {
     @ERROR = ();
 
     my ($r, $guards) = Workflow::Server::Remote->launch;
+    die "Failed to get a Workflow::Server::Remote from launch.\n" unless ($r);
     my $g = _advertise($r);
 
     my $response;
@@ -132,6 +133,7 @@ sub run_workflow_lsf {
     @ERROR = ();
 
     my ($r, $guards) = Workflow::Server::Remote->launch;
+    die "Failed to get a Workflow::Server::Remote from launch.\n" unless ($r);
     my $g = _advertise($r);    
 
     my $response;
