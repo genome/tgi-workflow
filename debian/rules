@@ -17,6 +17,6 @@ CP=/bin/cp
 override_dh_install:
 	$(MKDIR) -p $(BUILDROOT)/usr/bin
 	$(MKDIR) -p $(PERLROOT)
-	$(CP) -pa bin/workflow.pl $(BUILDROOT)/usr/bin/workflow
-	$(CP) -pa bin/annotate-log.pl $(BUILDROOT)/usr/bin/annotate-log
+	$(CP) -pa bin/workflow $(BUILDROOT)/usr/bin/workflow
+	$(CP) -pa bin/annotate-log $(BUILDROOT)/usr/bin/annotate-log
 	$(CP) -pa lib/* $(PERLROOT)
