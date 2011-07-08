@@ -6,7 +6,7 @@ use Test::More skip_all => 1;
 
 use IPC::Run qw(start);
 use Data::Dumper;
-use Storable qw/store_fd fd_retrieve/;
+use Storable qw/nstore_fd fd_retrieve/;
 
 my $run = {
     type => 'Workflow::OperationType::Dummy',
@@ -26,7 +26,7 @@ my $h = start \@cmd,
     '4>pipe' => $rdr;
 
 
-store_fd($run, $wtr) or die "cant store to subprocess";
+nstore_fd($run, $wtr) or die "cant store to subprocess";
 
 $h->pump;
 my $out = fd_retrieve($rdr) or die "cant retrieve from subprocess";

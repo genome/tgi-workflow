@@ -3,7 +3,7 @@ package Workflow::Operation::Instance;
 
 use strict;
 use warnings;
-use Storable qw(freeze thaw);
+use Storable qw(nfreeze thaw);
 use Workflow ();
 
 class Workflow::Operation::Instance {
@@ -448,7 +448,7 @@ sub serialize_input {
     return if !defined $self->input;
 
     local $Storable::forgive_me = 1;
-    $self->input_stored( freeze $self->input );
+    $self->input_stored( nfreeze $self->input );
 }
 
 sub serialize_output {
@@ -457,7 +457,7 @@ sub serialize_output {
     return if !defined $self->output;
 
     local $Storable::forgive_me = 1;
-    $self->output_stored( freeze $self->output );
+    $self->output_stored( nfreeze $self->output );
 }
 
 #

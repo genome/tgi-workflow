@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Workflow ();
-use Storable qw(store_fd fd_retrieve);
+use Storable qw(nstore_fd fd_retrieve);
 
 class Workflow::Command::Ns::Internal::Exec {
     is  => ['Workflow::Command'],
@@ -63,7 +63,7 @@ sub execute {
     open OUTS, ">$f"
         or die "cannot open $f!";
 
-    store_fd($outputs, *OUTS)
+    nstore_fd($outputs, *OUTS)
         or die "cannot store into $f";
 
     close OUTS;

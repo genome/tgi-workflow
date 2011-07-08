@@ -5,7 +5,7 @@ use warnings;
 
 use AnyEvent::Util;
 use IPC::Run qw(start);
-use Storable qw/store_fd fd_retrieve/;
+use Storable qw/nstore_fd fd_retrieve/;
 use Workflow ();
 
 class Workflow::Command::Ns::Internal::Run {
@@ -183,7 +183,7 @@ sub run_optype {
         '3<pipe' => $wtr,
         '4>pipe' => $rdr;
 
-    store_fd($run, $wtr) or die "cant store to subprocess";
+    nstore_fd($run, $wtr) or die "cant store to subprocess";
 
     my $out;
     if ($h->pumpable) {
