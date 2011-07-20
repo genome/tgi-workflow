@@ -176,12 +176,31 @@ sub _validate_property {
     }
 }
 
-# delegate to wrapped command class
-sub execute {
+sub shortcut {
     my $self = shift;
+    $self->call('shortcut', @_);
+}
+
+ sub execute {
+     my $self = shift;
+    $self->call('execute', @_);
+}
+
+# delegate to wrapped command class
+sub call {
+    my $self = shift;
+    my $type = shift;
+
+    unless ($type eq 'shortcut' || $type eq 'execute') {
+        die 'invalid type: ' . $type;
+    }
     my %properties = @_;
 
     my $command_name = $self->command_class_name;
+
+    if ($type eq 'shortcut' && !$command_name->can('shortcut')) {
+        return;
+    }
 
     my @errors = ();
 
@@ -225,9 +244,23 @@ sub execute {
     #warn "resource : " . ($self->lsf_resource || "undefined") . "\n";
     #warn "project : " . ($self->lsf_project || "undefined") . "\n";
 
-    my $retvalue = $command->execute;
+    my $retvalue;
+    if ($type eq 'shortcut') {
+        unless ($command->can('shortcut')) {
+            die ref($command) . ' has no method shortcut; ' .
+                'dying so execute can run on another host';
+        }
+        $retvalue = $command->shortcut();
+    } elsif ($type eq 'execute') {
+        $retvalue = $command->execute();
+    }
+
     unless (defined $retvalue && $retvalue && $retvalue > 0) {
-        die $command_name . ' failed to return a positive true value: ' . $retvalue;
+        if($type eq 'shortcut') {
+            die $command_name . ' did not successfully shortcut: ' . $retvalue;
+        } else {
+            die $command_name . ' failed to return a positive true value: ' . $retvalue;
+        }
     }
 
     UR::ModuleBase->message_callback('error',$error_cb);
