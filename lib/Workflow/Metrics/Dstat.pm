@@ -19,8 +19,11 @@ sub _sleep {
 
 sub pre_run {
     my $self = shift;
+    # Ideally we'd use locally installed dstat.  But we're not there yet.
     #my $cmd = "/usr/bin/dstat";
-    my $cmd = "/gsc/var/gsc/systems/blades/dstat/dstat";
+    # We want the option to write stats to graphite over the network.
+    # This requires dstat >= 0.7.0-3.
+    my $cmd = "/gsc/var/gsc/systems/blades/dstat-0.7.0-3";
     if (! -x $cmd) {
         warn "comand not found: $cmd: NOT profiling";
         return;
