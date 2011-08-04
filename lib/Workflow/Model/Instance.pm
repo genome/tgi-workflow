@@ -34,8 +34,6 @@ __PACKAGE__->add_observer (
     aspect   => 'load',
     callback => sub {
         my ($self) = @_;
-        print join("\n", map { $_ } @_) . "\n";
-        print "CALLBACK, YEAH\n";
         return $self->_init();
     }
 );
