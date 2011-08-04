@@ -77,16 +77,16 @@ sub get_command {
     if (defined $job->resource->min_proc) {
         $cmd .= sprintf("-n %s ", $job->resource->min_proc);
     }
+
     # set queue
-    if (defined $job->queue) {
+    if (my $queue = $ENV{'WF_LSF_QUEUE'}) {
+        $cmd .= sprintf("-q %s ", $queue);
+    }
+    elsif (defined $job->queue) {
         $cmd .= sprintf("-q %s ", $job->queue);
     }
     elsif (defined $self->default_queue) {
         $cmd .= sprintf("-q %s ", $job->default_queue);
-    }
-
-    if (my $queue = $ENV{'WF_LSF_QUEUE'}) {
-        $cmd .= sprintf("-q %s ", $queue);
     }
     
     $cmd .= sprintf("-o %s ", $job->stdout) if (defined $job->stdout); 
