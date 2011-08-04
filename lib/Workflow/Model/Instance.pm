@@ -30,18 +30,55 @@ class Workflow::Model::Instance {
     ]
 };
 
+__PACKAGE__->add_observer (
+    aspect   => 'load',
+    callback => sub {
+        my ($self) = @_;
+        print join("\n", map { $_ } @_) . "\n";
+        print "CALLBACK, YEAH\n";
+        return $self->_init();
+    }
+);
+
+sub _init {        
+    my $self = shift;
+
+    if ($self->parent_instance_id) {
+        my $parent = $self->parent_instance;
+        $self->root($parent->root);
+    } else {
+        $self->root($self);
+    }
+
+    $self->input_connector(
+        Workflow::Operation::Instance->get(
+            operation => $self->operation->get_input_connector,
+            parent_instance => $self
+        )
+    );
+
+    $self->output_connector(
+        Workflow::Operation::Instance->get(
+            operation => $self->operation->get_output_connector,
+            parent_instance => $self
+        )
+    );
+
+    return 1;
+}
+
 ## TODO rewrite so it doesnt lean on operation->operations_in_series
 sub sorted_child_instances {
     my $self = shift;
 
     my $i = 0;
     my %ops =
-      map { $_->name() => $i++ } $self->operation->operations_in_series();
+    map { $_->name() => $i++ } $self->operation->operations_in_series();
 
     my @child = sort {
-             $ops{ $a->name } <=> $ops{ $b->name }
-          || $a->name cmp $b->name
-          || $a->parallel_index <=> $b->parallel_index
+        $ops{ $a->name } <=> $ops{ $b->name }
+        || $a->name cmp $b->name
+        || $a->parallel_index <=> $b->parallel_index
     } $self->child_instances(@_);
 
     return @child;
@@ -67,19 +104,7 @@ sub create {
         $_->set_input_links;
     }
 
-    $self->input_connector(
-        Workflow::Operation::Instance->get(
-            operation       => $self->operation->get_input_connector,
-            parent_instance => $self
-        )
-    );
-
-    $self->output_connector(
-        Workflow::Operation::Instance->get(
-            operation       => $self->operation->get_output_connector,
-            parent_instance => $self
-        )
-    );
+    $self->_init();
 
     return $self;
 }
@@ -95,7 +120,7 @@ sub incomplete_operation_instances {
 sub resume {
     my $self = shift;
     die 'tried to resume a finished operation: ' . $self->id
-      if ( $self->is_done );
+    if ( $self->is_done );
 
     $self->input_connector->output( $self->input );
 
@@ -149,7 +174,7 @@ sub explain {
     my $reason = '';
     foreach my $child ( $self->child_instances ) {
         $reason .=
-          $child->name . ' <' . $child->id . '> (' . $child->status . ")\n";
+        $child->name . ' <' . $child->id . '> (' . $child->status . ")\n";
         if ( $child->status eq 'new' ) {
             foreach my $input ( $child->unfinished_inputs ) {
                 $reason .= '  ' . $input . "\n";
@@ -169,7 +194,7 @@ sub completion {
         # since we're throwing an error, lets generate something useful
 
         my $reason =
-"Execution halted due to unresolvable dependencies or crashed children.  Status and incomplete inputs:\n" . $self->explain;
+        "Execution halted due to unresolvable dependencies or crashed children.  Status and incomplete inputs:\n" . $self->explain;
 
         Workflow::Operation::InstanceExecution::Error->create(
             execution => $self->current,
@@ -183,8 +208,8 @@ sub completion {
         if ( ref( $oc->input->{$output_name} ) eq 'ARRAY' ) {
             my @new = map {
                 UNIVERSAL::isa( $_, 'Workflow::Link::Instance' )
-                  ? $_->value
-                  : $_
+                ? $_->value
+                : $_
             } @{ $oc->input->{$output_name} };
             $newoutputs{$output_name} = \@new;
         } else {
@@ -209,8 +234,8 @@ sub runq_filter {
     my $self = shift;
 
     my @runq =
-      sort { $a->name cmp $b->name }
-      grep { $_->is_ready && !$_->is_done && !$_->is_running } @_;
+    sort { $a->name cmp $b->name }
+    grep { $_->is_ready && !$_->is_done && !$_->is_running } @_;
 
     return @runq;
 }
