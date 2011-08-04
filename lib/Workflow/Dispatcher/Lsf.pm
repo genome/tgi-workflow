@@ -11,7 +11,10 @@ sub execute {
     my $self = shift;
     my $job = shift;
     my $cmd = $self->get_command($job);
+    warn("Workflow LSF Dispatcher issuing command: $cmd");
+
     my $bsub_output = `$cmd`;
+
     my ($job_id, $queue) = ($bsub_output =~ /^Job <([^>]+)> is submitted to\s[^<]*queue <([^>]+)>\..*/);
     return $job_id;
 }
@@ -81,6 +84,10 @@ sub get_command {
     elsif (defined $self->default_queue) {
         $cmd .= sprintf("-q %s ", $job->default_queue);
     }
+
+    if (my $queue = $ENV{'WF_LSF_QUEUE'}) {
+        $cmd .= sprintf("-q %s ", $queue);
+    }
     
     $cmd .= sprintf("-o %s ", $job->stdout) if (defined $job->stdout); 
     $cmd .= sprintf("-e %s ", $job->stderr) if (defined $job->stderr);
@@ -94,12 +101,8 @@ sub get_command {
             $cmd .= sprintf('-J %s ', $job->name);
         }
     }
-    if (defined $job->project) {
-        if ($job->project =~ /\s/) {
-            $cmd .= sprintf('-P "%s" ', $job->project);
-        } else {
-            $cmd .= sprintf('-P %s ', $job->project);
-        }
+    if ( my $project = $ENV{'WF_LSF_PROJECT'} or $job->project() ) {
+        $cmd .= sprintf('-P "%s" ', $project);
     }
 
     $cmd .= $job->command;
