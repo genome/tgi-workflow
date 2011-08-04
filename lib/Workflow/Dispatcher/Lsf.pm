@@ -105,6 +105,11 @@ sub get_command {
         $cmd .= sprintf('-P "%s" ', $project);
     }
 
+    # Workflow exclusive execution mode to run only one job per blade -- for use when benchmarking
+    if ($ENV{'WF_LSF_EXCLUSIVE'}) {
+        $cmd .= "-x ";
+    }
+
     $cmd .= $job->command;
     return $cmd;
 }
