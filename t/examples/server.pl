@@ -3,7 +3,6 @@
 use strict;
 use above 'Workflow::Server::Hub';
 use Workflow::Server::UR;
-use Workflow::Server::HTTPD;
 
 POE::Kernel->stop();
 
