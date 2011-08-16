@@ -30,7 +30,7 @@ if (not defined $pid) {
 
 #    print Data::Dumper->new([$output,\@Workflow::Simple::ERROR])->Dump;
 
-    ok($output->{'model output string'} eq 'foo bar baz', 'string is correct');
+    is($output->{'model output string'}, 'foo bar baz', 'string is correct');
 
 #    waitpid($pid,0);
 }
