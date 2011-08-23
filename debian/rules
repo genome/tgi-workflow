@@ -1,22 +1,8 @@
 #!/usr/bin/make -f
-# Uncomment this to turn on verbose mode.
-#export DH_VERBOSE=1
-export PREFIX=/usr
-
-PACKAGE=$(shell dh_listpackages)
-SITELIB=`perl -MConfig -e 'print "$$Config{installvendorarch}"'`
-BUILDROOT=debian/$(PACKAGE)
-PERLROOT=$(BUILDROOT)$(SITELIB)
-MKDIR=/bin/mkdir
-CP=/bin/cp
 
 %:
 	dh $@
 
-# Copy the packages's files.
-override_dh_install:
-	$(MKDIR) -p $(BUILDROOT)/usr/bin
-	$(MKDIR) -p $(PERLROOT)
-	$(CP) -pa bin/workflow $(BUILDROOT)/usr/bin/workflow
-	$(CP) -pa bin/annotate-log $(BUILDROOT)/usr/bin/annotate-log
-	$(CP) -pa lib/* $(PERLROOT)
+# Disable tests, which expect to be able to write to /gsc
+# and bsub to LSF.
+override_dh_auto_test:
