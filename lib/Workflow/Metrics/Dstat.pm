@@ -4,6 +4,7 @@ use base qw/Workflow::Metrics/;
 
 use strict;
 use warnings;
+use Sys::Hostname;
 
 sub _sleep {
   # Use an event timer to sleep within the event loop
@@ -30,11 +31,13 @@ sub pre_run {
     }
 
     #my $args = "-Tcldigmnpsy --ipc --lock --tcp --udp --unix --net-packets --nfs3 --output $self->{metrics}";
-    my $args = "-Tcldigmnpsy --ipc --lock --tcp --udp --unix --output $self->{metrics}";
+    my $args = "-Tcldigmnpsy --ipc --lock --tcp --udp --unix --output " . $self->{metrics};
     if ($ENV{WF_PROFILER_ARGS}) {
         warn "WF_PROFILER_ARGS overrides default profiler args";
         $args = $ENV{WF_PROFILER_ARGS};
     }
+
+    warn "profiling on " . hostname . ": $cmd $args";
 
     $self->{cv} = AnyEvent::Util::run_cmd(
         "$cmd $args",
@@ -44,26 +47,22 @@ sub pre_run {
         '$$' => \( $self->{pid} ),
         allow_failed_exit_code => 1,
     );
+
     $self->_sleep(2);
-}
 
-sub run {
-  my $self = shift;
-  my $cmd = shift;
-  my $args = shift;
-
-  my $cmd_cv = AnyEvent::Util::run_cmd(
-    '>' => $self->{output},
-    '2>' => $self->{errors},
-    cmd => "$cmd $args"
-  );
-
-  $cmd_cv->recv;
+    warn "started pid: " . $self->{pid};
 }
 
 sub post_run {
   my $self = shift;
-  return if (! defined $self->{pid});
+
+  # Check if our process is running...
+  unless (kill 0, $self->{pid}) {
+    warn "profiler pid " . $self->{pid} . " on " . hostname . " is no longer running";
+    return;
+  }
+
+  warn "kill profiler pid " . $self->{pid} . " on " . hostname;
 
   # Now that cmd_cv->cmd status is true, we're back, and we send SIGTERM to cmd pid.
   kill 15, $self->{pid};
