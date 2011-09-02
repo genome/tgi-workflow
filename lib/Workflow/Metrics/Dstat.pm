@@ -39,8 +39,10 @@ sub pre_run {
 
     warn "profiling on " . hostname . ": $cmd $args";
 
+    # Use an arrayref for cmd here so we don't spawn a subshell.
+    # Later, when we kill -TERM $PID, we'll only kill the shell in that case, leaving dstat/python running.
     $self->{cv} = AnyEvent::Util::run_cmd(
-        "$cmd $args",
+        [ split(" ",qq($cmd $args)) ],
         '>' => "/dev/null",
         '2>' => "/dev/null",
         close_all => 1,
