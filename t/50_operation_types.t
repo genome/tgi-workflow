@@ -8,7 +8,7 @@ BEGIN {
 use strict;
 use warnings;
 
-use Test::More tests => 29;
+use Test::More tests => 25;
 use Switch;
 
 use above 'Workflow';
