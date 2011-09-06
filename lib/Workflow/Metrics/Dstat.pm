@@ -39,10 +39,14 @@ sub pre_run {
 
     warn "profiling on " . hostname . ": $cmd $args";
 
-    # Use an arrayref for cmd here so we don't spawn a subshell.
-    # Later, when we kill -TERM $PID, we'll only kill the shell in that case, leaving dstat/python running.
+    # cmd could be an arrayref: [ split(" ",qq($cmd $args)) ],
+    # or a scalar: "$cmd $args"
+    # The choice results in either 1 process or a shell + a process, which we must account for
+    # later when we kill processes.
+    # If we use an arrayref for cmd here we won't spawn a subshell.
+    # If we use a scalar we do use a subshell, and the command might have env vars in it.
     $self->{cv} = AnyEvent::Util::run_cmd(
-        [ split(" ",qq($cmd $args)) ],
+        "$cmd $args",
         '>' => "/dev/null",
         '2>' => "/dev/null",
         close_all => 1,
@@ -64,10 +68,16 @@ sub post_run {
     return;
   }
 
-  warn "kill profiler pid " . $self->{pid} . " on " . hostname;
+  # If run_cmd above used a /bin/sh, we'll need to kill its children.
+  my $cmd = "pgrep -P " . $self->{pid};
+  my $child = qx|$cmd|;
+  chomp $child;
+  warn "kill child pid $child on " . hostname if ($child);
+  kill 15, $child if ($child);
 
-  # Now that cmd_cv->cmd status is true, we're back, and we send SIGTERM to cmd pid.
+  warn "kill pid " . $self->{pid} . " on " . hostname;
   kill 15, $self->{pid};
+
   # Now recv on that condition variable, which will catch the signal and exit.
   # We wrap in eval and examine $@ to ensure we catch the signal we sent, but we can still
   # observe any unexpected events.
