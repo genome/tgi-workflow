@@ -94,26 +94,6 @@ foreach my $operationtype (@operationtypes) {
             
             is_deeply($out,{},'check output ' . $operationtype);
         }
-        case 'Mail' {
-            my $dir = -d 't/template.d' ? 't/template.d' : 'template.d';
-            my $o;
-            ok($o = $operationtype_class->create(
-                input_properties => [qw/fruit vegetable nut/],
-            ),'create ' . $operationtype);
-
-            my $out;
-            my $user = $ENV{USER};
-            ok($out = $o->execute(
-                template_file => $dir . '/50_operation_types.txt',
-                email_address => $user . '@genome.wustl.edu',
-                subject => 'workflow unit test',
-                fruit => 'Apple',
-                vegetable => 'Tomato',
-                nut => 'Pecan' 
-            ),'execute ' . $operationtype);
-
-            is_deeply($out,{result => 1},'check output ' . $operationtype);
-        }
         case 'Model' {
             if (0) {
             my $dir = -d 't/xml.d' ? 't/xml.d' : 'xml.d';
