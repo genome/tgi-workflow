@@ -351,41 +351,6 @@ evTRACE and print "workflow schedule_instance\n";
                 $instance->current->status('scheduled');
                 $instance->current->dispatch_identifier($dispatch_id);
             },
-            'eval' => sub {  ## this is somewhat dangerous to let people do
-                my ($kernel, $heap, $arg) = @_[KERNEL,HEAP,ARG0];
-                my ($string,$array_context,$passed_args) = @$arg;
-evTRACE and print "workflow eval\n";
-              
-                $heap->{changes}++;
- 
-                my $sub = eval('sub { ' . $string . '}; ');
-                if ($@) {
-                    return [0,$@];
-                }
-
-                $passed_args ||= [];
-                if ($array_context) {
-                    my @result;
-                    eval {
-                        @result = $sub->(@$passed_args);
-                    };
-                    if ($@) {
-                        return [0,$@];
-                    } else {
-                        return [1,\@result];
-                    }
-                } else {
-                    my $result;
-                    eval {
-                        $result = $sub->(@$passed_args);
-                    };
-                    if ($@) {
-                        return [0,$@];
-                    } else {
-                        return [1,$result];
-                    }
-                }
-            }
         }
     );
 }
