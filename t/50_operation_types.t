@@ -15,7 +15,7 @@ use above 'Workflow';
 
 my @operationtypes = qw{
     Block Command Converge Dummy
-    Mail Model ModelInput ModelOutput
+    Model ModelInput ModelOutput
 };
 
 require_ok('Workflow');
