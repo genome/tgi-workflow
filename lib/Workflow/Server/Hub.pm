@@ -387,7 +387,7 @@ sub setup {
 
                 $heap->{finalizable}{$id} = $dispatch_id;
 
-                if ($remote_kernel && !$sc) {
+                if ($remote_kernel && !$sc and $dispatch_id !~ /^P/) {
                     $kernel->post('lsftail','skip_watcher',{job_id => $dispatch_id, seconds => 60});
                 } else {
                     $kernel->yield('finalize_work',[$id], []) unless $was_shortcutting;
@@ -434,7 +434,6 @@ sub setup {
                         my $group = $resource->group || "/workflow-worker2",
                         my $name = $payload->{instance}->name || 'worker';
 
-
                         my $namespace = (split(/::/, $payload->{operation_type}->command_class_name))[0];
 
                         my $libstring = '';
@@ -480,7 +479,7 @@ sub setup {
                                 'finalize_work', $payload->{instance}->id
                             );
 
-                            $kernel->post('lsftail','add_watcher',{job_id => $lsf_job_id, action => $cb});
+                            $kernel->post('lsftail','add_watcher',{job_id => $lsf_job_id, action => $cb}) unless ($lsf_job_id =~ /^P/);
                         }
 
                     }
