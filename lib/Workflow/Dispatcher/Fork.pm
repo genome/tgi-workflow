@@ -2,6 +2,8 @@
 # Ideally it should remove the need
 # for special fork related code in Hub.pm.
 
+package Workflow::Dispatcher::Fork;
+
 use strict;
 use warnings;
 
@@ -22,6 +24,17 @@ sub execute {
             open STDERR, '>>', $job->stderr if (defined $job->stderr);
             my $cmd = $job->command;
             `$cmd`;
+            exit(0);
+            #exec($cmd) || die "Exec failed for command $cmd: $!";
+            #exit(1);
         }
     }
 }
+
+sub get_command {
+    my $self = shift;
+    my $job = shift;
+    return $job->command;
+}
+
+1;
