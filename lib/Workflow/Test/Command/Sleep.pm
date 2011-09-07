@@ -50,7 +50,7 @@ sub execute {
         sleep $self->seconds;
     }
 
-    1;
+    return $self->seconds;
 }
  
 1;
