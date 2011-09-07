@@ -35,10 +35,12 @@ sub start {
             # breaks on linux.
             $job_id = 'P' . getppid();
         } else {
-            $job_id = 'P' . $$;
+            $job_id = 'P' . $use_pid;
         }
-    } else {
+    } elsif (exists $ENV{LSB_JOBID}) {
         $job_id = $ENV{LSB_JOBID};
+    } elsif (exists $ENV{'WF_FORK_JOBID'}) {
+        $job_id = $ENV{'WF_FORK_JOBID'};
     }
 
     our $client = POE::Component::IKC::Client->spawn( 

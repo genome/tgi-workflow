@@ -23,6 +23,7 @@ sub execute {
             open STDOUT, '>>', $job->stdout if (defined $job->stdout);
             open STDERR, '>>', $job->stderr if (defined $job->stderr);
             my $cmd = $job->command;
+            $ENV{'WF_FORK_JOBID'} = 'P'.$$;
             `$cmd`;
             exit(0);
             #exec($cmd) || die "Exec failed for command $cmd: $!";
