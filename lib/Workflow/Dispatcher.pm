@@ -27,6 +27,8 @@ sub get_class {
             return "Workflow::Dispatcher::Lsf";
         } elsif ($ENV{'WF_DISPATCHER'} eq "sge") {
             return "Workflow::Dispatcher::Sge";
+        } elsif ($ENV{'WF_DISPATCHER'} eq 'fork') {
+            return "Workflow::Dispatcher::Fork";
         }
     }
     if (`which bsub` && `which bhosts` && `which bjobs`) {
