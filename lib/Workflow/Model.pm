@@ -25,6 +25,7 @@ sub create {
     unless ($params{operation_type}) {
         $optype = Workflow::OperationType::Model->create(
             input_properties => delete($params{input_properties}) || [],
+            optional_input_properties => delete($params{optional_input_properties}) || [],
             output_properties => delete($params{output_properties}) || []
         );
 
