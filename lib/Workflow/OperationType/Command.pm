@@ -258,7 +258,8 @@ sub call {
     unless (defined $retvalue && $retvalue && $retvalue > 0) {
         my $display_retvalue = (defined $retvalue ? $retvalue : 'undef');
         if($type eq 'shortcut') {
-            die $command_name . " did not successfully shortcut (rv = " . $display_retvalue . ")";
+            $command->status_message("Unable to shortcut (rv = " . $display_retvalue . ").");
+            return;
         } else {
             die $command_name . " failed to return a positive true value (rv = " . $display_retvalue . ")";
         }
