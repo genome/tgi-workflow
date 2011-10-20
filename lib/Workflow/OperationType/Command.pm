@@ -198,7 +198,7 @@ sub call {
 
     my $command_name = $self->command_class_name;
 
-    if ($type eq 'shortcut' && !$command_name->can('shortcut')) {
+    if ($type eq 'shortcut' && !$command_name->can('_shortcut_body')) {
         return;
     }
 

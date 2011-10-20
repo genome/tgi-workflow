@@ -131,7 +131,7 @@ sub call {
 
     my $command_name = ref($event);
 
-    if ($type eq 'shortcut' && !$command_name->can('shortcut')) {
+    if ($type eq 'shortcut' && !$command_name->can('_shortcut_body')) {
         return;
     }
 
