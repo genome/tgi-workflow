@@ -34,5 +34,18 @@ my($self,$sequence_name) = @_;
     return $self->SUPER::_get_next_value_from_sequence($self->owner . '.' . $sequence_name);
 }
 
+sub _sync_database {
+    my $self = shift;
+
+    my $dbh = $self->get_default_handle;
+    unless ($dbh->do("alter session set NLS_DATE_FORMAT = 'YYYY-MM-DD HH24:MI:SS'")
+            and
+            $dbh->do("alter session set NLS_TIMESTAMP_FORMAT = 'YYYY-MM-DD HH24:MI:SSXFF'"))
+    {
+        Carp::croak("Can't set date format: $DBI::errstr");
+    }
+    $self->SUPER::_sync_database(@_);
+}
+
 
 1;
