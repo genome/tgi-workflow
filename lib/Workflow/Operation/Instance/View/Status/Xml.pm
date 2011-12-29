@@ -27,7 +27,7 @@ sub related_instances {
     return {
         name               => 'related_instances',
         subject_class_name => 'Workflow::Operation::Instance',
-        perspective        => 'status',
+        perspective        => 'default',
         toolkit            => 'xml',
         aspects => [ @aspects, &related_instances( $_[0] + 1 ) ]
     };
@@ -39,7 +39,16 @@ sub _generate_content {
     #preload the child instances
     my $subject = $self->subject;
     if($subject) {
-        $subject->ordered_child_instances;
+        my @all_exec_ids;
+        my @children = $subject;
+        while(@children) {
+            my @exec_ids = map($_->current_execution_id, @children);
+            push @all_exec_ids, @exec_ids;
+            @children =
+                (Workflow::Operation::Instance->get(parent_execution_id => \@exec_ids),
+                Workflow::Operation::Instance->get(parent_instance_id => [map($_->id, @children)]));
+        }
+        my @x = Workflow::Operation::InstanceExecution->get(\@all_exec_ids);
     }
 
     return $self->SUPER::_generate_content(@_);
