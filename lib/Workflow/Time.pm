@@ -124,7 +124,7 @@ sub date_now
     my $format = $class->config('date');
     if ($format)
     {
-        $class->debug_message("got date format $format", 4);
+        $class->debug_message("got date format $format");
     }
     else
     {
@@ -155,7 +155,7 @@ sub time_now
     my $format = $class->config('time');
     if ($format)
     {
-        $class->debug_message("got date format $format", 4);
+        $class->debug_message("got date format $format");
     }
     else
     {
@@ -241,7 +241,7 @@ sub from_integer
     my $format = $class->config('datetime');
     if ($format)
     {
-        $class->debug_message("got datetime format $format", 4);
+        $class->debug_message("got datetime format $format");
     }
     else
     {
@@ -309,7 +309,7 @@ sub compare_dates
     my ($date1, $date2) = @_;
 
     no warnings;
-    $class->debug_message("comparing >$date1< with >$date2<", 4);
+    $class->debug_message("comparing >$date1< with >$date2<");
     use warnings;
     
     return 0 if !$date1 && !$date2;
@@ -325,7 +325,7 @@ sub compare_dates
         return undef;
     }
 
-    $class->debug_message("$y1,$m1,$d1,$h1,$n1,$s1 to $y2,$m2,$d2,$h2,$n2,$s2", 4);
+    $class->debug_message("$y1,$m1,$d1,$h1,$n1,$s1 to $y2,$m2,$d2,$h2,$n2,$s2");
 
     no warnings qw(uninitialized);
     return $y1 <=> $y2 || $m1 <=> $m2 || $d1 <=> $d2
@@ -364,7 +364,7 @@ sub datetime_to_numbers
             push (@newtime, int($_)) if (defined $_);
         }
         @time = @newtime;
-        $class->debug_message("parse date $date", 4);
+        $class->debug_message("parse date $date");
         # fix month
         ++$time[4];
         $time[5] += 1900;
@@ -402,7 +402,7 @@ sub numbers_to_datetime
     my $format = $class->config('datetime');
     if ($format)
     {
-        $class->debug_message("got datetime format $format", 4);
+        $class->debug_message("got datetime format $format");
     }
     else
     {
@@ -433,7 +433,7 @@ sub datetime_to_time
     my @time = strptime($date);
     if (@time)
     {
-        $class->debug_message("parse date $date", 4);
+        $class->debug_message("parse date $date");
     }
     else
     {
@@ -474,7 +474,7 @@ sub add_date_delta_days
     my $format = $class->config('date');
     if ($format)
     {
-        $class->debug_message("got date format $format", 4);
+        $class->debug_message("got date format $format");
     }
     else
     {
@@ -487,7 +487,7 @@ sub add_date_delta_days
     my @time = strptime($date);
     if (@time)
     {
-        $class->debug_message("parsed date $date: " . join('-', @time[3 .. 5]), 4);
+        $class->debug_message("parsed date $date: " . join('-', @time[3 .. 5]));
         ($d, $m, $y) = @time[3 .. 5];
         # correct for use with Date::Pcalc
         ++$m;
