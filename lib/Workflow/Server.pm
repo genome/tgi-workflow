@@ -75,7 +75,7 @@ sub wait_for_lock {
 
     my $waited = 0;
     while (-e $lockname) {
-        die 'exceeded lock time' if ($waited > 300);
+        die 'exceeded lock time for ' . $lockname if ($waited > 300);
         sleep 5;
         $handle->pump_nb if (defined $handle);
         $waited += 5;
