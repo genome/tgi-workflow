@@ -5,12 +5,12 @@ use strict;
 
 sub setup {
     my $class = shift;
-    die "$class didn't implement setup method!"; 
+    die "$class didn't implement setup method!";
 }
 
 sub start {
     my $class = shift;
-    
+
     select STDERR; $| = 1;
     select STDOUT; $| = 1;
 
@@ -24,32 +24,32 @@ sub start {
 
 sub lockname {
     my ($class,$service) = @_;
-    
+
     my $lock_root = '/gsc/var/lock/workflow';
-    
+
     my $hostname = `hostname -s`;
     chomp $hostname;
-    
+
     my $lockname = $lock_root . '/' . $hostname . '-' . $service;
     my $gid = getgrnam('gsc');
-    
+
     if (!-e $lock_root) {
         mkdir $lock_root;
-        
+
         chown -1, $gid, $lock_root;
         chmod oct('2775'), $lock_root;
     }
-    
+
     return $lockname;
 }
 
 sub lock {
     my ($class,$service) = @_;
-    
+
     $class->wait_for_lock($service);
 
     my $lockname = $class->lockname($service);
-    
+
     my $f = IO::File->new('>' . $lockname);
 
     if (defined $f) {
@@ -62,7 +62,7 @@ sub lock {
 
 sub unlock {
     my ($class,$service) = @_;
-    
+
     my $lockname = $class->lockname($service);
 
     unlink($lockname);
@@ -70,7 +70,7 @@ sub unlock {
 
 sub wait_for_lock {
     my ($class,$service,$handle) = @_;
-    
+
     my $lockname = $class->lockname($service);
 
     my $waited = 0;
