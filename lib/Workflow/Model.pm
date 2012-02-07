@@ -288,7 +288,7 @@ sub validate {
             name => $operation->name
         );
         if (scalar @ops_with_this_name > 1) {
-            push @errors, "Operation name not unique: " . $self->name . '/' . $operation->name;
+            push @errors, "Operation name not unique: " . $self->name . '/' . $operation->name ."\n". Data::Dumper::Dumper(\@ops_with_this_name);
         }
     }
 
