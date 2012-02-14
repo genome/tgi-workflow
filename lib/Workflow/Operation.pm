@@ -150,7 +150,7 @@ sub execute {
     unless ($self->is_valid) {
         my @errors = $self->validate;
         unless (@errors == 0) {
-            die 'cannot execute invalid workflow';
+            die "cannot execute invalid workflow:\n" . join("\n", @errors);
         }
     }
     
