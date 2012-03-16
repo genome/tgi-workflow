@@ -20,23 +20,29 @@ class Workflow::Operation {
     ]
 };
 
+my $dependent_operations_tmpl;
 sub dependent_operations {
     my $self = shift;
     
-    my %operations = map {
-        $_->right_operation->id => $_->right_operation
-    } Workflow::Link->get(left_operation => $self);
+    $dependent_operations_tmpl
+        ||= UR::BoolExpr::Template->resolve('Workflow::Link', 'left_workflow_operation_id')->get_normalized_template_equivalent();
+
+    my %operations = map { $_->right_operation->id => $_->right_operation }
+                     Workflow::Link->get($dependent_operations_tmpl->get_rule_for_values($self->id));
     
     return values %operations;
 }
 
+my $depended_on_by_tmpl;
 sub depended_on_by {
     my $self = shift;
     
-    my %operations = map {
-        $_->left_operation->id => $_->left_operation
-    } Workflow::Link->get(right_operation => $self);
-    
+    $depended_on_by_tmpl
+        ||= UR::BoolExpr::Template->resolve('Workflow::Link', 'right_workflow_operation_id')->get_normalized_template_equivalent();
+
+    my %operations = map { $_->left_operation->id => $_->left_operation }
+                     Workflow::Link->get($depended_on_by_tmpl->get_rule_for_values($self->id));
+
     return values %operations;
 }
 
