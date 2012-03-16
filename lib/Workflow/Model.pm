@@ -327,7 +327,7 @@ sub validate {
 
     { ## orphans 
         my @orphans = ();
-        my %possible_orphans = map { $_ => $_ } $self->operations;
+        my %possible_orphans = map { $_ => $_ } @operations;
         my $input = $self->get_input_connector;
         my $output = $self->get_output_connector;
         
