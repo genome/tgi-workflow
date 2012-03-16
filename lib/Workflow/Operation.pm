@@ -43,6 +43,14 @@ sub create {
     my $class = shift;
     my $self = $class->SUPER::create(@_);
 
+    $self->_post_create();
+
+    return $self;
+}
+
+sub _post_create {
+    my $self = shift;
+
     if (!$self->workflow_model && !$self->executor) {
         $self->executor(Workflow::Executor::SerialDeferred->get);
     }
