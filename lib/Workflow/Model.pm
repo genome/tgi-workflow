@@ -363,7 +363,7 @@ sub validate {
             $self->is_valid(0);
             
         };
-        if ($@ =~ /^circular links near: '(.+?)'/) {
+        if ($@ =~ /^circular links near: '(.+?)'/s) {
             push @errors, 'Operation involved in circular link: ' . $self->name . "/$1";
         } elsif ($@) {
             die $@;
