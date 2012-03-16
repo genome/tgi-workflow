@@ -4,6 +4,7 @@ package Workflow::Operation;
 use strict;
 use warnings;
 use XML::Simple;
+use File::Spec;
 
 class Workflow::Operation {
     has => [
@@ -87,7 +88,11 @@ sub create_from_xml_simple_structure {
         if (exists $params{log_dir} && defined $params{log_dir}) {
             if ($params{log_dir}) {
                 if ($params{log_dir} !~ /^\/gsc/) {
-                    die "log directory not on a valid network volume for lsf: $params{log_dir}\n";
+                    if (File::Spec->rel2abs($params{log_dir}) =~ m/^\/gsc/) {
+                        $params{'log_dir'} = File::Spec->rel2abs($params{log_dir});
+                    } else {
+                        die "log directory not on a valid network volume for lsf: $params{log_dir}\n";
+                    }
                 }
             } else {
                 die "log directory does not exist: $params{log_dir}\n";
@@ -169,7 +174,8 @@ sub execute {
         }
 
         if (scalar keys %ikeys) {
-            Carp::croak('execute: Extra inputs provided: ' . join (', ', keys %ikeys));
+            Carp::croak('execute: Extra inputs provided for operation type '
+                        . $self->operation_type . ': ' . join (', ', keys %ikeys));
             return;
         }
     }
