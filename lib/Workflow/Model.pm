@@ -308,15 +308,18 @@ sub as_svg {
     return $self->graph->as_svg(@_);
 }
 
+my %properties_for_operation_type;  # used by the link property check inside
 sub validate {
     my $self = shift;
     
     my @errors = ();
-    foreach my $operation ($self->operations) {  ## unique names
-        my @ops_with_this_name = Workflow::Operation->get(
-            workflow_model => $self,
-            name => $operation->name
-        );
+    my @operations = $self->operations;
+
+    my $self_id = $self->id;
+    my $get_ops_for_name_tmpl = UR::BoolExpr::Template->resolve('Workflow::Operation', 'name', 'workflow_model_id')->get_normalized_template_equivalent();
+    foreach my $operation (@operations) {  ## unique names
+        my $rule = $get_ops_for_name_tmpl->get_rule_for_values($operation->name, $self_id);
+        my @ops_with_this_name = Workflow::Operation->get( $rule );
         if (scalar @ops_with_this_name > 1) {
             push @errors, "Operation name not unique: " . $self->name . '/' . $operation->name ."\n". Data::Dumper::Dumper(\@ops_with_this_name);
         }
