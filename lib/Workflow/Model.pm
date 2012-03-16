@@ -396,8 +396,65 @@ sub validate {
     return @errors;
 }
 
-# make a list of operations in the order of execution
 sub operations_in_series {
+    my $self = shift;
+
+$DB::single=1;
+    my %all_links;
+    my %op_incoming_links;
+    for my $link ( Workflow::Link->get(workflow_model_id => $self->id)) {
+        $all_links{$link->id} = $link;
+        $op_incoming_links{ $link->right_workflow_operation_id }->{ $link->right_property } = undef;
+    }
+
+    # The list of operations with no dependancies
+    my @operations_to_check = Workflow::Operation->get(workflow_model_id => $self->id,  # operations in this workflow
+                                                       'id not in' => [$self->id, keys %op_incoming_links]);
+    my @op_order;
+
+    while(@operations_to_check) {               # while S is non-empty do
+        my $op = shift @operations_to_check;    # remove a node n from S
+        push @op_order,$op;                     # insert n into L
+
+        my $op_id = $op->id;
+        # for each node m with an edge e from n to m do
+        my @outgoing_links = Workflow::Link->get(left_workflow_operation_id => $op_id);
+        foreach my $link ( @outgoing_links ) {
+            my $dependant_op = $link->right_operation;
+
+            delete $all_links{$link->id};       # remove edge e from the graph
+
+            my $right_op_id = $link->right_workflow_operation_id;
+            delete $op_incoming_links{ $right_op_id }->{ $link->right_property };
+
+            # if m has no other incoming edges then
+            if (! keys %{$op_incoming_links{ $right_op_id }}) {
+                delete $op_incoming_links{ $right_op_id };
+
+                push @operations_to_check, $dependant_op;   # insert m into S
+            }
+        }
+    }
+
+    # if graph has edges then
+    if (keys %all_links) {
+        # return error (graph has at least one cycle)
+        my $message = join("\n",
+                      map { $_->name }
+                      map { $_->left_operation }
+                      values %all_links);
+
+        $_->{'__circularity_was_checked'} = 0 foreach @op_order;
+        die "circular links near: '$message'";
+    } else {
+        # else return L (a topologically sorted order)
+        $_->{'__circularity_was_checked'} = 1 foreach @op_order;
+        return @op_order;
+    }
+}
+    
+# make a list of operations in the order of execution
+sub XXoperations_in_series {
     my $self = shift;
 
     unless ($self->is_valid) {
