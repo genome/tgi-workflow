@@ -38,28 +38,46 @@ sub create {
 
     # The next few lines do the same work as add_operation(), but is optimized
     # to be fast
-    $_add_operation_tmpl ||= UR::BoolExpr::Template->resolve('Workflow::Operation', 'id','name','workflow_model_id','workflow_operationtype_id')->get_normalized_template_equivalent;
-    $_create_model_input_tmpl = UR::BoolExpr::Template->resolve('Workflow::OperationType::ModelInput',
-                                       'id','input_properties','output_properties')->get_normalized_template_equivalent();
+    $_create_model_input_tmpl ||= UR::BoolExpr::Template->resolve(
+                                        'Workflow::OperationType::ModelInput',
+                                        'id','input_properties','output_properties'
+                                    )->get_normalized_template_equivalent();
 
-    my $input_op_type_id = UR::Object::Type->autogenerate_new_object_id_urinternal();
+    my $input_op_type_id = Workflow::OperationType::ModelInput->__meta__->autogenerate_new_object_id();
     my $input_op_type = UR::Context->create_entity('Workflow::OperationType::ModelInput',
-                                                    $_create_model_input_tmpl->get_rule_for_values($input_op_type_id, [], $optype->input_properties));
-    my $output_op_type_id = UR::Object::Type->autogenerate_new_object_id_urinternal();
-    my $output_op_type = UR::Context->create_entity('Workflow::OperationType::ModelOutput',
-                                                    $_create_model_input_tmpl->get_rule_for_values($output_op_type_id, $optype->output_properties, []));
-    UR::Context->create_entity('Workflow::Operation',
+                                                    $_create_model_input_tmpl->get_rule_for_values(
+                                                            $input_op_type_id,
+                                                            [],
+                                                            $optype->input_properties,
+                                                    ));
+    $_add_operation_tmpl ||= UR::BoolExpr::Template->resolve(
+                                            'Workflow::Operation',
+                                            'id','name','workflow_model_id','workflow_operationtype_id'
+                                        )->get_normalized_template_equivalent;
+
+    my $input_op = UR::Context->create_entity('Workflow::Operation',
                                 $_add_operation_tmpl->get_rule_for_values(
-                                    UR::Object::Type->autogenerate_new_object_id_urinternal(),
+                                    Workflow::Operation->__meta__->autogenerate_new_object_id(),
                                     'input connector',
                                     $self->id,
                                     $input_op_type_id));
-    UR::Context->create_entity('Workflow::Operation',
+    $input_op->_post_create();
+
+    my $output_op_type_id = Workflow::OperationType::ModelOutput->__meta__->autogenerate_new_object_id();
+    my $output_op_type = UR::Context->create_entity('Workflow::OperationType::ModelOutput',
+                                                    $_create_model_input_tmpl->get_rule_for_values(
+                                                            $output_op_type_id,
+                                                            $optype->output_properties,
+                                                            []
+                                                    ));
+
+    my $output_op = UR::Context->create_entity('Workflow::Operation',
                                 $_add_operation_tmpl->get_rule_for_values(
-                                    UR::Object::Type->autogenerate_new_object_id_urinternal(),
+                                    Workflow::Operation->__meta__->autogenerate_new_object_id(),
                                     'output connector',
                                     $self->id,
                                     $output_op_type_id));
+    $output_op->_post_create();
 
     return $self;
 }
