@@ -392,18 +392,45 @@ sub validate {
     }
     
     ## dangling links
-    
+
+    my $resolve_properties_for_optype = sub {
+            my $optype_id = shift;
+
+            my $optype = Workflow::OperationType->get($optype_id);
+            my %output_properties_for_operation_type = map { $_ => undef } @{ $optype->output_properties };
+            $properties_for_operation_type{$optype_id}->{'output'} = \%output_properties_for_operation_type;
+
+            my %input_properties_for_operation_type = map { $_ => undef } @{ $optype->input_properties };
+            $properties_for_operation_type{$optype_id}->{'input'} = \%input_properties_for_operation_type;
+    };
+
+$DB::single=1;
     foreach my $link ($self->links) {
-        my $left_output_properties = $link->left_operation->operation_type->output_properties;
-        my $right_input_properties = $link->right_operation->operation_type->input_properties;
         
-        my $linkdesc = $link->left_operation->name . '->' . $link->left_property . ' to ' . $link->right_operation->name . '->' . $link->right_property;
+        #my $left_output_properties = $link->left_operation->operation_type->output_properties;
+        my $left_optype_id = Workflow::Operation->get($link->{'left_workflow_operation_id'})->{'workflow_operationtype_id'};
+        unless ($properties_for_operation_type{$left_optype_id}) {
+            $resolve_properties_for_optype->($left_optype_id);
+        }
         
-        if (!grep { $link->left_property eq $_ } @{ $left_output_properties }) {
+        #if (!grep { $link->left_property eq $_ } @{ $left_output_properties })
+        if (! exists $properties_for_operation_type{$left_optype_id}->{'output'}->{$link->left_property}) {
+            my $linkdesc = $link->left_operation->name . '->' . $link->left_property
+                            . ' to ' . $link->right_operation->name . '->' . $link->right_property;
             push @errors, 'Left property not found on link: ' . $linkdesc;
         }
 
-        if (!grep { $link->right_property eq $_ } @{ $right_input_properties }) {
+
+        #my $right_input_properties = $link->right_operation->operation_type->input_properties;
+        my $right_optype_id = Workflow::Operation->get($link->{'right_workflow_operation_id'})->{'workflow_operationtype_id'};
+        unless ($properties_for_operation_type{$right_optype_id}) {
+            $resolve_properties_for_optype->($right_optype_id);
+        }
+
+        #if (!grep { $link->right_property eq $_ } @{ $right_input_properties }) {
+        if (! exists $properties_for_operation_type{$right_optype_id}->{'input'}->{$link->right_property}) {
+            my $linkdesc = $link->left_operation->name . '->' . $link->left_property
+                            . ' to ' . $link->right_operation->name . '->' . $link->right_property;
             push @errors, 'Right property not found on link: ' . $linkdesc;
         }
     }
