@@ -40,16 +40,20 @@ sub create {
     # to be fast
     $_create_model_input_tmpl ||= UR::BoolExpr::Template->resolve(
                                         'Workflow::OperationType::ModelInput',
-                                        'id','input_properties','output_properties'
+                                        #'id','input_properties','output_properties'
+                                        'id'
                                     )->get_normalized_template_equivalent();
 
     my $input_op_type_id = Workflow::OperationType::ModelInput->__meta__->autogenerate_new_object_id();
     my $input_op_type = UR::Context->create_entity('Workflow::OperationType::ModelInput',
                                                     $_create_model_input_tmpl->get_rule_for_values(
                                                             $input_op_type_id,
-                                                            [],
-                                                            $optype->input_properties,
+                                                            #[],
+                                                            #$optype->input_properties,
                                                     ));
+    $input_op_type->input_properties([]);
+    $input_op_type->output_properties($optype->input_properties);
+
     $_add_operation_tmpl ||= UR::BoolExpr::Template->resolve(
                                             'Workflow::Operation',
                                             'id','name','workflow_model_id','workflow_operationtype_id'
@@ -67,9 +71,11 @@ sub create {
     my $output_op_type = UR::Context->create_entity('Workflow::OperationType::ModelOutput',
                                                     $_create_model_input_tmpl->get_rule_for_values(
                                                             $output_op_type_id,
-                                                            $optype->output_properties,
-                                                            []
+                                                            #$optype->output_properties,
+                                                            #[]
                                                     ));
+    $output_op_type->input_properties($optype->output_properties);
+    $output_op_type->output_properties([]);
 
     my $output_op = UR::Context->create_entity('Workflow::Operation',
                                 $_add_operation_tmpl->get_rule_for_values(
