@@ -1,4 +1,4 @@
-Source: libworkflow-perl
+Source: libcord-perl
 Section: perl
 Priority: optional
 Maintainer: Matthew Callaway <mcallawa@genome.wustl.edu>
@@ -6,8 +6,7 @@ Build-Depends: debhelper (>= 7), perl (>= 5.10), libanyevent-perl, perl-modules,
 Build-Depends-Indep: perl
 Standards-Version: 3.8.3
 
-Package: libworkflow-perl
+Package: libcord-perl
 Architecture: all
 Depends: perl, libanyevent-perl, perl-modules, libur-perl, libtimedate-perl, libforks-perl, libgraphviz-perl, libguard-perl, libipc-run-perl, libmime-tools-perl, libpoe-perl, libpoe-component-ikc-perl, libtemplate-perl, libtest-simple-perl, libtext-csv-perl, libtime-hires-perl, liburi-perl, libxml-libxml-perl, libxml-libxslt-perl, libxml-simple-perl, libyaml-perl, libfile-grep-perl, libdbd-oracle-perl, libfile-which-perl
-Description: Workflow handling in perl
- Workflow handling in perl
+Description: Concurrent Operation Remote Dispatch: workflow manager for Command objects
