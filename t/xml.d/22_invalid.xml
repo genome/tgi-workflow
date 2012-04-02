@@ -1,5 +1,5 @@
 <?xml version='1.0' standalone='yes'?>
-<workflow name="Example Workflow">
+<workflow name="Example Cord">
   <link fromOperation="input connector" fromProperty="sleep time" toOperation="sleep" toProperty="seconds" />
   <link fromOperation="echo" fromProperty="result" toOperation="wait for sleep and echo" toProperty="echo result" />
   <link fromOperation="wait for sleep and echo" fromProperty="echo result" toOperation="output connector" toProperty="result" />
@@ -9,27 +9,27 @@
   <link fromOperation="time" fromProperty="today" toOperation="output connector" toProperty="today" />
   <link fromOperation="time2" fromProperty="now" toOperation="echo2" toProperty="input" />
   <operation name="wait for sleep and echo">
-    <operationtype typeClass="Workflow::OperationType::Block">
+    <operationtype typeClass="Cord::OperationType::Block">
       <property>echo result</property>
       <property>sleep result</property>
     </operationtype>
   </operation>
   <operation name="sleep">
-    <operationtype commandClass="Workflow::Test::Command::Sleep" typeClass="Workflow::OperationType::Command" />
+    <operationtype commandClass="Cord::Test::Command::Sleep" typeClass="Cord::OperationType::Command" />
   </operation>
   <operation name="echo">
-    <operationtype commandClass="Workflow::Test::Command::Echo" typeClass="Workflow::OperationType::Command" />
+    <operationtype commandClass="Cord::Test::Command::Echo" typeClass="Cord::OperationType::Command" />
   </operation>
   <operation name="time">
-    <operationtype commandClass="Workflow::Test::Command::Time" typeClass="Workflow::OperationType::Command" />
+    <operationtype commandClass="Cord::Test::Command::Time" typeClass="Cord::OperationType::Command" />
   </operation>
   <operation name="time2">
-    <operationtype commandClass="Workflow::Test::Command::Time" typeClass="Workflow::OperationType::Command" />
+    <operationtype commandClass="Cord::Test::Command::Time" typeClass="Cord::OperationType::Command" />
   </operation>
   <operation name="echo2">
-    <operationtype commandClass="Workflow::Test::Command::Echo" typeClass="Workflow::OperationType::Command" />
+    <operationtype commandClass="Cord::Test::Command::Echo" typeClass="Cord::OperationType::Command" />
   </operation>
-  <operationtype typeClass="Workflow::OperationType::Model">
+  <operationtype typeClass="Cord::OperationType::Model">
     <inputproperty>model input string</inputproperty>
     <inputproperty>sleep time</inputproperty>
     <outputproperty>model output string</outputproperty>

@@ -3,10 +3,10 @@
 use strict;
 use warnings;
 
-use above 'Workflow';
+use above 'Cord';
 use Data::Dumper;
 
-Workflow::Executor::SerialDeferred->add_observer(
+Cord::Executor::SerialDeferred->add_observer(
     aspect => 'count',
     callback => sub {
         my ($self) = @_;
@@ -14,7 +14,7 @@ Workflow::Executor::SerialDeferred->add_observer(
     }
 );
 
-my $w = Workflow::Model->create_from_xml($ARGV[0] || 'xml.d/00_basic.xml');
+my $w = Cord::Model->create_from_xml($ARGV[0] || 'xml.d/00_basic.xml');
 
 $w->executor->limit(1);
 
@@ -39,7 +39,7 @@ foreach my $inputs (@pipeline_inputs) {
     my $result = $w->execute(
         input => $inputs,
         output_cb => $callback,    
-        store => Workflow::Store::Db->create()
+        store => Cord::Store::Db->create()
     );
 }
 

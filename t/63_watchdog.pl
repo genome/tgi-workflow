@@ -11,12 +11,12 @@ use Test::More;
 
 plan tests => 2;
 
-use above 'Workflow';
-use Workflow::Simple;
+use above 'Cord';
+use Cord::Simple;
 
-my $op = Workflow::Operation->create(
+my $op = Cord::Operation->create(
     name => 'watchdog',
-    operation_type => Workflow::OperationType::Command->get('Workflow::Test::Command::Watchdog')
+    operation_type => Cord::OperationType::Command->get('Cord::Test::Command::Watchdog')
 );
 
 my $output = run_workflow_lsf(
@@ -24,6 +24,6 @@ my $output = run_workflow_lsf(
     seconds => 120 
 );
 
-print Data::Dumper->new([$output,\@Workflow::Simple::ERROR])->Dump;
+print Data::Dumper->new([$output,\@Cord::Simple::ERROR])->Dump;
 
 

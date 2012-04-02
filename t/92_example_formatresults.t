@@ -6,9 +6,9 @@ use Test::More;
 
 plan tests => 4;
 
-use_ok('Workflow::Command::Example::FormatResults');
+use_ok('Cord::Command::Example::FormatResults');
 
-my $obj = Workflow::Command::Example::FormatResults->create;
+my $obj = Cord::Command::Example::FormatResults->create;
 
 $obj->test_files([ ['abcd'], ['efgh'], ['ijkl'] ]);
 $obj->test_results([ 1, 1, 0 ]);

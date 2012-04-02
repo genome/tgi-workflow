@@ -1,4 +1,4 @@
-## Workflow Server ##
+## Cord Server ##
 
 ### Dispatcher
 

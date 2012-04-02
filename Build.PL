@@ -25,10 +25,10 @@ EOS
 );
 
 my $build = $class->new(
-  module_name => 'Workflow',
+  module_name => 'Cord',
   license => 'lgpl',
   dist_version => '421',
-  dist_abstract => 'Workflow engine using UR framework for Perl',
+  dist_abstract => 'Cord engine using UR framework for Perl',
 );
 
 $build->create_build_script;

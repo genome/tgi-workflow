@@ -11,8 +11,8 @@ use Test::More;
 
 plan tests => 11;
 
-use above 'Workflow';
-use Workflow::Simple;
+use above 'Cord';
+use Cord::Simple;
 
 my $output;
 
@@ -23,13 +23,13 @@ $output = run_workflow_lsf(
 );
 
 ok(!defined $output,'output not defined');
-ok(scalar(@Workflow::Simple::ERROR) == 2, 'two errors');
-ok($Workflow::Simple::ERROR[1]->error =~ /death by test case/, 'second error message correct');
+ok(scalar(@Cord::Simple::ERROR) == 2, 'two errors');
+ok($Cord::Simple::ERROR[1]->error =~ /death by test case/, 'second error message correct');
 
 my $op;
-$op = Workflow::Operation->create(
+$op = Cord::Operation->create(
     name => 'death to all',
-    operation_type => Workflow::OperationType::Command->get('Workflow::Test::Command::Die')
+    operation_type => Cord::OperationType::Command->get('Cord::Test::Command::Die')
 );
 $op->parallel_by('seconds');
 
@@ -40,12 +40,12 @@ $output = run_workflow_lsf(
 
 ok(!defined $output,'output not defined');
 
-ok(scalar(@Workflow::Simple::ERROR) == 3, 'three errors');
+ok(scalar(@Cord::Simple::ERROR) == 3, 'three errors');
 for (0..2) {
-    ok($Workflow::Simple::ERROR[$_]->error =~ /death by test case/, 'error message correct');
+    ok($Cord::Simple::ERROR[$_]->error =~ /death by test case/, 'error message correct');
 }
 
-my $model = Workflow::Model->create(
+my $model = Cord::Model->create(
     name => 'some finish and some die',
     input_properties => [ 'die_seconds', 'sleep1_seconds', 'sleep2_seconds' ],
     output_properties => [ 'die_result', 'sleep1_result', 'sleep2_result' ]
@@ -53,7 +53,7 @@ my $model = Workflow::Model->create(
 
 my $die = $model->add_operation(
     name => 'die',
-    operation_type => Workflow::OperationType::Command->get('Workflow::Test::Command::Die')
+    operation_type => Cord::OperationType::Command->get('Cord::Test::Command::Die')
 );
 
 
@@ -73,7 +73,7 @@ $model->add_link(
 
 my $sleep1 = $model->add_operation(
     name => 'sleep1',
-    operation_type => Workflow::OperationType::Command->get('Workflow::Test::Command::Sleep')
+    operation_type => Cord::OperationType::Command->get('Cord::Test::Command::Sleep')
 );
 
 
@@ -93,7 +93,7 @@ $model->add_link(
 
 my $sleep2 = $model->add_operation(
     name => 'sleep2',
-    operation_type => Workflow::OperationType::Command->get('Workflow::Test::Command::Sleep')
+    operation_type => Cord::OperationType::Command->get('Cord::Test::Command::Sleep')
 );
 
 $model->add_link(
@@ -119,12 +119,12 @@ $output = run_workflow_lsf(
 
 ok(!defined $output,'output not defined');
 
-ok(scalar(@Workflow::Simple::ERROR) == 2, 'two errors');
-ok($Workflow::Simple::ERROR[1]->error =~ /death by test case/, 'error message correct');
+ok(scalar(@Cord::Simple::ERROR) == 2, 'two errors');
+ok($Cord::Simple::ERROR[1]->error =~ /death by test case/, 'error message correct');
 
 __DATA__
 <?xml version='1.0' standalone='yes'?>
-<workflow name="Example Workflow" executor="Workflow::Executor::SerialDeferred">
+<workflow name="Example Cord" executor="Cord::Executor::SerialDeferred">
   <link fromOperation="input connector" fromProperty="sleep time" toOperation="sleep" toProperty="seconds" />
   <link fromOperation="echo" fromProperty="result" toOperation="wait for sleep and echo" toProperty="echo result" />
   <link fromOperation="wait for sleep and echo" fromProperty="echo result" toOperation="output connector" toProperty="result" />
@@ -133,21 +133,21 @@ __DATA__
   <link fromOperation="input connector" fromProperty="model input string" toOperation="echo" toProperty="input" />
   <link fromOperation="time" fromProperty="today" toOperation="output connector" toProperty="today" />
   <operation name="wait for sleep and echo">
-    <operationtype typeClass="Workflow::OperationType::Block">
+    <operationtype typeClass="Cord::OperationType::Block">
       <property>echo result</property>
       <property>sleep result</property>
     </operationtype>
   </operation>
   <operation name="sleep">
-    <operationtype commandClass="Workflow::Test::Command::Die" typeClass="Workflow::OperationType::Command" />
+    <operationtype commandClass="Cord::Test::Command::Die" typeClass="Cord::OperationType::Command" />
   </operation>
   <operation name="echo">
-    <operationtype commandClass="Workflow::Test::Command::Echo" typeClass="Workflow::OperationType::Command" />
+    <operationtype commandClass="Cord::Test::Command::Echo" typeClass="Cord::OperationType::Command" />
   </operation>
   <operation name="time">
-    <operationtype commandClass="Workflow::Test::Command::Time" typeClass="Workflow::OperationType::Command" />
+    <operationtype commandClass="Cord::Test::Command::Time" typeClass="Cord::OperationType::Command" />
   </operation>
-  <operationtype typeClass="Workflow::OperationType::Model">
+  <operationtype typeClass="Cord::OperationType::Model">
     <inputproperty>model input string</inputproperty>
     <inputproperty>sleep time</inputproperty>
     <outputproperty>model output string</outputproperty>

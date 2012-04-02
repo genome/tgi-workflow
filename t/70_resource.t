@@ -10,12 +10,12 @@ use warnings;
 
 use Test::More tests => 4;
 
-use above 'Workflow';
+use above 'Cord';
 
-require_ok('Workflow');
-require_ok('Workflow::Resource');
+require_ok('Cord');
+require_ok('Cord::Resource');
 
-my $resource = Workflow::Resource->create(mem_limit => 100);
+my $resource = Cord::Resource->create(mem_limit => 100);
 $resource->min_proc(5);
 
 ok($resource->mem_limit == 100, "Resource sets mem_limit");

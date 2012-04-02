@@ -4,6 +4,6 @@ use strict;
 use warnings;
 
 use Test::More tests => 1;
-use above 'Workflow';
+use above 'Cord';
 
-require_ok('Workflow::Command');
+require_ok('Cord::Command');

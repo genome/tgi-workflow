@@ -10,15 +10,15 @@ use warnings;
 
 use Test::More tests => 7;
 
-use above 'Workflow';
+use above 'Cord';
 
-require_ok('Workflow');
-require_ok('Workflow::Dispatcher');
-require_ok('Workflow::Dispatcher::Lsf');
+require_ok('Cord');
+require_ok('Cord::Dispatcher');
+require_ok('Cord::Dispatcher::Lsf');
 
-my $resource = Workflow::Resource->create(mem_limit => 100);
-my $lsf = Workflow::Dispatcher::Lsf->create(cluster => "default");
-my $job = Workflow::Dispatcher::Job->create(
+my $resource = Cord::Resource->create(mem_limit => 100);
+my $lsf = Cord::Dispatcher::Lsf->create(cluster => "default");
+my $job = Cord::Dispatcher::Job->create(
     resource => $resource,
     command => 'echo "Hello world"',
 );
@@ -31,14 +31,14 @@ ok($cmd eq 'bsub -R \'select[ncpus>=1] span[hosts=1]\' -M 102400 -n 1 echo "Hell
 my $job_id = $lsf->execute($job);
 ok(int($job_id), "Job id exists");
 
-my $resource2 = Workflow::Resource->create(
+my $resource2 = Cord::Resource->create(
     mem_request => 100,
     mem_limit => 1000,
     use_gtmp => 1,
     tmp_space => 1
 );
 
-my $job2 = Workflow::Dispatcher::Job->create(
+my $job2 = Cord::Dispatcher::Job->create(
     resource => $resource2,
     command => 'echo "Hello world"',
     queue => 'long',
@@ -51,14 +51,14 @@ ok($cmd eq 'bsub -R \'select[ncpus>=1 && mem>=100 && gtmp>=1] span[hosts=1] rusa
     "Job queue attribute sets queue"
 );
 
-my $resource3 = Workflow::Resource->create(
+my $resource3 = Cord::Resource->create(
     mem_limit => 10000,
     mem_request => 1000,
     min_proc => 4,
     tmp_space => 88,
     max_tmp => 88
     );
-my $job3 = Workflow::Dispatcher::Job->create(
+my $job3 = Cord::Dispatcher::Job->create(
     resource => $resource3,
     command => 'echo "Hello world"',
     queue => 'long',

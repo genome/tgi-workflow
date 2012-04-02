@@ -1,12 +1,12 @@
 use strict;
 
-use above 'Workflow';
+use above 'Cord';
 use Test::More tests => 4;
 
-use_ok('Workflow::Test::Widget');
+use_ok('Cord::Test::Widget');
 
 my @widgets = map {
-    Workflow::Test::Widget->new($_)
+    Cord::Test::Widget->new($_)
 } ({
     size => 'large', color => 'red', shape => 'boxy'
 }, {
@@ -17,7 +17,7 @@ my @widgets = map {
 
 ok(@widgets == 3, 'made 3 widgets');
 
-my $cmd = Workflow::Test::Command::WidgetManyReader->create(
+my $cmd = Cord::Test::Command::WidgetManyReader->create(
     widget => \@widgets
 );
 

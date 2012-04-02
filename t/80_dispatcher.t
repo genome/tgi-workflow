@@ -10,7 +10,7 @@ use warnings;
 
 use Test::More tests => 2;
 
-use above 'Workflow';
+use above 'Cord';
 
-require_ok('Workflow');
-require_ok('Workflow::Dispatcher');
+require_ok('Cord');
+require_ok('Cord::Dispatcher');

@@ -13,14 +13,14 @@ plan tests => 6;
 
 use File::Temp;
 
-use above 'Workflow';
-use Workflow::Simple;
+use above 'Cord';
+use Cord::Simple;
 
-$ENV{WF_TESTDIR} = File::Temp::tempdir('WorkflowXXXXX', DIR => '/gsc/var/cache/testsuite/running_testsuites', CLEANUP => 1);
+$ENV{WF_TESTDIR} = File::Temp::tempdir('CordXXXXX', DIR => '/gsc/var/cache/testsuite/running_testsuites', CLEANUP => 1);
 
-my $op = Workflow::Operation->create(
+my $op = Cord::Operation->create(
     name => 'ls',
-    operation_type => Workflow::OperationType::Command->get('Workflow::Test::Command::Ls')
+    operation_type => Cord::OperationType::Command->get('Cord::Test::Command::Ls')
 );
 
 my $output = run_workflow_lsf(

@@ -1,6 +1,6 @@
 [% subject %]
 
-Workflow complete.
+Cord complete.
 
 fruit: [% fruit %]
 vegetable: [% vegetable %]

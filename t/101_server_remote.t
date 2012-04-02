@@ -7,25 +7,25 @@ use Test::More tests => 8;
 BEGIN {
     $ENV{'WF_DISPATCHER'}='fork';
 }
-use above 'Workflow';
+use above 'Cord';
 
-use_ok('Workflow::Server::Remote');
+use_ok('Cord::Server::Remote');
 
 
 $SIG{'ALRM'} = sub { ok(0,'Test took too long'); exit(1); };
 alarm(30);
 
-my ( $r, $g ) = Workflow::Server::Remote->launch();
+my ( $r, $g ) = Cord::Server::Remote->launch();
 
 my($ur_srv_handle, $ur_guard, $hub_srv_handle, $hub_guard) = @$g;
 
-isa_ok( $r, 'Workflow::Server::Remote' );
+isa_ok( $r, 'Cord::Server::Remote' );
 BAIL_OUT('cannot continue tests without connection') unless defined $r;
 
-my $sleep_op = Workflow::Operation->create(
+my $sleep_op = Cord::Operation->create(
     name           => 'sleeper',
     operation_type =>
-      Workflow::OperationType::Command->get('Workflow::Test::Command::Sleep')
+      Cord::OperationType::Command->get('Cord::Test::Command::Sleep')
 );
 
 

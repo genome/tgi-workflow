@@ -3,10 +3,10 @@
 use strict;
 use warnings;
 
-use above 'Workflow';
+use above 'Cord';
 use Data::Dumper;
 
-my $w = Workflow::Model->create_from_xml($ARGV[0] || 'sample.xml');
+my $w = Cord::Model->create_from_xml($ARGV[0] || 'sample.xml');
 
 #if (0) {
 my $out = $w->execute(

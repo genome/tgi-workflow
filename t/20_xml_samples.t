@@ -10,12 +10,12 @@ use warnings;
 
 use Test::More qw(no_plan);
 use IO::Dir;
-use above 'Workflow';
+use above 'Cord';
 
 my $dir = -d 't/xml.d' ? 't/xml.d' : 'xml.d';
 
-require_ok('Workflow::Model');
-can_ok('Workflow::Model',qw/create_from_xml validate is_valid/);
+require_ok('Cord::Model');
+can_ok('Cord::Model',qw/create_from_xml validate is_valid/);
 
 ok(-d $dir,'finding xml.d directory');
 my @files;
@@ -36,7 +36,7 @@ foreach my $file (sort @files) {
         my $tv = 0;
         my $w;
         eval {
-            $w = Workflow::Model->create_from_xml($dir . '/' . $file);
+            $w = Cord::Model->create_from_xml($dir . '/' . $file);
         };
         if ($@) {
             if ($file =~ /_invalid/) {

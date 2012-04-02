@@ -1,5 +1,5 @@
 <?xml version='1.0' standalone='yes'?>
-<workflow name="Example Workflow">
+<workflow name="Example Cord">
   <link fromOperation="input connector" fromProperty="sleep time" toOperation="sleep" toProperty="seconds" />
   <link fromOperation="wait for sleep and echo" fromProperty="sleep result" toOperation="echo" toProperty="input" />
   <link fromOperation="input connector" fromProperty="model input string" toOperation="output connector" toProperty="model output string" />
@@ -8,21 +8,21 @@
   <link fromOperation="time" fromProperty="today" toOperation="output connector" toProperty="today" />
   <link fromOperation="wait for sleep and echo" fromProperty="echo result" toOperation="output connector" toProperty="result" />
   <operation name="wait for sleep and echo">
-    <operationtype typeClass="Workflow::OperationType::Block">
+    <operationtype typeClass="Cord::OperationType::Block">
       <property>echo result</property>
       <property>sleep result</property>
     </operationtype>
   </operation>
   <operation name="sleep">
-    <operationtype commandClass="Workflow::Test::Command::Sleep" typeClass="Workflow::OperationType::Command" />
+    <operationtype commandClass="Cord::Test::Command::Sleep" typeClass="Cord::OperationType::Command" />
   </operation>
   <operation name="echo">
-    <operationtype commandClass="Workflow::Test::Command::Echo" typeClass="Workflow::OperationType::Command" />
+    <operationtype commandClass="Cord::Test::Command::Echo" typeClass="Cord::OperationType::Command" />
   </operation>
   <operation name="time">
-    <operationtype commandClass="Workflow::Test::Command::Time" typeClass="Workflow::OperationType::Command" />
+    <operationtype commandClass="Cord::Test::Command::Time" typeClass="Cord::OperationType::Command" />
   </operation>
-  <operationtype typeClass="Workflow::OperationType::Model">
+  <operationtype typeClass="Cord::OperationType::Model">
     <inputproperty>model input string</inputproperty>
     <inputproperty>sleep time</inputproperty>
     <outputproperty>model output string</outputproperty>

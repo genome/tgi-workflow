@@ -1,5 +1,5 @@
 <?xml version='1.0' standalone='yes'?>
-<workflow name="Example Workflow" executor="Workflow::Executor::SerialDeferred">
+<workflow name="Example Cord" executor="Cord::Executor::SerialDeferred">
   <link fromOperation="input connector" fromProperty="test input" toOperation="echo alpha"       toProperty="input" />
   <link fromOperation="echo alpha"      fromProperty="output"     toOperation="cat"              toProperty="alpha" />
   <link fromOperation="input connector" fromProperty="test input" toOperation="echo beta"        toProperty="input" />
@@ -8,13 +8,13 @@
   <link fromOperation="cat"             fromProperty="result"     toOperation="output connector" toProperty="result" />
   
   <operation name="echo alpha" parallelBy="input">
-    <operationtype commandClass="Workflow::Test::Command::Echo" typeClass="Workflow::OperationType::Command" />
+    <operationtype commandClass="Cord::Test::Command::Echo" typeClass="Cord::OperationType::Command" />
   </operation>
   <operation name="echo beta" parallelBy="input">
-    <operationtype commandClass="Workflow::Test::Command::Echo" typeClass="Workflow::OperationType::Command" />
+    <operationtype commandClass="Cord::Test::Command::Echo" typeClass="Cord::OperationType::Command" />
   </operation>
   <operation name="cat">
-   <operationtype typeClass="Workflow::OperationType::Converge">
+   <operationtype typeClass="Cord::OperationType::Converge">
     <inputproperty>alpha</inputproperty>
     <inputproperty>beta</inputproperty>
     <outputproperty>all</outputproperty>
@@ -22,7 +22,7 @@
    </operationtype>
   </operation>
 
-  <operationtype typeClass="Workflow::OperationType::Model">
+  <operationtype typeClass="Cord::OperationType::Model">
     <inputproperty>test input</inputproperty>
     <outputproperty>result</outputproperty>
     <outputproperty>test output</outputproperty>

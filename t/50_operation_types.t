@@ -11,18 +11,18 @@ use warnings;
 use Test::More tests => 25;
 use Switch;
 
-use above 'Workflow';
+use above 'Cord';
 
 my @operationtypes = qw{
     Block Command Converge Dummy
     Model ModelInput ModelOutput
 };
 
-require_ok('Workflow');
-require_ok('Workflow::OperationType');
+require_ok('Cord');
+require_ok('Cord::OperationType');
 
 foreach my $operationtype (@operationtypes) {
-    my $operationtype_class = 'Workflow::OperationType::' . $operationtype;
+    my $operationtype_class = 'Cord::OperationType::' . $operationtype;
     require_ok($operationtype_class);
     
     switch ($operationtype) {
@@ -41,7 +41,7 @@ foreach my $operationtype (@operationtypes) {
         }
         case 'Command' {
             my $o = $operationtype_class->create(
-                command_class_name => 'Workflow::Test::Command::Echo'
+                command_class_name => 'Cord::Test::Command::Echo'
             );
             ok($o,'found ' . $operationtype);
             
@@ -97,7 +97,7 @@ foreach my $operationtype (@operationtypes) {
         case 'Model' {
             if (0) {
             my $dir = -d 't/xml.d' ? 't/xml.d' : 'xml.d';
-            my $w = Workflow::Model->create_from_xml($dir . '/00_basic.xml');
+            my $w = Cord::Model->create_from_xml($dir . '/00_basic.xml');
             
             my $o;
             ok($o = $w->operation_type,'found ' . $operationtype);
@@ -110,7 +110,7 @@ foreach my $operationtype (@operationtypes) {
 
             is_deeply($out,{
                 'model output string' => 'abracadabra',
-                'today' => Workflow::Time->today,
+                'today' => Cord::Time->today,
                 'result' => 1
             },'check output ' . $operationtype);
             }

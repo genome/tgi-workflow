@@ -1,11 +1,11 @@
-<workflow name="Example Inner Workflow" parallelBy='input string'>
+<workflow name="Example Inner Cord" parallelBy='input string'>
   <link fromOperation="echo" fromProperty="result" toOperation="output connector" toProperty="result" />
   <link fromOperation="input connector" fromProperty="input string" toOperation="echo" toProperty="input" />
   <link fromOperation="echo" fromProperty="output" toOperation="output connector" toProperty="output string" />
   <operation name="echo">
-    <operationtype commandClass="Workflow::Test::Command::Echo" typeClass="Workflow::OperationType::Command" />
+    <operationtype commandClass="Cord::Test::Command::Echo" typeClass="Cord::OperationType::Command" />
   </operation>
-  <operationtype typeClass="Workflow::OperationType::Model">
+  <operationtype typeClass="Cord::OperationType::Model">
     <inputproperty>input string</inputproperty>
     <outputproperty>output string</outputproperty>
     <outputproperty>result</outputproperty>

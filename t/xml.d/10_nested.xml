@@ -1,10 +1,10 @@
 <?xml version='1.0' standalone='yes'?>
-<workflow name="Example Workflow" executor="Workflow::Executor::SerialDeferred">
-  <link fromOperation="Example Inner Workflow" fromProperty="result" toOperation="output connector" toProperty="result" />
-  <link fromOperation="input connector" fromProperty="test input" toOperation="Example Inner Workflow" toProperty="input string" />
-  <link fromOperation="Example Inner Workflow" fromProperty="output string" toOperation="output connector" toProperty="test output" />
-  <operation name="Example Inner Workflow" workflowFile="10.1_nested.xml" />
-  <operationtype typeClass="Workflow::OperationType::Model">
+<workflow name="Example Cord" executor="Cord::Executor::SerialDeferred">
+  <link fromOperation="Example Inner Cord" fromProperty="result" toOperation="output connector" toProperty="result" />
+  <link fromOperation="input connector" fromProperty="test input" toOperation="Example Inner Cord" toProperty="input string" />
+  <link fromOperation="Example Inner Cord" fromProperty="output string" toOperation="output connector" toProperty="test output" />
+  <operation name="Example Inner Cord" workflowFile="10.1_nested.xml" />
+  <operationtype typeClass="Cord::OperationType::Model">
     <inputproperty>test input</inputproperty>
     <outputproperty>result</outputproperty>
     <outputproperty>test output</outputproperty>
