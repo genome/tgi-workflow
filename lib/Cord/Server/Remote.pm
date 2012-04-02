@@ -92,7 +92,7 @@ sub launch {
     my $ul_g = $class->guard_lock('UR');
 
     require File::Which;
-    my $workflow_cmd = File::Which::which('workflow');
+    my $workflow_cmd = File::Which::which('cord');
 
     my $h = IPC::Run::start(
         [
