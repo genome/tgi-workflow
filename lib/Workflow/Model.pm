@@ -410,7 +410,6 @@ sub validate {
             $properties_for_operation_type{$optype_id}->{'input'} = \%input_properties_for_operation_type;
     };
 
-$DB::single=1;
     foreach my $link ($self->links) {
         
         #my $left_output_properties = $link->left_operation->operation_type->output_properties;
@@ -453,7 +452,6 @@ $DB::single=1;
 sub operations_in_series {
     my $self = shift;
 
-$DB::single=1;
     my %all_links;
     my %op_incoming_links;
     for my $link ( Workflow::Link->get(workflow_model_id => $self->id)) {
