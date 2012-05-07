@@ -431,7 +431,7 @@ sub setup {
                         # $resource is a Workflow::Resource object
                         my $resource = $payload->{operation_type}->resource;
                         my $queue = $resource->queue || $payload->{operation_type}->lsf_queue || 'long';
-                        my $group = $resource->group || "/workflow-worker2",
+                        my $group = $resource->group || "/workflow-worker",
                         my $name = $payload->{instance}->name || 'worker';
 
                         my $namespace = (split(/::/, $payload->{operation_type}->command_class_name))[0];
