@@ -111,5 +111,12 @@ sub get_command {
     }
 
     $cmd .= $job->command;
+    my $cmd_to_debug = $ENV{'WF_DEBUG_MATCH'};
+    if ($cmd_to_debug and ($cmd =~ /$cmd_to_debug/)) {
+        my $perl_name = $^X;
+        if ($cmd =~ s|$perl_name|$perl_name -d:ptkdb|){
+            print "Running command with ptkdb debugger: $cmd\n";
+        }
+    }
     return $cmd;
 }
