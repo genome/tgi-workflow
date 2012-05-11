@@ -182,7 +182,7 @@ sub shortcut {
 }
 
  sub execute {
-     my $self = shift;
+    my $self = shift;
     $self->call('execute', @_);
 }
 
@@ -197,6 +197,22 @@ sub call {
     my %properties = @_;
 
     my $command_name = $self->command_class_name;
+
+    foreach my $key (keys %properties) {
+        my $value = $properties{$key};
+        if ((defined $value) and (Scalar::Util::blessed $value) 
+                and $value->isa('UR::Object')){
+            my $id = $value->id;
+            my $class_name = $value->class;
+            my $old_value = $value;
+            $value = $class_name->get($id);
+            unless($value) {
+                die "Starting command $command_name: could not get object of class $class_name with id $id for property $key";
+            }
+            $properties{$key} = $value;
+            print "Reloaded $old_value as $value\n";
+        }
+    }
 
     if ($type eq 'shortcut' && !$command_name->can('_shortcut_body')) {
         return;
