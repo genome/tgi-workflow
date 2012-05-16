@@ -13,6 +13,8 @@ class Workflow::Model {
     isa => 'Workflow::Operation',
     has => [
         operations => { is => 'Workflow::Operation', is_many => 1, reverse_id_by => 'workflow_model' },
+        input_connector => { is => 'Workflow::Operation', via => 'operations', to => '-filter', where => ['name' => 'input connector'] },
+        output_connector => { is => 'Workflow::Operation', via => 'operations', to => '-filter', where => ['name' => 'output connector'] },
         links => { is => 'Workflow::Link', is_many => 1 },
     ]
 };
@@ -169,24 +171,15 @@ sub as_xml_simple_structure {
     return $struct;
 }
 
+#TODO These two methods are now redundant and ripe for removal
 sub get_input_connector {
     my $self = shift;
-
-    my $input = Workflow::Operation->get(
-        workflow_model => $self,
-        name => 'input connector'
-    );
-    return $input;
+    return $self->input_connector;
 }
 
 sub get_output_connector {
     my $self = shift;
-
-    my $output = Workflow::Operation->get(
-        workflow_model => $self,
-        name => 'output connector'
-    );
-    return $output;
+    return $self->output_connector;
 }
 
 ## needs to be pulled into a viewer
