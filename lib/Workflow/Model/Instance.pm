@@ -41,13 +41,6 @@ __PACKAGE__->add_observer (
 sub _init {        
     my $self = shift;
 
-    if ($self->parent_instance_id) {
-        my $parent = $self->parent_instance;
-        $self->root($parent->root);
-    } else {
-        $self->root($self);
-    }
-
     $self->input_connector(
         Workflow::Operation::Instance->get(
             operation => $self->operation->get_input_connector,

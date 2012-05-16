@@ -56,11 +56,19 @@ class Workflow::Operation::Instance {
         root => {
             is => 'Workflow::Operation::Instance',
             id_by => 'root_id',
-            is_transient => 1
         },
         root_id => {
             implied_by => 'root',
-            is_transient => 1
+            is_constant => 1,
+            calculate_from => ['parent_instance','id'],
+            calculate => q|
+                if ($parent_instance) {
+                    $parent_instance->root_id;
+                } 
+                else {
+                    $id;
+                }
+            |,
         }, 
         output        => { is => 'HASH', is_transient => 1 },
         input         => { is => 'HASH', is_transient => 1 },
@@ -273,13 +281,6 @@ our @observers = (
             $self->__output( thaw $self->output_stored );
 
             my $parent;
-            if ($self->parent_instance_id) {
-                $parent = $self->parent_instance;
-
-                $self->root($parent->root);
-            } else {
-                $self->root($self);
-            }
 
             if (
                 $parent
@@ -296,8 +297,7 @@ our @observers = (
         }
       ),
     __PACKAGE__->add_observer(
-        aspect =>
-          'create',    # due to weird inheritance this is better as an observer
+        aspect => 'create',    # due to weird inheritance this is better as an observer
         callback => sub {
             my $self = shift;
 
@@ -310,13 +310,10 @@ our @observers = (
                     xml => $self->operation->save_to_xml );
 
                 $self->cache_workflow($c);
-                $self->root($self);
             } elsif ( defined $self->parent_instance ) {
                 $self->cache_workflow( $self->parent_instance->cache_workflow );
-                $self->root($self->parent_instance->root);
             } elsif ( defined $self->peer_of ) {
                 $self->cache_workflow( $self->peer_of->cache_workflow );
-                $self->root($self);
             }
 
             $self->name( $self->operation->name );
