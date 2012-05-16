@@ -14,13 +14,15 @@ class Workflow::Model::Instance {
         },
         input_connector => {
             is    => 'Workflow::Operation::Instance',
-            id_by => 'input_connector_id',
-            is_optional => 1,
+            via => 'child_instances',
+            to => '-filter',
+            where => ['name' => 'input connector'],
         },
         output_connector => {
             is    => 'Workflow::Operation::Instance',
-            id_by => 'output_connector_id',
-            is_optional => 1,
+            via => 'child_instances',
+            to => '-filter',
+            where => ['name' => 'output connector'],
         },
         ordered_child_instances => {
             is        => 'Workflow::Operation::Instance',
@@ -30,33 +32,6 @@ class Workflow::Model::Instance {
     ]
 };
 
-__PACKAGE__->add_observer (
-    aspect   => 'load',
-    callback => sub {
-        my ($self) = @_;
-        return $self->_init();
-    }
-);
-
-sub _init {        
-    my $self = shift;
-
-    $self->input_connector(
-        Workflow::Operation::Instance->get(
-            operation => $self->operation->get_input_connector,
-            parent_instance => $self
-        )
-    );
-
-    $self->output_connector(
-        Workflow::Operation::Instance->get(
-            operation => $self->operation->get_output_connector,
-            parent_instance => $self
-        )
-    );
-
-    return 1;
-}
 
 ## TODO rewrite so it doesnt lean on operation->operations_in_series
 sub sorted_child_instances {
@@ -94,8 +69,6 @@ sub create {
     foreach (@all_opi) {
         $_->set_input_links;
     }
-
-    $self->_init();
 
     return $self;
 }
