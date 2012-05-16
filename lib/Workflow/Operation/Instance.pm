@@ -269,8 +269,8 @@ our @observers = (
 
             $self->load_operation;
 
-            $self->input( thaw $self->input_stored );
-            $self->output( thaw $self->output_stored );
+            $self->__input( thaw $self->input_stored );
+            $self->__output( thaw $self->output_stored );
 
             my $parent;
             if ($self->parent_instance_id) {
@@ -448,6 +448,7 @@ sub serialize_input {
     return if !defined $self->input;
 
     local $Storable::forgive_me = 1;
+    local $Storable::canonical = 1;
     $self->input_stored( nfreeze $self->input );
 }
 
@@ -457,6 +458,7 @@ sub serialize_output {
     return if !defined $self->output;
 
     local $Storable::forgive_me = 1;
+    local $Storable::canonical = 1;
     $self->output_stored( nfreeze $self->output );
 }
 
