@@ -53,6 +53,10 @@ class Workflow::Operation::InstanceExecution {
                 return $formatted_time;
             }
         },
+        start_time_nice => {
+            calculate_from => ['start_time'],
+            calculate => q{ (my $time_nice = $start_time) =~ s/\.0+\z// if $start_time =~ /\./; return $time_nice; } #trim sub-second zeros
+        },
         exit_code  => { is => 'NUMBER',   len => 5,   is_optional => 1 },
         stdout     => { is => 'VARCHAR2', len => 512, is_optional => 1 },
         stderr     => { is => 'VARCHAR2', len => 512, is_optional => 1 },

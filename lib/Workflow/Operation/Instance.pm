@@ -127,9 +127,10 @@ class Workflow::Operation::Instance {
             via        => 'current',
             is_mutable => 1
         },
-        start_time   => { via => 'current', },
-        end_time     => { via => 'current', },
-        elapsed_time => { via => 'current', },
+        start_time      => { via => 'current', },
+        end_time        => { via => 'current', },
+        elapsed_time    => { via => 'current', },
+        start_time_nice => { via => 'current', },
         executor     => {     #TODO store executor upon creation
             is        => 'Workflow::Executor',
             calculate => q{
