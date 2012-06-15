@@ -13,6 +13,8 @@ class Cord::Model {
     isa => 'Cord::Operation',
     has => [
         operations => { is => 'Cord::Operation', is_many => 1, reverse_id_by => 'workflow_model' },
+        input_connector => { is => 'Cord::Operation', via => 'operations', to => '-filter', where => ['name' => 'input connector'] },
+        output_connector => { is => 'Cord::Operation', via => 'operations', to => '-filter', where => ['name' => 'output connector'] },
         links => { is => 'Cord::Link', is_many => 1 },
     ]
 };
@@ -169,24 +171,15 @@ sub as_xml_simple_structure {
     return $struct;
 }
 
+#TODO These two methods are now redundant and ripe for removal
 sub get_input_connector {
     my $self = shift;
-
-    my $input = Cord::Operation->get(
-        workflow_model => $self,
-        name => 'input connector'
-    );
-    return $input;
+    return $self->input_connector;
 }
 
 sub get_output_connector {
     my $self = shift;
-
-    my $output = Cord::Operation->get(
-        workflow_model => $self,
-        name => 'output connector'
-    );
-    return $output;
+    return $self->output_connector;
 }
 
 ## needs to be pulled into a viewer

@@ -215,7 +215,7 @@ sub create {
     my $poe = POE::Component::IKC::ClientLite::create_ikc_client(
         ip              => $params->{host},
         port            => $params->{port},
-        timeout         => 1209600,
+        timeout         => 2419200, # 4 weeks
         connect_timeout => 5
     );
     if ( !$poe ) {

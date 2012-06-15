@@ -1,6 +1,6 @@
 package Cord::Operation::Instance::View::Status::Xml;
 
-our @aspects = qw/name status start_time end_time elapsed_time operation_type parallel_index is_parallel/;
+our @aspects = qw/name status start_time end_time elapsed_time start_time_nice operation_type parallel_index is_parallel/;
 
 push @aspects,
   {
