@@ -81,8 +81,8 @@ sub create {
         push @$a, $link;
     }
 
-    warn "starting profiling at " . time() . " in file " . __FILE__ . " on line " . __LINE__ . "\n";
-    #DB::enable_profiling();
+    #warn "starting profiling at " . time() . " in file " . __FILE__ . " on line " . __LINE__ . "\n";
+    #DB::enable_profile();
     
     # Make one link instance per link. 
     # Go through all of the links which go "to" a given node at once
@@ -107,7 +107,7 @@ sub create {
         $right_opi->input( \%added_inputs );
     }
     
-    warn "stop profiling at " . time() . " in file " . __FILE__ . " on line " . __LINE__ . "\n";
+    #warn "stop profiling at " . time() . " in file " . __FILE__ . " on line " . __LINE__ . "\n";
     #exit;  # disable profiling and exit so the file is written
 
     return $self;
