@@ -56,19 +56,59 @@ sub create {
     my %args  = (@_);
     my $self  = $class->SUPER::create(%args);
 
-    my @all_opi;
-    foreach ( $self->operation->operations ) {
-        my $this_data = Workflow::Operation::Instance->create(
-            operation       => $_,
+    # create a child opi for each child op
+    my @child_opis;
+    my @child_op_ids;
+    my %child_opi_id_by_op_id;
+    for my $child_op ( $self->operation->operations ) {
+        my $child_opi = Workflow::Operation::Instance->create(
+            operation       => $child_op,
             parent_instance => $self
         );
-        $this_data->input(  {} );
-        $this_data->output( {} );
-        push @all_opi, $this_data;
+        #$child_opi->input(  {} );
+        $child_opi->output( {} );
+
+        push @child_opis, $child_opi;
+        push @child_op_ids, $child_op->id;
+        $child_opi_id_by_op_id{$child_op->id} = $child_opi->id;
     }
-    foreach (@all_opi) {
-        $_->set_input_links;
+    
+    # make one pass through all of the links and index them by "right" (to) operation 
+    my @all_links = Workflow::Link->get( right_workflow_operation_id => \@child_op_ids);
+    my %links_by_right_op;
+    for my $link (@all_links) {
+        my $a = $links_by_right_op{$link->right_workflow_operation_id} ||= [];
+        push @$a, $link;
     }
+
+    warn "starting profiling at " . time() . " in file " . __FILE__ . " on line " . __LINE__ . "\n";
+    #DB::enable_profiling();
+    
+    # Make one link instance per link. 
+    # Go through all of the links which go "to" a given node at once
+    # so we only have to reset its input hash one time.
+    for my $right_opi (@child_opis) {
+        my $right_op_id = shift @child_op_ids;
+        my $links_to_right_op = $links_by_right_op{$right_op_id} || [];
+
+        my %added_inputs = ();
+        foreach my $link (@$links_to_right_op) {
+            my $left_op_id = $link->left_workflow_operation_id;
+            my $left_opi_id = $child_opi_id_by_op_id{$left_op_id};
+            next unless $left_opi_id;
+
+            my $linki = Workflow::Link::Instance->create(
+                other_operation_instance_id => $left_opi_id,
+                property           => $link->left_property
+            );
+
+            $added_inputs{ $link->right_property } = $linki;
+        }
+        $right_opi->input( \%added_inputs );
+    }
+    
+    warn "stop profiling at " . time() . " in file " . __FILE__ . " on line " . __LINE__ . "\n";
+    #exit;  # disable profiling and exit so the file is written
 
     return $self;
 }

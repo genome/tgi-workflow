@@ -500,36 +500,6 @@ sub err_log_file {
     }
 }
 
-#FIXME remove use of operation here, at first glance looks problematic anyway
-# this is only called during a model constructor, its _probably_ ok
-sub set_input_links {
-    my $self = shift;
-
-    my @links = Workflow::Link->get( right_operation => $self->operation, );
-
-    my %linkage = ();
-
-    foreach my $link (@links) {
-        my $opi;
-        foreach my $child ( $self->parent_instance->child_instances ) {
-            if ( $child->operation == $link->left_operation ) {
-                $opi = $child;
-                last;
-            }
-        }
-        next unless $opi;
-
-        my $linki = Workflow::Link::Instance->create(
-            operation_instance => $opi,
-            property           => $link->left_property
-        );
-
-        $linkage{ $link->right_property } = $linki;
-    }
-
-    $self->input( { %{ $self->input }, %linkage } );
-}
-
 sub is_ready {
     my $self = shift;
 

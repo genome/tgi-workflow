@@ -27,6 +27,7 @@ ok(do {
 
 $w->parallel_by('model input string');
 
+$DB::single = 1;
 my $data = $w->execute(
     input => {
         'test input' => [
@@ -34,7 +35,6 @@ my $data = $w->execute(
         ]
     }
 );
-
 $w->wait;
 
 my $output = $data->output;
