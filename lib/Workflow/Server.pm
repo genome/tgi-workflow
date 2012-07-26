@@ -20,6 +20,7 @@ sub start {
 
     $class->setup(@_);
     POE::Kernel->run();
+    return 1;
 }
 
 sub lockname {
