@@ -197,7 +197,7 @@ sub setup {
                 
                 $kernel->sig('USR1','sig_USR1');
                 $kernel->sig('USR2','sig_USR2');
-                $kernel->sig('CHLD','sig_CHLD');
+                #$kernel->sig('CHLD','sig_CHLD');
                 $kernel->sig('HUP','sig_HUP_INT_TERM');
                 $kernel->sig('INT','sig_HUP_INT_TERM');
                 $kernel->sig('TERM','sig_HUP_INT_TERM');
@@ -421,7 +421,7 @@ sub setup {
                             push @requeue, $payload;
                             next;
                         }
-                        
+
                         $lsf_job_id = $kernel->call($_[SESSION],'fork_worker',
                             $payload->{operation_type}->command_class_name, $payload->{out_log}, $payload->{err_log}
                         );
@@ -485,6 +485,10 @@ sub setup {
                     }
 
                     if ($lsf_job_id) {
+                        if (my($pid) = $lsf_job_id =~ m/^P(\d+)/) {
+                            # was a locally forked job.  Set up a sig_child handler
+                            $kernel->sig_child($pid,'sig_CHLD');
+                        }
                         $heap->{dispatched}->{$lsf_job_id} = $payload;
 
                         $kernel->post('IKC','post','poe://UR/workflow/schedule_instance',[$payload->{instance}->id,$lsf_job_id]);
