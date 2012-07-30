@@ -176,7 +176,7 @@ sub setup {
             periodic_check_time => 300,
             job_limit           => 500,
             job_count           => 0,
-            fork_limit          => 1,
+            fork_limit          => 15,
             fork_count          => 0,
             dispatched          => {}, # keyed on lsf job id
             claimed             => {}, # keyed on remote kernel name
