@@ -50,8 +50,13 @@ sub initialize {
         }
     }
 
-    my $class_meta = $command->__meta__;
-    die 'invalid command class' unless $class_meta;
+    my $class_meta = eval { $command->__meta__ };
+    if($@ or not $class_meta) {
+        warn 'Could not find command class ' . $command;
+        $self->{input_properties} = [];
+        $self->{output_properties} = [];
+        return $self;
+    }
 
     my @property_meta = $class_meta->all_property_metas();
 
