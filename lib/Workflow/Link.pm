@@ -22,9 +22,14 @@ sub create_from_xml_simple_structure {
     my $struct = shift;
     my %params = (@_);
 
-    my %ops_by_name = map {
-        $_->name => $_
-    } $params{workflow_model}->operations;
+    my %ops_by_name;
+    if(exists $params{operations_by_name}) {
+        %ops_by_name = %{delete $params{operations_by_name}};
+    } else {
+        %ops_by_name = map {
+            $_->name => $_
+        } $params{workflow_model}->operations;
+    }
 
     unless(exists $ops_by_name{$struct->{fromOperation}}) {
         Carp::confess('From operation not found: ' . $struct->{fromOperation});
