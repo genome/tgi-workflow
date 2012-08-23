@@ -27,22 +27,16 @@ my $_link_id_position;
 sub create_from_xml_simple_structure {
     my $class = shift;
     my $struct = shift;
+    my $ops_by_name = shift;
     my %params = (@_);
 
-    my %ops_by_name;
-    if(exists $params{operations_by_name}) {
-        %ops_by_name = %{$params{operations_by_name}};
-    } else {
-        %ops_by_name = map {
-            $_->name => $_
-        } $params{workflow_model}->operations;
-    }
+    Carp::confess unless ref $ops_by_name;
 
-    unless(exists $ops_by_name{$struct->{fromOperation}}) {
+    unless(exists $ops_by_name->{$struct->{fromOperation}}) {
         Carp::confess('From operation not found: ' . $struct->{fromOperation});
     }
 
-    unless(exists $ops_by_name{$struct->{fromOperation}}) {
+    unless(exists $ops_by_name->{$struct->{fromOperation}}) {
         Carp::confess('To operation not found: ' . $struct->{toOperation});
     }
 
@@ -66,9 +60,9 @@ sub create_from_xml_simple_structure {
             $_link_template = $tmpl;
         }
 
-        $params{left_workflow_operation_id} = $ops_by_name{$struct->{fromOperation}}->id;
+        $params{left_workflow_operation_id} = $ops_by_name->{$struct->{fromOperation}}->id;
         $params{left_property} = $struct->{fromProperty};
-        $params{right_workflow_operation_id} = $ops_by_name{$struct->{toOperation}}->id;
+        $params{right_workflow_operation_id} = $ops_by_name->{$struct->{toOperation}}->id;
         $params{right_property} = $struct->{toProperty};
 
         my @values = @params{@_properties_in_template_order};
@@ -79,9 +73,9 @@ sub create_from_xml_simple_structure {
 
     } else {
         $self = $class->create(
-            left_operation => $ops_by_name{$struct->{fromOperation}},
+            left_operation => $ops_by_name->{$struct->{fromOperation}},
             left_property => $struct->{fromProperty},
-            right_operation => $ops_by_name{$struct->{toOperation}},
+            right_operation => $ops_by_name->{$struct->{toOperation}},
             right_property => $struct->{toProperty},
             %params
         );

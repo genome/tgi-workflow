@@ -144,7 +144,11 @@ sub create_from_xml_simple_structure {
         } $self->operations;
 
         foreach my $link_struct (@$links) {
-            my $link = Workflow::Link->create_from_xml_simple_structure($link_struct,workflow_model=>$self, operations_by_name => \%operations_by_name);
+            my $link = Workflow::Link->create_from_xml_simple_structure(
+                $link_struct,
+                \%operations_by_name,
+                workflow_model=>$self
+            );
         }
     }
 
