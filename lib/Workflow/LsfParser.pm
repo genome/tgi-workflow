@@ -100,7 +100,7 @@ sub get_resource_from_lsf_resource {
         # if gtmp didnt do it, there should be info in
         # tmp. gtmp is genome center specific and avoids
         # a problem with lsfs tmp disk allocation sys
-        my ($tmp) = ($rusage =~ /tmp=(\d+)/);
+        my ($tmp) = ($rusage =~ /(?:\W|^)tmp=(\d+)/);
         if (defined $tmp) {
             $tmp = $tmp / 1024;
             $tmp = ceil($tmp);
