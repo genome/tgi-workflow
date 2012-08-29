@@ -577,4 +577,30 @@ sub set_all_executor {
     return $self->executor;
 }
 
+#If the current code is running under another workflow operation,
+#get its model's log directory.
+sub parent_workflow_log_dir {
+    my $class = shift;
+    if(ref $class) {
+        $class->warning_message('Ingoring passed object and looking in current environment for parent log directory');
+    }
+
+    #not running under another workflow
+    return unless exists $ENV{'WORKFLOW_PARENT_EXECUTION'};
+
+    my $parent_execution = Workflow::Operation::InstanceExecution->get($ENV{'WORKFLOW_PARENT_EXECUTION'});
+    unless($parent_execution) {
+        $class->warning_message('Could not find execution for environment variable WORKFLOW_PARENT_EXECUTION: ' . $ENV{'WORKFLOW_PARENT_EXECUTION'});
+        return;
+    }
+
+    my $parent_instance = Workflow::Operation::Instance->get($parent_execution->instance_id);
+    my $parent_model = $parent_instance->root;
+    if($parent_model->can('log_dir') and $parent_model->log_dir) {
+        return $parent_model->log_dir;
+    }
+
+    return;
+}
+
 1;
