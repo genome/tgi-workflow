@@ -6,26 +6,16 @@ package Workflow::DataSource::InstanceSchema;
 use Workflow;
 
 class Workflow::DataSource::InstanceSchema {
-    is => ['UR::DataSource::Oracle'],
+    is => ['UR::DataSource::Pg'],
     type_name => 'workflow datasource instanceschema',
+	has_constant => [
+	        server => { default_value => 'dbname=genome;host=gms-postgres' },
+	        login => { default_value => 'genome' },
+	        auth => { default_value => 'TGIlab' },
+	        owner => { default_value => 'workflow' },
+	    ],
 };
-
-sub server {
-    "gscprod";
-}
-
-sub login {
-    "wrkflo_user";
-}
-
-sub auth {
-    "wfl0us3r";
-}
-
-sub owner {
-    "WORKFLOW";
-}
-
+=cut
 sub table_and_column_names_are_upper_case { 1; }
 
 sub _get_next_value_from_sequence {
@@ -46,6 +36,7 @@ sub _sync_database {
     }
     $self->SUPER::_sync_database(@_);
 }
+=cut
 
 
 1;

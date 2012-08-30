@@ -6,6 +6,7 @@ use warnings;
 
 class Workflow::Model::Instance {
     isa => 'Workflow::Operation::Instance',
+    id_generator => '-uuid',
     has => [
         child_instances => {
             is            => 'Workflow::Operation::Instance',

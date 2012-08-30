@@ -9,7 +9,7 @@ class Workflow::Operation::InstanceExecution::Metric {
     table_name => 'WORKFLOW_EXECUTION_METRIC',
     id_by      => [
         name                  => { is => 'VARCHAR2', len => 100 },
-        workflow_execution_id => { is => 'NUMBER',   len => 11 },
+        workflow_execution_id => { is => 'Text' },
     ],
     has => [
         value => { is => 'VARCHAR2', len => 1000, is_optional => 1 },

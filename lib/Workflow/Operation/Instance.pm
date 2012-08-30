@@ -10,8 +10,9 @@ class Workflow::Operation::Instance {
     sub_classification_method_name => '_resolve_subclass_name',
     id_by                          => [
         instance_id =>
-          { is => 'INTEGER', column_name => 'WORKFLOW_INSTANCE_ID' }
+          { is => 'Text', column_name => 'WORKFLOW_INSTANCE_ID', len=>255 }
     ],
+	id_generator => '-uuid',
     table_name => 'WORKFLOW_INSTANCE',
     schema_name => 'InstanceSchema',
     data_source => 'Workflow::DataSource::InstanceSchema',
@@ -22,7 +23,7 @@ class Workflow::Operation::Instance {
             is_optional => 1
         },
         cache_workflow_id => {
-            is          => 'INTEGER',
+            is          => 'Text',
             column_name => 'WORKFLOW_PLAN_ID',
             implied_by  => 'cache_workflow',
             is_optional => 1
@@ -42,14 +43,14 @@ class Workflow::Operation::Instance {
             id_by       => 'parent_execution_id',
             is_optional => 1
         },
-        parent_execution_id => { is  => 'Number', is_optional => 1 },
+        parent_execution_id => { is  => 'Text', is_optional => 1 },
         parent_instance     => {
             is          => 'Workflow::Model::Instance',
             id_by       => 'parent_instance_id',
             is_optional => 1
         },
         parent_instance_id => {
-            is          => 'INTEGER',
+            is          => 'Text',
             implied_by  => 'parent_instance',
             is_optional => 1
         },
@@ -91,7 +92,7 @@ class Workflow::Operation::Instance {
             is_optional => 1
         },
         peer_instance_id =>
-          { is => 'INTEGER', implied_by => 'peer_of', is_optional => 1 },
+          { is => 'Text', implied_by => 'peer_of', is_optional => 1 },
         parallel_by => { via => 'operation' },
         is_parallel => {
             is        => 'Boolean',
@@ -109,7 +110,7 @@ class Workflow::Operation::Instance {
             is_optional => 1
         },
         current_execution_id =>
-          { is => 'INTEGER', implied_by => 'current', is_optional => 1 },
+          { is => 'Text', implied_by => 'current', is_optional => 1 },
         is_done => {
             via        => 'current',
             is_mutable => 1
