@@ -13,6 +13,4 @@ class Workflow {
     type_name => 'workflow',
 };
 
-print "HAY GUYS I AM IN THE GOOD WORKFLOW\n";
-
 1;
