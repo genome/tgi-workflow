@@ -11,7 +11,7 @@ class Workflow::Cache {
         workflow_id => { is => 'INTEGER', column_name => 'workflow_plan_id' },
     ],
     has => [
-        xml  => { is => 'BLOB', is_optional => 1 },
+        xml  => { is => 'XmlBlob', is_optional => 1 },
         plan => {
             is             => 'Workflow::Operation',
             calculate_from => ['xml'],
