@@ -53,7 +53,7 @@ sub setup {
                 $kernel->call('IKC','publish','lsftail',[qw(add_watcher delete_watcher quit)]);
 
                 my $filename = "/usr/local/lsf/work/gsccluster1/logdir/lsb.acct";
-                my $newfilename = "/usr/local/lsfmaster/work/gsccluster1/logdir/lsb.acct";
+                my $newfilename = "/usr/local/lsf/work/lsfcluster1/logdir/lsb.acct";
 
                 if (-e $newfilename && -r _) {
                     $filename = $newfilename;
