@@ -2,7 +2,6 @@ package Workflow::DataSource::InstanceSchema;
 
 use strict;
 use warnings;
-use Genome;
 use Carp;
 use File::lockf;
 
@@ -64,7 +63,6 @@ sub _sync_database {
 	my $pid = ( $skip_postgres ? $$ : UR::Context::Process->fork());
 	
     if ($pid) {
-		print STDERR "FORKED, CHILD IS $pid\n";
         my $sync_time_start = Time::HiRes::time();
         my $oracle_sync_rv = $self->SUPER::_sync_database(@_);
         my $sync_time_duration = Time::HiRes::time() - $sync_time_start;
@@ -175,7 +173,7 @@ sub create_log_message {
     $dt->set_time_zone('America/Chicago');
     my $date = $dt->ymd;
     my $time = $dt->hms;
-    my $user = Genome::Sys->username;
+    my $user = $ENV{'REMOTE_USER'} || getpwuid($class->user_id);
 
     require Sys::Hostname;
     my $host = Sys::Hostname::hostname();
