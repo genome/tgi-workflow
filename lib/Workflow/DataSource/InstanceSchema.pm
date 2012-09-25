@@ -213,7 +213,7 @@ sub open_error_log {
 
 sub pause_db_if_necessary {
     my $self = shift;
-    return 1 unless -e $ENV{GENOME_DB_PAUSE};
+    return 1 unless ($ENV{GENOME_DB_PAUSE} && -e $ENV{GENOME_DB_PAUSE});
 
     my @o = grep { ref($_) eq 'UR::DeletedRef' } UR::Context->all_objects_loaded('UR::Object');
     if (@o) {
