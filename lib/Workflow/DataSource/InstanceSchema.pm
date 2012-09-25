@@ -173,7 +173,7 @@ sub create_log_message {
     $dt->set_time_zone('America/Chicago');
     my $date = $dt->ymd;
     my $time = $dt->hms;
-    my $user = $ENV{'REMOTE_USER'} || getpwuid($class->user_id);
+    my $user = $ENV{'REMOTE_USER'} || getpwuid($<);
 
     require Sys::Hostname;
     my $host = Sys::Hostname::hostname();
