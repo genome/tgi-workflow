@@ -47,5 +47,8 @@ sub _sync_database {
     $self->SUPER::_sync_database(@_);
 }
 
+sub _my_data_source_id {
+	"Workflow::DataSource::InstanceSchema";
+}
 
 1;
