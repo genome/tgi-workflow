@@ -123,8 +123,10 @@ sub incomplete_operation_instances {
 
 sub resume {
     my $self = shift;
-    die 'tried to resume a finished operation: ' . $self->id
-    if ( $self->is_done );
+
+    if($self->is_done) {
+        die 'tried to resume a finished operation: ' . $self->id
+    }
 
     $self->input_connector->output( $self->input );
 
@@ -239,7 +241,7 @@ sub runq_filter {
 
     my @runq =
     sort { $a->name cmp $b->name }
-    grep { $_->is_ready && !$_->is_done && !$_->is_running } @_;
+    grep { !$_->is_done && !$_->is_running && $_->is_ready } @_;
 
     return @runq;
 }
