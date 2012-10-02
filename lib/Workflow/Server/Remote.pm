@@ -6,6 +6,7 @@ use strict;
 use warnings;
 use Carp;
 # now loaded at run time
+# Globally loading it in Genome.pm breaks debugging for lims Gtk2 apps.
 #use POE::Component::IKC::ClientLite;
 
 use Guard;
@@ -18,7 +19,7 @@ use Workflow::Server::Hub;
 
 class Workflow::Server::Remote {
     is_transactional => 0,
-    id_by            => [ 'host', 'port' ],
+    id_by            => ['host', 'port'],
     has              => [
         host => {
             is  => 'String',
@@ -33,7 +34,6 @@ class Workflow::Server::Remote {
 };
 
 ### setting these signals to exit makes the guards run
-
 $SIG{'HUP'} = sub {
     exit;
 };
@@ -50,16 +50,15 @@ my $poe_loaded = 0;
 sub load_poe {
     return if $poe_loaded;
 
-    if ($ENV{PERL5DB}) {
+    if($ENV{PERL5DB}) {
         warn "Debugger detected.  The workflow engine may trigger runaway debugging in ptkdb...\n";
-        warn "Use console debugger or see eclark for assistance.\n";
+        warn "Use console debugger.\n";
         for my $mod (qw/Workflow::Server::Remote/) {
             warn "\t$mod...\n";
             eval "use $mod";
             die $@ if $@;
         }
         warn "Close any extra debug windows which may have been created by the POE engine.\n";
-
     }
 
     eval "use POE::Component::IKC::ClientLite";
@@ -133,7 +132,7 @@ sub launch {
 
     if (wantarray) {
         return $self, [$u => $u_g, $h => $h_g];
-    } else {
+    } else { # FIXME currently never called in scalar context.. is this needed?
         $u_g->cancel;
         $h_g->cancel;
 
