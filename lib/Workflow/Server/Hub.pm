@@ -59,7 +59,7 @@ sub setup {
             handle_error     => \&_lsftail_handle_error,
 
             skip_watcher     => \&_lsftail_skip_watcher,
-            skip_it          => \&_lsftail_skip_id,
+            skip_it          => \&_lsftail_skip_it,
             event_JOB_FINISH => \&_lsftail_event_JOB_FINISH,
         },
     );
