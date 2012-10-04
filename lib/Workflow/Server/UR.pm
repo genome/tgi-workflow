@@ -226,14 +226,6 @@ sub _workflow_commit {
     if($heap->{changes} > 0) {
         UR::Context->commit();
         $heap->{changes} = 0;
-        $heap->{unchanged_commits} = 0;
-    } else {
-        if(Workflow::DataSource::InstanceSchema->has_default_handle) {
-            $heap->{unchanged_commits}++;
-            if($heap->{unchanged_commits} > 2) {
-                $heap->{unchanged_commits} = 0;
-            }
-        }
     }
     $kernel->delay('commit', 30);
 }
