@@ -1,10 +1,7 @@
-# This class is a remote control for workflow servers.
-
 package Workflow::Server::Remote;
 
 use strict;
 use warnings;
-use Carp;
 # now loaded at run time
 # Globally loading it in Genome.pm breaks debugging for lims Gtk2 apps.
 #use POE::Component::IKC::ClientLite;
@@ -33,6 +30,167 @@ class Workflow::Server::Remote {
     ]
 };
 
+sub get_or_create {
+    my $class = shift;
+    return $class->SUPER::get(@_) || $class->create(@_);
+}
+
+sub create {
+    my $class = shift;
+    my $params = { $class->define_boolexpr(@_)->normalize->params_list };
+
+    unless(defined($params->{host}) and defined($params->{port})) {
+        $class->error_message('host and port must be set');
+        return;
+    }
+
+    _load_poe();
+    my $poe = POE::Component::IKC::ClientLite::create_ikc_client(
+        ip              => $params->{host},
+        port            => $params->{port},
+        timeout         => 60 * 60 * 24 * 7 * 4, # 4 weeks
+        connect_timeout => 5
+    );
+    if(!$poe) {
+        $class->error_message('Cannot connect: ' .
+                POE::Component::IKC::ClientLite::error());
+        return undef;
+    }
+
+    my $self = $class->SUPER::create(@_);
+    $self->_client($poe);
+
+    return $self;
+}
+
+sub launch {
+    my $class = shift;
+
+    Carp::croak 'launch is not an instance method' if ref($class);
+
+    _load_poe();
+    _set_signals();
+
+    local $ENV{'PERL5LIB'} = UR::Util::used_libs_perl5lib_prefix() .
+            $ENV{'PERL5LIB'};
+    require File::Which;
+
+    # This lock is to ensure that the ports we get are indeed available
+    # When we get around to actually launching the servers.
+    my $launch_guard = _guard_lock('Remote Launch');
+
+    my $ur_port = 17001;
+    while ( !_is_port_available($ur_port) ) {
+        $ur_port += 2;
+    }
+    my $hub_port = 17000;
+    while ( !_is_port_available($hub_port) ) {
+        $hub_port += 2;
+    }
+
+    my ($h, $h_g) = _launch_remote_server('hub', 'Hub', $ur_port, $hub_port);
+    my ($u, $u_g) = _launch_remote_server('ur', 'UR', $ur_port, $hub_port);
+    my $processes = [$u, $h];
+    my $guards = [$u_g, $h_g];
+
+    Workflow::Server->unlock('Remote Launch');
+    $launch_guard->cancel;
+
+    ## servers use prctl PR_SET_PDEATHSIG SIGHUP, they dont need guards to die
+    _restore_signals();
+
+    my $self = $class->get_or_create(
+        host => hostname(),
+        port => $ur_port
+    );
+
+    if($self) {
+        return $self, $processes, $guards;
+    } else {
+        return;
+    }
+}
+
+sub simple_start {
+    my ($self, $xml, $input ) = @_;
+
+    my $response = $self->_client->post_respond('workflow/simple_start',
+            [$xml, $input]);
+    unless($response) {
+        Carp::croak 'client error (unserializable input passed?): ' .
+                $self->_client->error;
+    }
+    return $response;
+}
+
+sub simple_resume {
+    my ($self, $id) = @_;
+
+    my $response = $self->_client->post_respond('workflow/simple_resume',[$id])
+            or Carp::croak 'client error: ' . $self->_client->error;
+    return $response;
+}
+
+sub end_child_servers {
+    my ($self, $processes, $guards, $max_attempts) = @_;
+    $max_attempts = $max_attempts || 50;
+
+    $self->_quit();
+
+    my %process_pairs;
+    my $num_processes = scalar(@{$processes});
+    for my $i (0..$num_processes-1) {
+        $process_pairs{$i} = [shift @{$processes}, shift @{$guards}];
+    }
+    for my $t (1..$max_attempts) {
+        for my $i (keys %process_pairs) {
+            my $succeeded = _attempt_finish(@{$process_pairs{$i}});
+            if($succeeded) {
+                delete $process_pairs{$i};
+            }
+        }
+        if(keys %process_pairs) {
+            usleep 100_000;
+        }
+    }
+    return 1;
+}
+
+sub _launch_remote_server {
+    my ($type, $name, $ur_port, $hub_port) = @_;
+
+    # It appears that this lock is to ensure that we wait until the server is
+    # up before continuing.
+    my $guard = _guard_lock($name);
+
+    my $workflow_cmd = File::Which::which('workflow');
+    my $process = IPC::Run::start(
+            [
+            $^X, $workflow_cmd,  'server',
+            "--type=$type", "--hub-port=$hub_port",
+            "--ur-port=$ur_port"
+            ]
+    );
+    my $process_guard = guard { $process->kill_kill; $process->finish; };
+    Workflow::Server->wait_for_lock($name, $process);
+
+    $guard->cancel();
+    return $process, $process_guard;
+}
+
+sub _attempt_finish {
+    my ($process, $guard) = @_;
+
+    if($process->_running_kids) {
+        $process->reap_nb();
+        return 0;
+    } else {
+        $process->finish();
+        eval { $guard->cancel() };
+        return 1;
+    }
+}
+
 ### setting these signals to exit makes the guards run
 $SIG{'HUP'} = sub {
     exit;
@@ -47,7 +205,7 @@ $SIG{'TERM'} = sub {
 };
 
 my $poe_loaded = 0;
-sub load_poe {
+sub _load_poe {
     return if $poe_loaded;
 
     if($ENV{PERL5DB}) {
@@ -66,341 +224,49 @@ sub load_poe {
     $poe_loaded=1;
 }
 
-sub launch {
-    my $class = shift;
-
-    croak 'exec is not an instance method' if ref($class);
-
-    $class->load_poe;
-    $class->set_signals;
-
-    my $sl_g = $class->guard_lock('Simple');
-
-    my $ur_port = 17001;
-    while ( !$class->_is_port_available($ur_port) ) {
-        $ur_port += 2;
-    }
-    my $hub_port = 17000;
-    while ( !$class->_is_port_available($hub_port) ) {
-        $hub_port += 2;
-    }
-
-    local $ENV{'PERL5LIB'} = UR::Util::used_libs_perl5lib_prefix() . $ENV{'PERL5LIB'};
-
-    my $hl_g = $class->guard_lock('Hub');
-    my $ul_g = $class->guard_lock('UR');
-
-    require File::Which;
-    my $workflow_cmd = File::Which::which('workflow');
-
-    my $h = IPC::Run::start(
-        [
-            $^X, $workflow_cmd,   'server',
-            '--type=hub', "--hub-port=$hub_port",
-            "--ur-port=$ur_port"
-        ]
-    );
-    my $h_g = guard { $h->kill_kill; $h->finish; };
-
-    Workflow::Server->wait_for_lock( 'Hub', $h );
-    $hl_g->cancel;
-
-    my $u = IPC::Run::start(
-        [
-            $^X, $workflow_cmd,  'server',
-            '--type=ur', "--hub-port=$hub_port",
-            "--ur-port=$ur_port"
-        ]
-    );
-    my $u_g = guard { $u->kill_kill; $u->finish; };
-
-    Workflow::Server->wait_for_lock( 'UR', $u );
-    $ul_g->cancel;
-
-    Workflow::Server->unlock('Simple');
-    $sl_g->cancel;
-
-    ## servers use prctl PR_SET_PDEATHSIG SIGHUP, they dont need guards to die
-    $class->restore_signals;
-
-    my $self = $class->get(
-        host => hostname(),
-        port => $ur_port
-    );
-
-    return unless $self;
-
-    if (wantarray) {
-        return $self, [$u => $u_g, $h => $h_g];
-    } else { # FIXME currently never called in scalar context.. is this needed?
-        $u_g->cancel;
-        $h_g->cancel;
-
-        return $self;
-    }
-}
-
-sub end_child_servers {
-    my ($self, $guards) = @_;
-
-    $self->quit;
-
-    my $t = 0; 
-    while (1) {
-        my $done = 0;
-        foreach my $i (0,2) {
-            if ($guards->[$i]->_running_kids) {
-                $guards->[$i]->reap_nb;
-            } else {
-                $guards->[$i]->finish;
-                eval { $guards->[$i+1]->cancel };
-                $done++;
-            }
-        }
-
-        if ($done == 2) {
-            last;
-        }
-
-        if ($t > 50) {
-            foreach my $i (1,3) {
-                undef $guards->[$i];
-            }
-
-            last;
-        }
-        $t++;
-        usleep 100000;
-    }
-
-    return 1;
-}
-
 our %OLD_SIGNALS = ();
-sub set_signals {
+sub _set_signals {
     @OLD_SIGNALS{'HUP','INT','TERM'} = @SIG{'HUP','INT','TERM'};
     my $cb = sub {
         warn 'signalled exit';
         exit;
     };
-    
+
     @SIG{'HUP','INT','TERM'} = ($cb,$cb,$cb);
 }
 
-sub restore_signals {
+sub _restore_signals {
     foreach my $sig (keys %OLD_SIGNALS) {
         $SIG{$sig} = delete $OLD_SIGNALS{$sig};
     }
     return 1;
 }
 
-sub get {
-    my $class = shift;
-
-    return $class->SUPER::get(@_) || $class->create(@_);
-}
-
-sub create {
-    my $class  = shift;
-    my $params = { $class->define_boolexpr(@_)->normalize->params_list };
-
-    unless ( defined $params->{host} && defined $params->{port} ) {
-        $class->error_message('host and port must be set');
-        return undef;
-    }
-
-    $class->load_poe;
-
-    my $poe = POE::Component::IKC::ClientLite::create_ikc_client(
-        ip              => $params->{host},
-        port            => $params->{port},
-        timeout         => 2419200, # 4 weeks
-        connect_timeout => 5
-    );
-    if ( !$poe ) {
-        $class->error_message(
-            'Cannot connect: ' . POE::Component::IKC::ClientLite::error() );
-        return undef;
-    }
-
-    my $self = $class->SUPER::create(@_);
-    $self->_client($poe);
-
-    return $self;
-}
-
-sub add_plan {
-    my ( $self, $plan ) = @_;
-
-    croak 'must supply a plan'
-      unless defined $plan;
-
-    my $xml;
-    if ( ref($plan) ) {
-        if ( ref($plan) eq 'GLOB' ) {
-
-            # FILEHANDLE (i hope)
-            $xml = '';
-            while ( my $line = <$xml> ) {
-                $xml .= $line;
-            }
-        } elsif ( UNIVERSAL::isa( $plan, 'Workflow::Operation' ) ) {
-
-            # OBJECT
-            $xml = $plan->save_to_xml;
-        } else {
-            croak 'plan was not filehandle, object or xml string';
-        }
-    } else {
-        $xml = $plan;
-    }
-
-    my $plan_id = $self->_client->call( 'workflow/load', [$xml] )
-      or croak $self->_client->error;
-
-    return $plan_id;
-}
-
-sub simple_start {
-    my ($self, $xml, $input ) = @_;
-    
-    my $response = $self->_client->post_respond('workflow/simple_start',[$xml,$input])
-        or croak 'client error (unserializable input passed?): ' . $self->_client->error;
-    
-    return $response;
-}
-
-sub simple_resume {
-    my ($self, $id) = @_;
-
-    my $response = $self->_client->post_respond('workflow/simple_resume',[$id])
-        or croak 'client error: ' . $self->_client->error;
-
-    return $response;
-}
-
-sub start {
-    my ( $self, $plan_id, $input ) = @_;
-
-    #return $instance_id;
-}
-
-sub resume {
-    my ( $self, $instrance_id ) = @_;
-
-}
-
-sub stop {
-    my ( $self, $instance_id ) = @_;
-
-}
-
-sub quit {
+sub _quit {
     my ($self) = @_;
 
     $self->_client->post( 'workflow/quit', 1 );
-
-    $self->delete;
-}
-
-sub loaded_instances {
-    my ($self) = @_;
-
-    my @ids = $self->_seval(
-        q{
-            my @instance = Workflow::Operation::Instance->is_loaded(parent_instance_id => undef);
-
-            my @ids = ();
-            foreach my $i (@instance) {
-                if (defined $i->peer_instance_id && $i->peer_instance_id ne $i->id) {
-                    next;
-                }
-
-                push @ids, $i->id;
-            }
-            return @ids;
-        }
-    );
-
-    return @ids;
-}
-
-sub _seval {
-    my $self = shift;
-    my $code = shift;
-    my @args = @_;
-
-    my $wantlist = wantarray ? 1 : 0;
-
-    my $result = $self->_client->call( "workflow/eval", [ $code, $wantlist, \@args ] );
-
-    unless ($result) {
-        confess 'internal error: ' . $self->_client->error;
-    }
-
-    unless ( ref($result) eq 'ARRAY' && scalar @$result == 2 ) {
-        confess 'unexpected return type from workflow/eval: '
-          . Data::Dumper->new( [$result], ['result'] )->Dump;
-    }
-
-    unless ( $result->[0] ) {
-
-        confess 'server threw exception: ' . $result->[1];
-    }
-
-    if ($wantlist) {
-        return @{ $result->[1] };
-    } else {
-        return $result->[1];
-    }
-}
-
-sub delete {
-    my ($self) = @_;
-
     $self->_client->disconnect;
-
     return $self->SUPER::delete(@_);
 }
 
-sub print_STDOUT {
-    my ( $self, $s ) = @_;
-
-    my $result =
-      $self->_client->call( 'workflow/eval',
-        [ q|print STDOUT q{| . $s . q|};|, 0 ] );
-
-    return $result;
-}
-
-sub print_STDERR {
-    my ( $self, $s ) = @_;
-
-    my $result =
-      $self->_client->call( 'workflow/eval',
-        [ q|print STDERR q{| . $s . q|};|, 0 ] );
-
-    return $result;
-}
-
 sub _is_port_available {
-    my $class = shift;
     my $port = shift;
 
-    socket( TESTSOCK, PF_INET, SOCK_STREAM, 6 );
-    setsockopt( TESTSOCK, SOL_SOCKET, SO_REUSEADDR, 1 );
+    socket(TESTSOCK, PF_INET, SOCK_STREAM, 6);
+    setsockopt(TESTSOCK, SOL_SOCKET, SO_REUSEADDR, 1);
 
-    my $val = bind( TESTSOCK, sockaddr_in( $port, INADDR_ANY ) );
+    my $val = bind(TESTSOCK, sockaddr_in($port, INADDR_ANY));
 
-    shutdown( TESTSOCK, 2 );
+    shutdown(TESTSOCK, 2);
     close(TESTSOCK);
 
     return 1 if $val;
     return 0;
 }
 
-sub guard_lock {
-    my ( $class, $lockname ) = @_;
+sub _guard_lock {
+    my ($lockname) = @_;
 
     Workflow::Server->lock($lockname);
     return guard { Workflow::Server->unlock($lockname); };
