@@ -62,7 +62,7 @@ sub _build {
 }
 
 sub _worker_start {
-    my ($kernel, $heap) = @_[KERNEL, HEAP];
+    my ($kernel) = @_[KERNEL];
     $kernel->alias_set("worker");
     $kernel->call('IKC','publish','worker',[qw(execute disconnect)]);
 
@@ -71,7 +71,7 @@ sub _worker_start {
 
 
 sub _worker_execute {
-    my ($kernel, $heap, $arg) = @_[KERNEL, HEAP, ARG0];
+    my ($kernel, $arg) = @_[KERNEL, ARG0];
     my ($instance, $type, $input, $sc_flag, $out_log, $err_log) = @$arg;
 
     $kernel->alarm_remove_all();
@@ -172,7 +172,7 @@ sub _worker_get_work {
 
     my $kernel_name = $kernel->ID;
     $kernel->post('IKC','post','poe://Hub/dispatch/get_work',
-                [$job_id, $kernel_name, "poe://$kernel_name/worker/execute"]);
+                [$job_id, $kernel_name]);
 }
 
 1;

@@ -73,8 +73,8 @@ sub setup {
             fork_count          => 0,
             dispatched          => {}, # keyed on lsf job id
             claimed             => {}, # keyed on remote kernel name
-            failed              => {}, # keyed on instance id
             cleaning_up         => {}, # keyed on remote kernel name
+            failed              => {}, # keyed on instance id
             finalizable         => {}, # keyed on instance id
             queue               => POE::Queue::Array->new(),
             hub_port            => $hub_port,
@@ -150,7 +150,7 @@ sub _lsftail_start {
         $filename = $newfilename;
     }
 
-    $heap->{monitor} = POE::Wheel::FollowTail->new(
+    POE::Wheel::FollowTail->new(
         Filename   => $filename,
         InputEvent => 'handle_input',
         ResetEvent => 'handle_reset',
@@ -199,8 +199,6 @@ sub _lsftail_skip_watcher {
 sub _lsftail_stop {
     my ($heap) = $_[HEAP];
     DEBUG "lsftail quit";
-
-    delete $heap->{monitor};
 }
 
 sub _lsftail_handle_input {
@@ -216,7 +214,6 @@ sub _lsftail_handle_error {
     my ($heap, $operation, $errnum, $errstr, $wheel_id) = @_[HEAP, ARG0..ARG3];
 
     WARN "Wheel $wheel_id: $operation error $errnum: $errstr";
-    delete $heap->{monitor};
 }
 
 sub _lsftail_skip_it {
@@ -589,7 +586,8 @@ sub _dispatch_register {
     DEBUG sprintf("dispatch register %s%s", $real ? '' : 'alias ', $name);
 }
 
-sub _dispatch_unregister { #TODO understand when this is called...
+# this gets called when a worker's POE kernel shuts down.
+sub _dispatch_unregister {
     my ($kernel, $session, $heap, $remote_kernel, $real) =
             @_[KERNEL, SESSION, HEAP, ARG1, ARG2];
 
@@ -642,9 +640,9 @@ sub _dispatch_add_work {
 
 sub _dispatch_get_work {
     my ($kernel, $heap, $arg) = @_[KERNEL, HEAP, ARG0];
-    my ($dispatch_id, $remote_kernel, $where) = @$arg;
+    my ($dispatch_id, $remote_kernel) = @$arg;
 
-    DEBUG "dispatch get_work $dispatch_id $where";
+    DEBUG "dispatch get_work $dispatch_id";
     if($heap->{dispatched}->{$dispatch_id}) {
         my $payload = delete $heap->{dispatched}->{$dispatch_id};
         $payload->{dispatch_id} = $dispatch_id;
@@ -657,10 +655,7 @@ sub _dispatch_get_work {
 
         $kernel->post('IKC', 'post', 'poe://UR/workflow/begin_instance',
                 [$instance->id, $dispatch_id]);
-        # where is poe://$kernel_name/worker/execute from workflow/server/worker.pm
-        # they couldn't just use IKC call because of the else case below, they only
-        # want this callback to occur if we are in this block.
-        $kernel->post('IKC', 'post', $where, #TODO more descriptive name than where?
+        $kernel->post('IKC', 'post', "poe://$remote_kernel/worker/execute",
                 [$instance, $operation_type, $input, $shortcut_flag,
                 $payload->{out_log}, $payload->{err_log}]);
     } else {
