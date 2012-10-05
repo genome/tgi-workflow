@@ -25,8 +25,8 @@ sub execute {
     my $self = shift;
     my %params = @_;
 
-    my $opdata = $params{operation_instance};
-    $self->debug_message($opdata->id . ' ' . $opdata->operation->name);
+    my $op_instance = $params{operation_instance};
+    $self->debug_message($op_instance->id . ' ' . $op_instance->operation->name);
 
     push @{ $self->queue }, [ @params{'operation_instance','edited_input'} ];
     $params{'operation_instance'}->status('scheduled');
@@ -38,35 +38,35 @@ sub wait {
     my $self = shift;
 
     while (scalar @{ $self->queue } > 0) {
-        my ($opdata, $edited_input) = @{ shift @{ $self->queue } };
+        my ($op_instance, $edited_input) = @{ shift @{ $self->queue } };
 
         if (!defined $self->limit || $self->count < $self->limit) {
             $self->count($self->count + 1);
 
-            $opdata->current->status('running');
-            $opdata->current->start_time(Workflow::Time->now);
-#            $self->status_message('exec/' . $opdata->id . '/' . $opdata->operation->name);
+            $op_instance->current->status('running');
+            $op_instance->current->start_time(Workflow::Time->now);
+#            $self->status_message('exec/' . $op_instance->id . '/' . $op_instance->operation->name);
             my $outputs;
             eval {
-                local $Workflow::DEBUG_GLOBAL=1 if $opdata->debug_mode;
-                $outputs = $opdata->operation->operation_type->execute(%{ $opdata->input }, %{ $edited_input });
+                local $Workflow::DEBUG_GLOBAL=1 if $op_instance->debug_mode;
+                $outputs = $op_instance->operation->operation_type->execute(%{ $op_instance->input }, %{ $edited_input });
             };
             if ($@) {
 #                warn $@; 
-                $opdata->current->status('crashed');
+                $op_instance->current->status('crashed');
                 
                 Workflow::Operation::InstanceExecution::Error->create(
-                    execution => $opdata->current,
+                    execution => $op_instance->current,
                     error => $@
                 );
             } else {
-                $opdata->output({ %{ $opdata->output }, %{ $outputs } });        
-                $opdata->current->status('done');
+                $op_instance->output({ %{ $op_instance->output }, %{ $outputs } });        
+                $op_instance->current->status('done');
             }
-            $opdata->current->end_time(Workflow::Time->now);
+            $op_instance->current->end_time(Workflow::Time->now);
         }
 
-        $opdata->completion;
+        $op_instance->completion;
     }
 
     1;    
