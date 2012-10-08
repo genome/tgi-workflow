@@ -43,10 +43,6 @@ sub setup {
         name => 'Hub',
     );
 
-    if(defined $ENV{WF_SLEEP_IN_HUB_SETUP_FOR_TEST}) {
-        sleep $ENV{WF_SLEEP_IN_HUB_SETUP_FOR_TEST};
-    }
-
     DEBUG "hub server starting on port $hub_port";
 
     POE::Session->create(
