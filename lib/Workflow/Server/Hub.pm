@@ -35,16 +35,19 @@ BEGIN {
 };
 
 sub setup {
-    my $class = shift;
-    my %args = @_;
-    my $hub_port = $args{hub_port};
+    my ($class, $announce_location_fifo) = @_;
     $Storable::forgive_me = 1;
 
-    DEBUG "hub server starting on port $hub_port";
-    POE::Component::IKC::Server->spawn(
-        port => $hub_port,
+    my $hub_port = POE::Component::IKC::Server->spawn(
+        port => 0,
         name => 'Hub',
     );
+
+    if(defined $ENV{WF_SLEEP_IN_HUB_SETUP_FOR_TEST}) {
+        sleep $ENV{WF_SLEEP_IN_HUB_SETUP_FOR_TEST};
+    }
+
+    DEBUG "hub server starting on port $hub_port";
 
     POE::Session->create(
         inline_states => {
@@ -80,8 +83,8 @@ sub setup {
             hub_port            => $hub_port,
         },
         inline_states => {
-            _start => \&_dispatch_start,
-            _stop  => sub { DEBUG "dispatch _stop"; },
+            _start        => \&_dispatch_start,
+            _stop         => sub { DEBUG "dispatch _stop"; },
 
             periodic_check => \&_dispatch_periodic_check,
             check_jobs     => \&_dispatch_check_jobs,
@@ -90,24 +93,133 @@ sub setup {
 
             sig_HUP_INT_TERM => \&_dispatch_sig_HUP_INT_TERM,
             close_out        => \&_dispatch_close_out,
+            unregister       => \&_dispatch_unregister,
+            register         => \&_dispatch_register,
 
             sig_USR1  => \&_dispatch_sig_USR1,
             sig_USR2  => \&_dispatch_sig_USR2,
             sig_CHLD  => \&_dispatch_sig_CHLD,
-            unlock_me => sub { Workflow::Server->unlock('Hub'); },
 
             quit         => \&_dispatch_quit,
             quit_stage_2 => \&_dispatch_quit_stage_2,
-            register     => \&_dispatch_register,
-            unregister   => \&_dispatch_unregister,
-
             add_work      => \&_dispatch_add_work,
             get_work      => \&_dispatch_get_work,
             end_work      => \&_dispatch_end_work,
             finalize_work => \&_dispatch_finalize_work,
         },
     );
+
+    POE::Session->create(
+        heap => {
+            # a list of info to pass to the ur process when possible
+            inventory => [],
+
+            announce_location_fifo  => $announce_location_fifo,
+            hub_port                => $hub_port,
+        },
+        inline_states => {
+            _start => \&_passthru_start,
+            _stop  => sub { DEBUG "passthru _stop"; },
+            announce_location => \&_passthru_announce_location,
+
+            register_ur => \&_passthru_register_ur,
+            start_ur    => \&_passthru_start_ur,
+            resume_ur   => \&_passthru_resume_ur,
+            pass_it_on  => \&_passthru_pass_it_on,
+            relay_result => \&_passthru_relay_result,
+        },
+    );
 }
+
+sub _passthru_start {
+    my ($kernel, $heap) = @_[KERNEL, HEAP];
+
+    DEBUG "passthru _start";
+    $kernel->alias_set("passthru");
+
+    $kernel->post('IKC', 'monitor',
+            '*', {register=>'register'});
+
+    $kernel->post('IKC', 'publish', 'passthru',
+            [qw(start_ur
+                resume_ur
+                register_ur
+                relay_result
+                quit_ur)]);
+    $kernel->yield('announce_location');
+}
+
+sub _passthru_announce_location {
+    my $heap = $_[HEAP];
+
+    my $hostname = hostname();
+    my $hub_port = $heap->{hub_port};
+    my $fifo = $heap->{announce_location_fifo};
+    Workflow::Server::put_location_in_fifo($hostname, $hub_port, $fifo);
+    DEBUG "passthru Announcing we are at $hostname:$hub_port to $fifo";
+}
+
+sub _passthru_register_ur {
+    my ($kernel, $heap) = @_[KERNEL, HEAP];
+
+    DEBUG "passthru Registered UR client.";
+    if(scalar(@{$heap->{inventory}})) {
+        $kernel->yield('pass_it_on');
+    } else {
+        DEBUG "passthru Not recieved message to pass through yet... waiting.";
+        $kernel->delay('register_ur', 1.0);
+    }
+}
+
+sub _passthru_pass_it_on {
+    my ($kernel, $heap) = @_[KERNEL, HEAP];
+
+    DEBUG "pasthru pass_it_on";
+    while (my $inventory = shift @{$heap->{inventory}}) {
+        $kernel->call('IKC', 'post', $inventory->{state}, $inventory->{args});
+    }
+}
+
+sub _passthru_start_ur {
+    my ($heap, $post_response_args) = @_[HEAP, ARG0];
+    my ($args, $return_address) = @$post_response_args;
+    my ($xml, $input) = @$args;
+
+    DEBUG "passthru start ur (deferring until UR process connects)";
+    push @{$heap->{inventory}}, {args => [$xml, $input, $return_address],
+                                state => 'poe://UR/workflow/load_and_execute'};
+}
+
+sub _passthru_resume_ur {
+    my ($heap, $post_response_args) = @_[HEAP, ARG0];
+    my ($args, $return_address) = @$post_response_args;
+    my ($id) = @$args;
+
+    DEBUG "passthru resume ur $id (deferring until UR process connects)";
+    push @{$heap->{inventory}}, {args => [$id, $return_address],
+                                state => 'poe://UR/workflow/resume'};
+}
+
+sub _passthru_quit_ur {
+    my ($kernel, $heap, $hub_kill_flag) = @_[KERNEL, HEAP, ARG0];
+
+    DEBUG "passthr quit ur " . $hub_kill_flag ? 'and kill Hub too.' : '';
+    push @{$heap->{inventory}}, {args => $hub_kill_flag,
+                                state => 'poe://UR/workflow/quit'};
+    $kernel->yield('pass_it_on');
+}
+
+sub _passthru_relay_result {
+    my ($kernel, $arg0) = @_[KERNEL, ARG0];
+    my @args = @{$arg0};
+    my $return_address = shift @args;
+    my $result = \@args;
+
+    DEBUG "passthru Relaying result from ur process to " .
+            $return_address->{kernel};
+    $kernel->post('IKC', 'post', $return_address, $result);
+}
+
 
 sub lsf_state {
     my ($lsf_job_id) = @_;
@@ -156,6 +268,7 @@ sub _lsftail_start {
         ResetEvent => 'handle_reset',
         ErrorEvent => 'handle_error'
     );
+    # TODO remove csv and alarms, they are useless
     $heap->{csv} = Text::CSV->new({sep_char => ' '});
 
     $heap->{watchers} = {};
@@ -263,17 +376,14 @@ sub _dispatch_start {
     $kernel->call('IKC', 'publish', 'dispatch',
             [qw(add_work get_work end_work quit)]);
 
-    # handle remote sessions connecting or disconnecting from us.
     $kernel->post('IKC', 'monitor',
-            '*', {register=>'register', unregister=>'unregister'});
+            '*', {register => 'register', unregister=>'unregister'});
 
     $kernel->sig('USR1', 'sig_USR1');
     $kernel->sig('USR2', 'sig_USR2');
     $kernel->sig('HUP',  'sig_HUP_INT_TERM');
     $kernel->sig('INT',  'sig_HUP_INT_TERM');
     $kernel->sig('TERM', 'sig_HUP_INT_TERM');
-    #$kernel->sig('CHLD','sig_CHLD');
-    $kernel->yield('unlock_me');
 
     $kernel->delay('periodic_check', $heap->{periodic_check_time});
 }
@@ -562,28 +672,11 @@ sub _dispatch_close_out {
     }
 }
 
-sub _dispatch_quit {
-    my $kernel = $_[KERNEL];
-
-    DEBUG "dispatch quit";
-    $kernel->post('lsftail', 'quit');
-    $kernel->yield('quit_stage_2');
-
-    return 1; # must return something here so IKC forwards the reply
-}
-
-sub _dispatch_quit_stage_2 {
-    my $kernel = $_[KERNEL];
-
-    DEBUG "dispatch quit_stage_2";
-    $kernel->alarm_remove_all();
-    $kernel->alias_remove('dispatch');
-    $kernel->post('IKC', 'shutdown');
-}
-
 sub _dispatch_register {
-    my ($name, $real) = @_[ARG1, ARG2];
-    DEBUG sprintf("dispatch register %s%s", $real ? '' : 'alias ', $name);
+    my ($remote_kernel, $real) = @_[ARG1, ARG2];
+
+    DEBUG sprintf("dispatch register %s%s",
+            $real ? '' : 'alias ', $remote_kernel);
 }
 
 # this gets called when a worker's POE kernel shuts down.
@@ -624,6 +717,25 @@ sub _dispatch_unregister {
                     [-666, $remote_kernel, $instance->id, 'crashed', {}]);
         }
     }
+}
+
+sub _dispatch_quit {
+    my $kernel = $_[KERNEL];
+
+    DEBUG "dispatch quit";
+    $kernel->post('lsftail', 'quit');
+    $kernel->yield('quit_stage_2');
+
+    return 1; # must return something here so IKC forwards the reply
+}
+
+sub _dispatch_quit_stage_2 {
+    my $kernel = $_[KERNEL];
+
+    DEBUG "dispatch quit_stage_2";
+    $kernel->alarm_remove_all();
+    $kernel->alias_remove('dispatch');
+    $kernel->post('IKC', 'shutdown');
 }
 
 sub _dispatch_add_work {

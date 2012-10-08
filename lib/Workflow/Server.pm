@@ -1,7 +1,29 @@
-
 package Workflow::Server;
 
 use strict;
+require IO::File;
+
+sub put_location_in_fifo {
+    my ($hostname, $port, $fifo_filename) = @_;
+
+    my $fh = IO::File->new($fifo_filename, 'w');
+    print $fh "$hostname:$port\n";
+    $fh->close();
+}
+
+sub get_location_from_fifo {
+    my ($fifo_filename) = @_;
+
+    my $fh = IO::File->new($fifo_filename, 'r');
+    my $line = $fh->getline();
+
+    $fh->close();
+    unlink $fifo_filename;
+
+    chomp $line;
+    my ($hostname, $port) = split(":", $line);
+    return $hostname, $port;
+}
 
 sub setup {
     my $class = shift;
@@ -18,7 +40,6 @@ sub start {
     # non-portable
     syscall 172, 1, 1;
 
-    $class->setup(@_);
     POE::Kernel->run();
     return 1;
 }

@@ -5,13 +5,12 @@ use strict;
 use AnyEvent::Impl::POE;
 use AnyEvent::Util;
 use AnyEvent;
-use POE;
 
 use File::Basename;
 use File::Temp;
 
+use POE;
 use POE::Component::IKC::Client;
-use Workflow::Server::Hub;
 use POE::Component::IKC::Responder;
 use Error qw(:try);
 
@@ -39,6 +38,7 @@ sub start {
     } elsif(exists $ENV{'WF_FORK_JOBID'}) {
         $job_id = $ENV{'WF_FORK_JOBID'};
     }
+    create_ikc_responder();
 
     create_ikc_responder();
     POE::Component::IKC::Client->spawn(

@@ -28,7 +28,7 @@ my $sleep_op = Workflow::Operation->create(
 
 
 my $xml = $sleep_op->save_to_xml();
-my $response = $r->simple_start($xml,{seconds => 2});
+my $response = $r->start($xml,{seconds => 2});
 
 ok($response, "Got a response back from simple_start");
 is($response->[1]->{'result'}, 2, 'Result code was 2');  # Returns the number of seconds it slept

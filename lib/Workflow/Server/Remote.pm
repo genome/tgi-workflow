@@ -11,8 +11,18 @@ use IPC::Run;
 use Socket;
 use Sys::Hostname;
 use Time::HiRes qw/usleep/;
-use Workflow::Server::UR;
-use Workflow::Server::Hub;
+use Log::Log4perl qw(:easy);
+require Workflow::Server;
+require File::Temp;
+require POSIX;
+
+BEGIN {
+    if(defined $ENV{WF_TRACE_REMOTE}) {
+        Log::Log4perl->easy_init($DEBUG);
+    } else {
+        Log::Log4perl->easy_init($ERROR);
+    }
+};
 
 class Workflow::Server::Remote {
     is_transactional => 0,
@@ -32,6 +42,8 @@ class Workflow::Server::Remote {
 
 sub get_or_create {
     my $class = shift;
+
+    DEBUG "remote get_or_create";
     return $class->SUPER::get(@_) || $class->create(@_);
 }
 
@@ -39,6 +51,7 @@ sub create {
     my $class = shift;
     my $params = { $class->define_boolexpr(@_)->normalize->params_list };
 
+    DEBUG "remote create";
     unless(defined($params->{host}) and defined($params->{port})) {
         $class->error_message('host and port must be set');
         return;
@@ -59,8 +72,24 @@ sub create {
 
     my $self = $class->SUPER::create(@_);
     $self->_client($poe);
+    DEBUG sprintf("Connected IKC::ClientLite to hub (%s:%s)",
+            $params->{host},
+            $params->{port});
 
     return $self;
+}
+
+sub _make_fifo_for_location_communication {
+    my $fifo_dir = File::Temp::tempdir(CLEANUP => 1);
+    my $fifo_name = join('/', $fifo_dir, 'hub_location');
+
+    unless (POSIX::mkfifo($fifo_name, 0600) == 0) {
+        Carp::confess(sprintf(
+                "Could not create fifo %s for location communication.",
+                $fifo_name));
+    }
+
+    return $fifo_name;
 }
 
 sub launch {
@@ -75,33 +104,29 @@ sub launch {
             $ENV{'PERL5LIB'};
     require File::Which;
 
-    # This lock is to ensure that the ports we get are indeed available
-    # When we get around to actually launching the servers.
-    my $launch_guard = _guard_lock('Remote Launch');
+    my $hub_fifo = _make_fifo_for_location_communication();
 
-    my $ur_port = 17001;
-    while ( !_is_port_available($ur_port) ) {
-        $ur_port += 2;
-    }
-    my $hub_port = 17000;
-    while ( !_is_port_available($hub_port) ) {
-        $hub_port += 2;
-    }
+    DEBUG "remote Launching hub server";
+    my ($h, $h_g) = _launch_hub_server($hub_fifo);
 
-    my ($h, $h_g) = _launch_remote_server('hub', 'Hub', $ur_port, $hub_port);
-    my ($u, $u_g) = _launch_remote_server('ur', 'UR', $ur_port, $hub_port);
+    # block to get HUB port
+    DEBUG "remote Waiting on hub to start up and announce it's location";
+    my ($hub_hostname, $hub_port) =
+            Workflow::Server::get_location_from_fifo($hub_fifo);
+    DEBUG "remote Hub server at $hub_hostname:$hub_port";
+
+    DEBUG "remote Launching ur server";
+    my ($u, $u_g) = _launch_ur_server($hub_hostname, $hub_port);
+
     my $processes = [$u, $h];
     my $guards = [$u_g, $h_g];
-
-    Workflow::Server->unlock('Remote Launch');
-    $launch_guard->cancel;
 
     ## servers use prctl PR_SET_PDEATHSIG SIGHUP, they dont need guards to die
     _restore_signals();
 
     my $self = $class->get_or_create(
-        host => hostname(),
-        port => $ur_port
+        host => $hub_hostname,
+        port => $hub_port
     );
 
     if($self) {
@@ -111,10 +136,10 @@ sub launch {
     }
 }
 
-sub simple_start {
-    my ($self, $xml, $input ) = @_;
+sub start {
+    my ($self, $xml, $input) = @_;
 
-    my $response = $self->_client->post_respond('workflow/simple_start',
+    my $response = $self->_client->post_respond('passthru/start_ur',
             [$xml, $input]);
     unless($response) {
         Carp::croak 'client error (unserializable input passed?): ' .
@@ -123,10 +148,10 @@ sub simple_start {
     return $response;
 }
 
-sub simple_resume {
+sub resume {
     my ($self, $id) = @_;
 
-    my $response = $self->_client->post_respond('workflow/simple_resume',[$id])
+    my $response = $self->_client->post_respond('passthru/resume_ur',[$id])
             or Carp::croak 'client error: ' . $self->_client->error;
     return $response;
 }
@@ -156,25 +181,35 @@ sub end_child_servers {
     return 1;
 }
 
-sub _launch_remote_server {
-    my ($type, $name, $ur_port, $hub_port) = @_;
-
-    # It appears that this lock is to ensure that we wait until the server is
-    # up before continuing.
-    my $guard = _guard_lock($name);
+sub _launch_hub_server {
+    my ($announce_location_fifo) = @_;
 
     my $workflow_cmd = File::Which::which('workflow');
     my $process = IPC::Run::start(
             [
-            $^X, $workflow_cmd,  'server',
-            "--type=$type", "--hub-port=$hub_port",
-            "--ur-port=$ur_port"
+            $^X, $workflow_cmd,  'start-hub',
+            "--announce-location-fifo=$announce_location_fifo",
             ]
     );
     my $process_guard = guard { $process->kill_kill; $process->finish; };
-    Workflow::Server->wait_for_lock($name, $process);
 
-    $guard->cancel();
+    return $process, $process_guard;
+}
+
+
+sub _launch_ur_server {
+    my ($hub_hostname, $hub_port) = @_;
+
+    my $workflow_cmd = File::Which::which('workflow');
+    my $process = IPC::Run::start(
+            [
+            $^X, $workflow_cmd,  'start-ur',
+            "--hub-hostname=$hub_hostname",
+            "--hub-port=$hub_port",
+            ]
+    );
+    my $process_guard = guard { $process->kill_kill; $process->finish; };
+
     return $process, $process_guard;
 }
 
@@ -248,8 +283,8 @@ sub _restore_signals {
 sub _quit {
     my ($self) = @_;
 
-    $self->_client->post( 'workflow/quit', 1 );
-    $self->_client->disconnect;
+    $self->_client->post( 'passthru/quit_ur', 1);
+    $self->_client->disconnect();
     return $self->SUPER::delete(@_);
 }
 

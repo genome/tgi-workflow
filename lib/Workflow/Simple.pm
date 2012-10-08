@@ -96,7 +96,7 @@ sub resume_lsf {
 
     my $response;
     handle_child_exit {
-        $response = $remote->simple_resume($id);
+        $response = $remote->resume($id);
     } sub { undef $g; undef $processes; undef $guards; };
 
     $remote->end_child_servers($processes, $guards);
@@ -143,7 +143,7 @@ sub run_workflow_lsf {
 
     my $response;
     handle_child_exit {
-        $response = $remote->simple_start($xml,\%inputs);
+        $response = $remote->start($xml,\%inputs);
     } sub { undef $g; undef $processes; undef $guards };
     $remote->end_child_servers($processes, $guards);
 

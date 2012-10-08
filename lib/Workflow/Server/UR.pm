@@ -2,7 +2,8 @@ package Workflow::Server::UR;
 
 use strict;
 use base 'Workflow::Server';
-use POE qw(Component::IKC::Server Component::IKC::Client);
+use POE;
+use POE::Component::IKC::Client;
 use POE::Component::IKC::Responder;
 use Log::Log4perl qw(:easy);
 
@@ -18,51 +19,37 @@ BEGIN {
 };
 
 sub setup {
-    my $class = shift;
-    my %args = @_;
-
-    _setup_client(%args);
-
-    DEBUG "ur server starting on port " . $args{ur_port};
-    POE::Component::IKC::Server->spawn(
-        port => $args{ur_port}, name => 'UR'
-    );
-}
-
-sub _setup_client {
-    my %args = @_;
-    my $ur_port = $args{ur_port};
-    my $hub_port = $args{hub_port};
+    my ($class, $hub_hostname, $hub_port) = @_;
 
     $Storable::forgive_me = 1;
 
-    DEBUG "ur process connecting to hub " . $hub_port;
-
     create_ikc_responder();
+    DEBUG "ur process connecting to hub $hub_hostname:$hub_port";
+
     POE::Component::IKC::Client->spawn(
-        ip         => 'localhost',
+        ip         => $hub_hostname,
         port       => $hub_port,
         name       => 'UR',
-        on_connect => sub { # $poe_kernel exported by POE
-            _build($poe_kernel->get_active_session()->ID, $ur_port);
-        }
+        on_connect => sub { _build($hub_hostname, $hub_port); },
     );
 }
 
-sub _build {
-    my ($channel, $port_number) = @_;
 
+sub _build {
+    my ($hub_hostname, $hub_port) = @_;
+
+    DEBUG "UR server _build hub_port=$hub_port";
     POE::Session->create(
         heap => {
-            channel => $channel,
-            port_number => $port_number,
+            hub_hostname => $hub_hostname,
+            hub_port => $hub_port,
             changes => 0,  ## this means possible changes, not that anything actually changed and needs to be synced.  For my purposes I don't care.
             unchanged_commits => 0,
         },
         inline_states => {
-            _start    => \&_workflow_start,
-            _stop     => \&_workflow_stop,
-            unlock_me => sub { Workflow::Server->unlock('UR'); },
+            _start      => \&_workflow_start,
+            _stop       => \&_workflow_stop,
+            announce    => \&_workflow_announce,
 
             sig_HUP      => \&_workflow_sig_HUP,
             register     => \&_workflow_register,
@@ -70,10 +57,7 @@ sub _build {
             output_relay => \&_workflow_output_relay,
             error_relay  => \&_workflow_error_relay,
 
-            simple_start      => \&_workflow_simple_start,
-            simple_resume     => \&_workflow_simple_resume,
-            load              => \&_workflow_load,
-            execute           => \&_workflow_execute,
+            load_and_execute  => \&_workflow_load_and_execute,
             resume            => \&_workflow_resume,
             begin_instance    => \&_workflow_begin_instance,
             end_instance      => \&_workflow_end_instance,
@@ -88,7 +72,7 @@ sub _build {
 }
 
 sub dispatch {
-    my ($class,$instance,$input) = @_;
+    my ($class, $instance, $input) = @_;
 
     $instance->status('scheduled');
 
@@ -130,10 +114,7 @@ sub _workflow_start {
     DEBUG "workflow _start";
     $kernel->alias_set("workflow");
     $kernel->post('IKC','publish','workflow',
-        [qw(simple_start
-            simple_resume
-            load
-            execute
+        [qw(load_and_execute
             resume
             begin_instance
             end_instance
@@ -144,24 +125,28 @@ sub _workflow_start {
 
     $kernel->sig('HUP','sig_HUP');
 
-    $kernel->post('IKC','monitor',
-            '*'=>{register=>'register', unregister=>'unregister'});
-
-    $heap->{workflow_plans} = {};
-    $heap->{workflow_executions} = {};
-    $heap->{record} = Workflow::Service->create(port => $heap->{port_number});
+    $heap->{record} = Workflow::Service->create(
+        hostname => $heap->{hub_hostname},
+        port => $heap->{hub_port}
+    );
     UR::Context->commit();
 
+    $kernel->yield('announce');
     $kernel->delay('commit', 30);
-    $kernel->yield('unlock_me');
 }
 
 sub _workflow_stop {
-    my ($heap) = @_[HEAP];
+    my $heap = $_[HEAP];
 
     DEBUG "workflow _stop";
     $heap->{record}->delete();
     UR::Context->commit();
+}
+
+sub _workflow_announce {
+    my $kernel = $_[KERNEL];
+
+    $kernel->post('IKC', 'post', 'poe://Hub/passthru/register_ur');
 }
 
 sub _workflow_sig_HUP {
@@ -171,30 +156,6 @@ sub _workflow_sig_HUP {
     UR::Context->commit();
 
     # NOTE: not calling sig_handled so this is still terminal
-}
-
-sub _workflow_simple_start {
-    my ($kernel, $session, $arg) = @_[KERNEL, SESSION, ARG0];
-    my ($arg2, $return) = @$arg;
-    my ($xml, $input) = @$arg2;
-
-    DEBUG "workflow simple_start";
-    my $id = $kernel->call($session, 'load', [$xml]);
-    $kernel->call($session,'execute',
-            [$id, $input, $return, $return]);
-
-    return $id;
-}
-
-sub _workflow_simple_resume {
-    my ($kernel, $session, $arg) = @_[KERNEL, SESSION, ARG0];
-    my ($arg2, $return) = @$arg;
-    my ($id) = @$arg2;
-
-    DEBUG "workflow simple_resume";
-    $kernel->call($session, 'resume', [$id, $return, $return]);
-
-    return $id;
 }
 
 sub _workflow_quit {
@@ -214,7 +175,7 @@ sub _workflow_quit_stage_2 {
     my ($kernel, $session, $heap) = @_[KERNEL, SESSION, HEAP];
 
     DEBUG "workflow quit_stage_2";
-    $kernel->post($heap->{channel}, 'shutdown');
+    $kernel->post($session, 'shutdown');
 
     $kernel->call($session, 'commit');
     $kernel->alarm_remove_all();
@@ -243,40 +204,33 @@ sub _workflow_unregister {
     DEBUG "workflow unregister ", ($real ? '' : 'alias '), "$name";
 }
 
-sub _workflow_load {
-    my ($kernel, $heap, $arg) = @_[KERNEL, HEAP, ARG0];
-    my ($xml) = @$arg;
+sub _load {
+    my ($heap, $xml) = @_;
 
-    DEBUG "workflow load";
+    DEBUG "Loading Workflow::Operation from xml";
     my $workflow = Workflow::Operation->create_from_xml($xml);
-    $heap->{workflow_plans}->{$workflow->id} = $workflow;
 
-    return $workflow->id;
+    my $id = $workflow->id;
+    DEBUG "Loaded Workflow::Operation($id) from xml";
+    return $workflow;
 }
 
-sub _workflow_execute {
+sub _workflow_load_and_execute {
     my ($kernel, $session, $heap, $arg) = @_[KERNEL, SESSION, HEAP, ARG0];
-    my ($id, $input, $output_dest, $error_dest) = @$arg;
+    my ($xml, $input, $return_address) = @$arg;
 
-    DEBUG "workflow execute";
+    DEBUG "workflow load_and_execute (return_address:$return_address)";
     $heap->{changes}++;
 
-    my $workflow = $heap->{workflow_plans}->{$id};
+    my $workflow = _load($heap, $xml);
     my $executor = Workflow::Executor::Server->get();
     $workflow->set_all_executor($executor);
 
     my %opts = (
         input => $input
     );
-
-    if($output_dest) {
-        my $cb = $session->postback('output_relay', $output_dest);
-        $opts{output_cb} = $cb;
-    }
-    if($error_dest) {
-        my $cb = $session->postback('error_relay', $error_dest);
-        $opts{error_cb} = $cb;
-    }
+    $opts{output_cb} = $session->postback('output_relay', $return_address);
+    $opts{error_cb} = $session->postback('error_relay', $return_address);
 
     my $instance = $workflow->execute(%opts);
 
@@ -286,16 +240,13 @@ sub _workflow_execute {
     }
 
     $workflow->wait();
-
-    $heap->{workflow_executions}->{$instance->id} = $instance;
-    return $instance->id;
 }
 
 sub _workflow_resume {
     my ($kernel, $heap, $session, $arg) = @_[KERNEL, HEAP, SESSION, ARG0];
-    my ($id, $output_dest, $error_dest) = @$arg;
+    my ($id, $return_address) = @$arg;
 
-    DEBUG "workflow resume";
+    DEBUG "workflow resume $id";
     $heap->{changes}++;
 
     my @tree = Workflow::Operation::Instance->get(
@@ -307,30 +258,23 @@ sub _workflow_resume {
     my $executor = Workflow::Executor::Server->get();
     $instance->operation->set_all_executor($executor);
 
-    if ($output_dest) {
-        my $cb = $session->postback('output_relay', $output_dest);
-        $instance->output_cb($cb);
-    }
-    if ($error_dest) {
-        my $cb = $session->postback('error_relay', $error_dest);
-        $instance->error_cb($cb);
-    }
+    my $output_cb = $session->postback('output_relay', $return_address);
+    $instance->output_cb($output_cb);
+
+    my $error_cb = $session->postback('error_relay', $return_address);
+    $instance->error_cb($error_cb);
 
     if ($instance->is_done) {
         Workflow::Operation::InstanceExecution::Error->create(
             execution => $instance->current,
             error => "Cannot resume finished workflow"
         );
-        $kernel->yield('error_relay', [$error_dest], [$instance]);
-
-        return $instance->id;
+        $kernel->yield('error_relay', [$return_address], [$instance]);
+        return;
     }
 
     $instance->resume();
     $instance->operation->wait();
-
-    $heap->{workflow_executions}->{$instance->id} = $instance;
-    return $instance->id;
 }
 
 sub _workflow_output_relay {
@@ -347,8 +291,8 @@ sub _workflow_output_relay {
     $kernel->refcount_decrement($session->ID, 'anon_event');
 
     # undef hole is where $instance->current was.  removing that from the return set.
-    $kernel->post('IKC', 'post', $output_dest,
-            [$instance->id, $instance->output, undef]);
+    $kernel->post('IKC', 'post', 'poe://Hub/passthru/relay_result', 
+            [$output_dest, $instance->id, $instance->output, undef]);
 }
 
 sub _workflow_error_relay {
@@ -365,8 +309,8 @@ sub _workflow_error_relay {
     $kernel->refcount_decrement($session->ID, 'anon_event');
 
     my @errors = _util_error_walker($instance);
-    $kernel->post('IKC', 'post', $error_dest,
-            [$instance->id, $instance->output, undef, \@errors]);
+    $kernel->post('IKC', 'post', 'poe://Hub/passthru/relay_result',
+            [$error_dest, $instance->id, $instance->output, undef, \@errors]);
 }
 
 sub _workflow_begin_instance {

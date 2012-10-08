@@ -2,7 +2,7 @@ package Workflow::Service;
 
 use strict;
 use warnings;
-use Sys::Hostname ();
+use Sys::Hostname; #exports hostname()
 use IO::File;
 
 use Workflow;
@@ -24,7 +24,7 @@ class Workflow::Service {
                 $psline = $f->getline;
                 chomp ($psline) if defined $psline;
                 $f->close;
-                
+
                 return $psline;
             ) },
     ],
@@ -37,10 +37,10 @@ sub create {
     my %args = (@_);
     
     my $self = $class->SUPER::create(
-        hostname => Sys::Hostname::hostname(),
+        hostname => $args{hostname} || hostname(),
         username => (getpwuid($<))[0],
         process_id => $$,
-        port => $args{port} || $Workflow::Server::UR::port_number,
+        port => $args{port},
         start_time => Workflow::Time->now
     );
 
