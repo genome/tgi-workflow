@@ -44,6 +44,7 @@ sub setup {
     );
 
     DEBUG "hub server starting on port $hub_port";
+    $0 = "workflow hubd on port $hub_port";
 
     POE::Session->create(
         inline_states => {

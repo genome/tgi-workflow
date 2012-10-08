@@ -32,6 +32,7 @@ sub setup {
         name       => 'UR',
         on_connect => sub { _build($hub_hostname, $hub_port); },
     );
+    $0 = "workflow urd connected to hubd at $hub_hostname:$hub_port";
 }
 
 
