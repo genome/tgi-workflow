@@ -465,7 +465,7 @@ sub _dispatch_fork_worker {
     my @cmd = ( 'annotate-log', $^X, '-e',
         sprintf('%s use %s; use %s; ' .
                 'use Workflow::Server::Worker; ' .
-                'Workflow::Server::Worker->start(%s , %s, 2)',
+                'Workflow::Server::Worker->start("%s" , %s, 2)',
         $libstring, $namespace, $command_class,
         $hostname, $port)
     );
