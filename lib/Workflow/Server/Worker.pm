@@ -12,6 +12,7 @@ use File::Temp;
 
 use POE::Component::IKC::Client;
 use Workflow::Server::Hub;
+use POE::Component::IKC::Responder;
 use Error qw(:try);
 
 use Workflow ();
@@ -39,6 +40,7 @@ sub start {
         $job_id = $ENV{'WF_FORK_JOBID'};
     }
 
+    create_ikc_responder();
     POE::Component::IKC::Client->spawn(
         ip=>$host,
         port=>$port,

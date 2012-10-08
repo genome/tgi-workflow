@@ -3,6 +3,7 @@ package Workflow::Server::UR;
 use strict;
 use base 'Workflow::Server';
 use POE qw(Component::IKC::Server Component::IKC::Client);
+use POE::Component::IKC::Responder;
 use Log::Log4perl qw(:easy);
 
 use Workflow::Server::Hub;
@@ -36,6 +37,8 @@ sub _setup_client {
     $Storable::forgive_me = 1;
 
     DEBUG "ur process connecting to hub " . $hub_port;
+
+    create_ikc_responder();
     POE::Component::IKC::Client->spawn(
         ip         => 'localhost',
         port       => $hub_port,
