@@ -220,6 +220,9 @@ sub _load_poe {
     }
 
     eval "use POE::Component::IKC::ClientLite";
+    eval "use POE::Component::IKC";
+    DEBUG "Loaded POE::Component::IKC version " .
+            $POE::Component::IKC::VERSION;
     die $@ if $@;
     $poe_loaded=1;
 }
