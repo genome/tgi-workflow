@@ -342,8 +342,8 @@ sub _lsftail_event_JOB_FINISH {
     my ($kernel, $heap, $line, $fields) = @_[KERNEL, HEAP, ARG0, ARG1];
     my $job_id = $fields->[3];
 
-    DEBUG "lsftail event_JOB_FINISH $job_id";
     if(exists $heap->{watchers}{$job_id}) {
+        DEBUG "lsftail event_JOB_FINISH $job_id";
         my $offset = $fields->[22];
         $offset += $fields->[$offset+23];
         my $job_stat_code = $fields->[$offset + 24];
@@ -683,9 +683,8 @@ sub _dispatch_unregister {
 
     DEBUG sprintf("dispatch unregister %s%s",
             $real ? '' : 'alias ', $remote_kernel);
-    if($heap->{cleaning_up}->{$remote_kernel} ||
+    if(delete $heap->{cleaning_up}->{$remote_kernel} ||
             exists($heap->{claimed}->{$remote_kernel})) {
-        delete $heap->{cleaning_up}->{$remote_kernel};
         $heap->{job_count}--;
         # either move start_jobs to the front of the queue or put it there.
         $kernel->delay('start_jobs', 0);
