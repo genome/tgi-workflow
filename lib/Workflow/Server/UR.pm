@@ -189,6 +189,7 @@ sub _workflow_commit {
     my ($kernel, $heap) = @_[KERNEL, HEAP];
 
     if($heap->{changes} > 0) {
+        DEBUG sprintf("Committing %s (possible) changes.", $heap->{changes});
         UR::Context->commit();
         $heap->{changes} = 0;
     }
@@ -292,7 +293,7 @@ sub _workflow_output_relay {
     $kernel->refcount_decrement($session->ID, 'anon_event');
 
     # undef hole is where $instance->current was.  removing that from the return set.
-    $kernel->post('IKC', 'post', 'poe://Hub/passthru/relay_result', 
+    $kernel->post('IKC', 'post', 'poe://Hub/passthru/relay_result',
             [$output_dest, $instance->id, $instance->output, undef]);
 }
 
@@ -353,7 +354,7 @@ sub _workflow_end_instance {
 }
 
 sub _workflow_finalize_instance {
-    my ($kernel, $heap, $arg) = @_[KERNEL, HEAP, ARG0];
+    my ($kernel, $session, $heap, $arg) = @_[KERNEL, SESSION, HEAP, ARG0];
     my ($id, $cpu_sec, $mem, $swap) = @$arg;
 
     DEBUG "workflow finalize_instance $id $cpu_sec $mem $swap";
@@ -366,6 +367,7 @@ sub _workflow_finalize_instance {
     $instance->current->max_swap($swap) if $swap;
 
     $instance->completion();
+    $kernel->call($session, 'commit');
 }
 
 sub _workflow_schedule_instance {
