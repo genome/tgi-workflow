@@ -259,8 +259,8 @@ sub _lsftail_start {
         $filename = $newfilename;
     }
 
-    Debug "lsftail Establishing Wheel on $filename";
-    $heap{wheel} = POE::Wheel::FollowTail->new(
+    DEBUG "lsftail Establishing Wheel on $filename";
+    $heap->{wheel} = POE::Wheel::FollowTail->new(
         Filename   => $filename,
         InputEvent => 'handle_input',
         ResetEvent => 'handle_reset',
