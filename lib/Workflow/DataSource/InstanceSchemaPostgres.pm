@@ -1,5 +1,6 @@
 use strict;
 use warnings;
+use File::Temp;
 
 package Workflow::DataSource::InstanceSchemaPostgres;
 
