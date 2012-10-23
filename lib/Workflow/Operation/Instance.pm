@@ -756,94 +756,14 @@ sub resolved_inputs {
     return %current_inputs;
 }
 
-sub orphan {
-    my $self    = shift;
-    my %outputs = @_;
-
-    Carp::confess
-      'orphaning is disabled at this time due to performance issues';
-
-    my @deps = $self->dependent_operations;
-    foreach my $dep (@deps) {
-        if ( defined $dep->input ) {
-            while ( my ( $k, $v ) = each( %{ $dep->input } ) ) {
-                if (eval { $v->isa('Workflow::Link::Instance') }) {
-                    if ( $v->operation_instance == $self ) {
-                        unless ( $v->broken ) {
-                            my $break_val = $outputs{ $v->property };
-                            $v->break($break_val);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    $self->spin;
-}
-
-sub is_orphan {
-    my $self = shift;
-
-    return 0;
-
-    my $broken = 1;
-
-    my @deps = $self->dependent_operations;
-
-# this may all be worthless, because dependent_operations excludes those with broken links
-    foreach my $dep (@deps) {
-        if ( defined $dep->input ) {
-            while ( my ( $k, $v ) = each( %{ $dep->input } ) ) {
-                if (eval { $v->isa('Workflow::Link::Instance') }) {
-                    if ( $v->operation_instance == $self ) {
-                        unless ( $v->broken ) {
-                            $broken = 0;
-                        }
-                    }
-                } elsif ( ref($v) eq 'ARRAY' ) {
-                    foreach my $vv (@$v) {
-                        if (eval { $vv->isa('Workflow::Link::Instance') })
-                        {
-                            if ( $vv->operation_instance == $self ) {
-                                unless ( $vv->broken ) {
-                                    $broken = 0;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    if ( $self->name eq 'output connector' || !$self->parent_instance ) {
-
-# output connectors have no deps but are not broken.  everything else must have deps
-# operations with no parent can't be broken by definition
-        $broken = 0;
-    }
-
-#    if ($self->name eq 'Example Inner Workflow') {
-#        $self->status_message('       ' . $self->name . ' is ' . ($broken ? '' : 'not ') . 'an orphan (' . scalar(@deps) . ')[' . $self->id . ']' );
-#
-#        print Data::Dumper->new([\@deps])->Dump . "\n";
-#    }
-
-    return $broken;
-}
-
 our %retry_count = ();
-
 sub completion {
     my $self = shift;
-
-    #    $self->status_message('e| ' . $self->name . '|' . $self->is_orphan);
 
     $self->is_done(1) unless $self->status eq 'crashed';
     $self->is_running(0);
 
-    $self->spin unless ( $self->is_orphan );
+    $self->spin();
 }
 
 sub spin {
@@ -866,7 +786,7 @@ sub spin {
                 $self->resume;
             } else {
                 my @running_siblings =
-                  grep { $_->is_running && !$_->is_orphan }
+                  grep { $_->is_running }
                   ( $parent->child_instances );
                 unless (@running_siblings) {
 
@@ -888,7 +808,7 @@ sub spin {
                 }
 
                 my @running =
-                  grep { $_->is_running && !$_->is_orphan }
+                  grep { $_->is_running }
                   ( $parent->child_instances );
                 if ( scalar @runq == 0 && scalar @running == 0 ) {
 

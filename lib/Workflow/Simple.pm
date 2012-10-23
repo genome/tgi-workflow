@@ -1,4 +1,3 @@
-
 package Workflow::Simple;
 
 require Exporter;
@@ -7,9 +6,9 @@ our @EXPORT = qw/run_workflow run_workflow_lsf resume_lsf/;
 our @EXPORT_OK = qw//;
 
 our @ERROR = ();
-our $override_lsf_use = 0;
-our $server_location_file;
+our $server_location_file; # see _advertise
 
+our $override_lsf_use = 0;
 if (defined $ENV{NO_LSF} && $ENV{NO_LSF}) {
     $override_lsf_use = 1;
 }
@@ -20,7 +19,7 @@ use Workflow ();
 use Guard;
 use Workflow::Server;
 use Workflow::Server::Remote;
-use POSIX ":sys_wait_h";
+use POSIX ":sys_wait_h"; # for non-blocking read
 
 sub run_workflow {
     my $xml = shift;
@@ -46,11 +45,11 @@ sub run_workflow {
             $error = 1;
         }
     );
- 
+
     $w->wait;
 
     if (defined $error) {
-        @ERROR = Workflow::Operation::InstanceExecution::Error->is_loaded;    
+        @ERROR = Workflow::Operation::InstanceExecution::Error->is_loaded;
         return undef;
     }
 
@@ -87,20 +86,20 @@ sub handle_child_exit (&&) {
 
 sub resume_lsf {
     return resume(@_) if ($override_lsf_use);
-    
+
     my $id = shift;
     @ERROR = ();
 
-    my ($r, $guards) = Workflow::Server::Remote->launch;
-    die "Failed to get a Workflow::Server::Remote from launch.\n" unless ($r);
-    my $g = _advertise($r);
+    my ($remote, $processes, $guards) = Workflow::Server::Remote->launch();
+    die "Failed to get a Workflow::Server::Remote from launch.\n" unless ($remote);
+    my $g = _advertise($remote);
 
     my $response;
     handle_child_exit {
-        $response = $r->simple_resume($id);
-    } sub { undef $g; undef $guards; };
+        $response = $remote->resume($id);
+    } sub { undef $g; undef $processes; undef $guards; };
 
-    $r->end_child_servers($guards);
+    $remote->end_child_servers($processes, $guards);
 
     if (scalar @$response == 3) {
         return $response->[1];
@@ -116,12 +115,15 @@ sub resume_lsf {
 sub run_workflow_lsf {
     return run_workflow(@_) if ($override_lsf_use);
 
+    # $xml can be either an xml formatted string, a GLOB ref or a Workflow::Operation.
     my $xml = shift;
     my %inputs = @_;
 
-    if (ref($xml)) {
-        if (ref($xml) eq 'GLOB') {
-            my $newxml = '';        
+    # in case $xml is a GLOB ref or a Workflow::Operation
+    my $xml_ref = ref($xml);
+    if($xml_ref) {
+        if($xml_ref eq 'GLOB') {
+            my $newxml = '';
             while (my $line = <$xml>) {
                 $newxml .= $line;
             }
@@ -132,19 +134,24 @@ sub run_workflow_lsf {
     }
     @ERROR = ();
 
-    my ($r, $guards) = Workflow::Server::Remote->launch;
-    die "Failed to get a Workflow::Server::Remote from launch.\n" unless ($r);
-    my $g = _advertise($r);    
+    my ($remote, $processes, $guards) = Workflow::Server::Remote->launch();
+    unless($remote) {
+        die "Failed to get a Workflow::Server::Remote from launch.\n";
+    }
+
+    my $g = _advertise($remote);
 
     my $response;
     handle_child_exit {
-        $response = $r->simple_start($xml,\%inputs);
-    } sub { undef $g; undef $guards };
-    $r->end_child_servers($guards);
+        $response = $remote->start($xml,\%inputs);
+    } sub { undef $g; undef $processes; undef $guards };
+    $remote->end_child_servers($processes, $guards);
 
+    # see Workflow::Server::UR::_workflow_output_relay
     if (scalar @$response == 3) {
         return $response->[1];
 
+    # see Workflow::Server::UR::_workflow_error_relay
     } elsif (scalar @$response == 4) {
         @ERROR = @{ $response->[3] };
         return undef;
@@ -154,11 +161,13 @@ sub run_workflow_lsf {
 }
 
 sub _advertise {
-    my ($r) = @_;
+    my ($remote) = @_;
     my $g;
-    if (defined $server_location_file) {
+    # NOTE this is only used by 'genome model build restart' to ensure that
+    # only one workflow server is spawned per build.
+    if(defined $server_location_file) {
         open FH, ('>' . $server_location_file);
-        print FH $r->host . ':' . $r->port . "\n";
+        print FH $remote->host . ':' . $remote->port . "\n";
         close FH;
         $g = guard { unlink $server_location_file };
     }

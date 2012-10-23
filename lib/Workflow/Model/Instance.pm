@@ -39,8 +39,7 @@ sub sorted_child_instances {
     my $self = shift;
 
     my $i = 0;
-    my %ops =
-    map { $_->name() => $i++ } $self->operation->operations_in_series();
+    my %ops = map { $_->name() => $i++ } $self->operation->operations_in_series();
 
     my @child = sort {
         $ops{ $a->name } <=> $ops{ $b->name }
@@ -114,18 +113,12 @@ sub create {
     return $self;
 }
 
-sub incomplete_operation_instances {
-    my $self = shift;
-
-    my @all_data = $self->child_instances;
-
-    return grep { !$_->is_done } @all_data;
-}
-
 sub resume {
     my $self = shift;
-    die 'tried to resume a finished operation: ' . $self->id
-    if ( $self->is_done );
+
+    if($self->is_done) {
+        die 'tried to resume a finished operation: ' . $self->id
+    }
 
     $self->input_connector->output( $self->input );
 
@@ -190,6 +183,13 @@ sub explain {
     return $reason; 
 }
 
+sub incomplete_operation_instances {
+    my $self = shift;
+
+    my @all_data = $self->child_instances;
+    return grep { !$_->is_done } @all_data;
+}
+
 sub completion {
     my $self = shift;
 
@@ -240,7 +240,7 @@ sub runq_filter {
 
     my @runq =
     sort { $a->name cmp $b->name }
-    grep { $_->is_ready && !$_->is_done && !$_->is_running } @_;
+    grep { !$_->is_done && !$_->is_running && $_->is_ready } @_;
 
     return @runq;
 }

@@ -16,11 +16,6 @@ class Workflow::Command::Server {
             default_value => 'both',
             doc => 'Type of server to run: UR,Hub or Both',
         },
-# hub host is commented out because Workflow::Server::UR is hardcoded to localhost, oops
-#        hub_host => {
-#            is => 'String',
-#            doc => 'Host running the Hub server',
-#        },
         ur_port => {
             is => 'Integer',
             default_value => 14401,
@@ -42,7 +37,7 @@ sub help_brief {
 
 sub help_synopsis {
     return <<"EOS"
-    workflow server 
+    workflow server
 EOS
 }
 
@@ -50,7 +45,7 @@ sub help_detail {
     return <<"EOS"
 This command is used for diagnostic purposes.
 EOS
-}
+} # yet we use it in production code... :( see Workflow::Server::Remote
 
 sub execute {
     my $self = shift;
@@ -59,34 +54,35 @@ sub execute {
 
     if ($type eq 'both') {
         # start_both
-
-        POE::Kernel->stop();
+        POE::Kernel->stop(); # ??
 
         my $pid = fork;
         if ($pid) {
+            # parent
             print "Hub pid: $$\n";
-            Workflow::Server::Hub->start(ur_port => $self->ur_port, hub_port => $self->hub_port);
+            Workflow::Server::Hub->start(ur_port  => $self->ur_port,
+                                         hub_port => $self->hub_port);
         } elsif (defined $pid) {
-            sleep 3;
+            # child
+            sleep 3; # ??
             print "UR pid: $$\n";
-            Workflow::Server::UR->start(ur_port => $self->ur_port, hub_port => $self->hub_port);
+            Workflow::Server::UR->start(ur_port  => $self->ur_port,
+                                        hub_port => $self->hub_port);
         } else {
+            # bad
             die "no child?";
         }
     } elsif ($type eq 'ur') {
-
-            $0 = 'workflow urd ' . $self->ur_port;
-
-            Workflow::Server::UR->start(ur_port => $self->ur_port, hub_port => $self->hub_port);
-
+        # changes name in ps command.
+        $0 = 'workflow urd ' . $self->ur_port;
+        Workflow::Server::UR->start(ur_port  => $self->ur_port,
+                                        hub_port => $self->hub_port);
     } elsif ($type eq 'hub') {
         # start a hub server and connect 
-
         $0 = 'workflow hubd ' . $self->hub_port; 
-
-        Workflow::Server::Hub->start(ur_port => $self->ur_port, hub_port => $self->hub_port);
+        Workflow::Server::Hub->start(ur_port  => $self->ur_port,
+                                     hub_port => $self->hub_port);
     }
-
 }
 
 1;
