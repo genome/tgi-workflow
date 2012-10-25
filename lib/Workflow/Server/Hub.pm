@@ -571,8 +571,12 @@ sub _dispatch_fork_worker {
     my $hostname = hostname();
     my $port = $heap->{hub_port};
     my @cmd = ( 'annotate-log', $^X, '-e',
-        sprintf('%s use %s; use %s; ' .
+        sprintf('%s BEGIN {use Time::HiRes; our $time_before = Time::HiRes::time();}; ' .
+                'use %s; use %s; ' .
                 'use Workflow::Server::Worker; ' .
+                'use Workflow::Instrumentation qw(timing); ' .
+                'my $time_after = Time::HiRes::time(); ' .
+                'timing("workflow.server.worker.load_libraries", 1000.0 *($time_after-$time_before)); '.
                 'Workflow::Server::Worker->start("%s" , %s, 2)',
         $libstring, $namespace, $command_class,
         $hostname, $port)
