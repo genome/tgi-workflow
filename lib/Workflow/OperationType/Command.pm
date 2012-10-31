@@ -239,7 +239,7 @@ sub call {
         'error',
         sub {
             my ($error, $self) = @_;
-            my $package_name = $error->pacakge_name || 'UnknownPackage';
+            my $package_name = $error->package_name || 'UnknownPackage';
             my $text = $error->text || 'No error text.';
             push @errors, $package_name . ': ' . $text;
         }
