@@ -4,6 +4,9 @@ package Workflow::OperationType::Command;
 use strict;
 use warnings;
 
+use Time::HiRes;
+use Workflow::Instrumentation qw(timing);
+
 class Workflow::OperationType::Command {
     isa => [ 'UR::Value', 'Workflow::OperationType' ],
     is_transactional => 0,
@@ -183,7 +186,13 @@ sub _validate_property {
 
 sub shortcut {
     my $self = shift;
-    $self->call('shortcut', @_);
+
+    my $time_before = Time::HiRes::time();
+    my $output = $self->call('shortcut', @_);
+    my $time_after = Time::HiRes::time();
+    timing("workflow.operation_type.command.shortcut", 1000.0 * ($time_after-$time_before));
+
+    return $output;
 }
 
  sub execute {
