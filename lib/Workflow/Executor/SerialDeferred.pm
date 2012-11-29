@@ -45,19 +45,23 @@ sub wait {
 
             $op_instance->current->status('running');
             $op_instance->current->start_time(Workflow::Time->now);
-#            $self->status_message('exec/' . $op_instance->id . '/' . $op_instance->operation->name);
             my $outputs;
             eval {
                 local $Workflow::DEBUG_GLOBAL=1 if $op_instance->debug_mode;
-                $outputs = $op_instance->operation->operation_type->execute(%{ $op_instance->input }, %{ $edited_input });
+                my $optype = $op_instance->operation->operation_type;
+                my %args = (%{ $op_instance->input }, %{ $edited_input });
+                # $self->status_message('exec/' . $op_instance->id . '/' . $op_instance->operation->name);
+                $outputs = $optype->execute(%args);
             };
             if ($@) {
-#                warn $@; 
+                my $error_msg = $@;
+                if (ref($error_msg) and ref($error_msg) eq "ARRAY") {
+                    $error_msg = join("\n", @$error_msg);
+                }
                 $op_instance->current->status('crashed');
-                
                 Workflow::Operation::InstanceExecution::Error->create(
                     execution => $op_instance->current,
-                    error => $@
+                    error => $error_msg
                 );
             } else {
                 $op_instance->output({ %{ $op_instance->output }, %{ $outputs } });        
