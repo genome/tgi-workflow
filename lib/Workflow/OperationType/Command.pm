@@ -250,7 +250,7 @@ sub call {
                 die "Starting command $command_name: could not get object of class $class_name with id $id for property $key";
             }
             $properties{$key} = $value;
-            print "Reloaded $old_value as $value\n";
+            #print "Reloaded $old_value as $value\n";
         }
         my $pmeta = $class_meta->property($key);
         unless ($pmeta) {
