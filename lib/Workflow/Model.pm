@@ -420,7 +420,10 @@ sub validate {
         }
         
         #if (!grep { $link->left_property eq $_ } @{ $left_output_properties })
-        if (! exists $properties_for_operation_type{$left_optype_id}->{'output'}->{$link->left_property}) {
+        if (! exists $properties_for_operation_type{$left_optype_id}->{'output'}->{$link->left_property}
+            and
+            ! exists $properties_for_operation_type{$left_optype_id}->{'input'}->{$link->left_property}
+        ) {
             my $linkdesc = $link->left_operation->name . '->' . $link->left_property
                             . ' to ' . $link->right_operation->name . '->' . $link->right_property;
             push @errors, 'Left property not found on link: ' . $linkdesc;
