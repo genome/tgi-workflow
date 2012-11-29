@@ -45,7 +45,14 @@ sub raw_value {
     if ($self->broken) {
         return $self->broken_value;
     } else {
-        return $self->operation_instance->output->{ $self->property };
+        my $oi = $self->operation_instance;
+        if (exists $oi->output->{ $self->property }) {
+            return $oi->output->{ $self->property };
+        }
+        elsif (exists $oi->input->{ $self->property }) {
+            return $oi->input->{ $self->property };
+        }
+        return undef;
     }
 }
 
