@@ -100,7 +100,6 @@ sub create {
                 other_operation_instance_id => $left_opi_id,
                 property           => $link->left_property
             );
-
             $added_inputs{ $link->right_property } = $linki;
         }
         $right_opi->input( \%added_inputs );

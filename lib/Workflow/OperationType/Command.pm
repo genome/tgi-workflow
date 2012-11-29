@@ -229,13 +229,14 @@ sub shortcut {
 sub call {
     my $self = shift;
     my $type = shift;
-
+    $DB::single = 1;
     unless ($type eq 'shortcut' || $type eq 'execute') {
         die 'invalid type: ' . $type;
     }
     my %properties = @_;
 
     my $command_name = $self->command_class_name;
+    my $class_meta = $command_name->__meta__;
 
     foreach my $key (keys %properties) {
         my $value = $properties{$key};
@@ -250,6 +251,31 @@ sub call {
             }
             $properties{$key} = $value;
             print "Reloaded $old_value as $value\n";
+        }
+        my $pmeta = $class_meta->property($key);
+        unless ($pmeta) {
+            die "property $key not found on class $command_name";
+        }
+        # this is where we would handle sets, etc, as well...
+        if (ref($value) and ref($value) eq 'ARRAY') {
+            if (not $pmeta->is_many) {
+                # convert many to one if possible
+                if (@$value > 1) {
+                    die "multiple values for $key passed to $command_name!";
+                }
+                elsif (@$value == 1) {
+                    $properties{$key} = $value->[0];
+                }
+                else {
+                    $properties{$key} = undef;
+                }
+            }
+        }
+        else {
+            if ($pmeta->is_many) {
+                # convert one to a one-item list of many
+                $properties{$key} = [$value];
+            }
         }
     }
 
@@ -275,53 +301,84 @@ sub call {
     $command_name->dump_error_messages(1);
     $command_name->dump_debug_messages(0);
 
-    my $command = $command_name->create(%properties);
+    my $command = eval { $command_name->create(%properties) };
+    if ($@) {
+        push @errors, $@;
+    }
 
-    if ($Workflow::DEBUG_GLOBAL) {
-        if (UNIVERSAL::can('Devel::ptkdb','brkonsub')) {
-            Devel::ptkdb::brkonsub($command_name . '::execute');
-        } elsif (UNIVERSAL::can('DB','cmd_b_sub')) {
-            DB::cmd_b_sub($command_name . '::execute');
-        } else {
-            $DB::single=2;
+    if ($command) {
+        @errors = map { $_->desc } $command->__errors__;
+    }
+    else {
+        @errors = $command_name->error_message();
+        @errors = ("Unspecified error creating object of type $command_name!") if not @errors;
+    }
+
+    my $failed_shortcut = 0;
+    eval {
+        if ($command and not @errors) {
+            if ($Workflow::DEBUG_GLOBAL) {
+                if (UNIVERSAL::can('Devel::ptkdb','brkonsub')) {
+                    Devel::ptkdb::brkonsub($command_name . '::execute');
+                } elsif (UNIVERSAL::can('DB','cmd_b_sub')) {
+                    DB::cmd_b_sub($command_name . '::execute');
+                } else {
+                    $DB::single=2;
+                }
+            }
+
+            if (!defined $command) {
+                die "Undefined value returned from $command_name->create\n" . join("\n", @errors) . "\n";
+            }
+
+            $command->dump_status_messages(1);
+            $command->dump_warning_messages(1);
+            $command->dump_error_messages(1);
+            $command->dump_debug_messages(0);
+            #warn "Dispatching via OperationType::Command " . $command . "\n";
+            #warn "Our LSF settings: " . ($self->lsf_queue || "undefined") . "\n";
+            #warn "resource : " . ($self->lsf_resource || "undefined") . "\n";
+            #warn "project : " . ($self->lsf_project || "undefined") . "\n";
+
+            my $retvalue;
+            if ($type eq 'shortcut') {
+                unless ($command->can('shortcut')) {
+                    die ref($command) . ' has no method shortcut; ' .
+                        'dying so execute can run on another host';
+                }
+                $retvalue = $command->shortcut();
+            } elsif ($type eq 'execute') {
+                $retvalue = $command->execute();
+            }
+
+            unless (defined $retvalue && $retvalue && $retvalue > 0) {
+                my $display_retvalue = (defined $retvalue ? $retvalue : 'undef');
+                if($type eq 'shortcut') {
+                    $command->status_message("Unable to shortcut (rv = " . $display_retvalue . ").");
+                    $failed_shortcut = 1; 
+                } else {
+                    push @errors, $command_name . " failed to return a positive true value (rv = " . $display_retvalue . ")";
+                }
+            }
         }
-    }
-
-    if (!defined $command) {
-        die "Undefined value returned from $command_name->create\n" . join("\n", @errors) . "\n";
-    }
-
-    $command_name->dump_status_messages(1);
-    $command_name->dump_warning_messages(1);
-    $command_name->dump_error_messages(1);
-    $command_name->dump_debug_messages(0);
-    #warn "Dispatching via OperationType::Command " . $command . "\n";
-    #warn "Our LSF settings: " . ($self->lsf_queue || "undefined") . "\n";
-    #warn "resource : " . ($self->lsf_resource || "undefined") . "\n";
-    #warn "project : " . ($self->lsf_project || "undefined") . "\n";
-
-    my $retvalue;
-    if ($type eq 'shortcut') {
-        unless ($command->can('shortcut')) {
-            die ref($command) . ' has no method shortcut; ' .
-                'dying so execute can run on another host';
-        }
-        $retvalue = $command->shortcut();
-    } elsif ($type eq 'execute') {
-        $retvalue = $command->execute();
-    }
-
-    unless (defined $retvalue && $retvalue && $retvalue > 0) {
-        my $display_retvalue = (defined $retvalue ? $retvalue : 'undef');
-        if($type eq 'shortcut') {
-            $command->status_message("Unable to shortcut (rv = " . $display_retvalue . ").");
-            return;
-        } else {
-            die $command_name . " failed to return a positive true value (rv = " . $display_retvalue . ")";
-        }
-    }
+    };
+    my $exception = $@;
 
     UR::ModuleBase->message_callback('error',$error_cb);
+
+    if ($exception) {
+        push @errors, $exception;
+        die join("\n",@errors);
+    }
+
+    if ($failed_shortcut) {
+        # continue on with regular, non-shortcut processing
+        return;
+    }
+
+    if (@errors) {
+        die join("\n",@errors);
+    }
 
     my %outputs = ();
     foreach my $output_property (@{ $self->output_properties }) {

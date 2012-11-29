@@ -506,6 +506,10 @@ sub is_ready {
     return 0 if ( $self->status eq 'crashed' );
     my @unfinished_inputs = $self->unfinished_inputs;
 
+    my @incomplete_predecessors = Workflow::Link::Instance->get(
+        
+    );
+
     if ( scalar @unfinished_inputs == 0 ) {
         return 1;
     } else {
