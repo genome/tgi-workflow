@@ -93,18 +93,13 @@ sub create_from_xml_simple_structure {
 
         if (exists $params{log_dir} && defined $params{log_dir}) {
             if ($params{log_dir}) {
-                if ($params{log_dir} !~ /^\/gsc/) {
-                    if (File::Spec->rel2abs($params{log_dir}) =~ m/^\/gsc/) {
-                        $params{'log_dir'} = File::Spec->rel2abs($params{log_dir});
-                    } else {
-                        die "log directory not on a valid network volume for lsf: $params{log_dir}\n";
-                    }
-                }
-            } else {
-                die "log directory does not exist: $params{log_dir}\n";
+                my $abs_path = File::Spec->rel2abs($params{log_dir});
+                $params{'log_dir'} = $abs_path;
+            } 
+            else {
+                die "log directory is not specified: $params{log_dir}\n";
             }
         }
-        
 
         my $optype = Workflow::OperationType->create_from_xml_simple_structure($struct->{operationtype});
         $self = $class->create(
