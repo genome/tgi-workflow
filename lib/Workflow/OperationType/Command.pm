@@ -62,28 +62,53 @@ sub initialize {
     }
 
     my @property_meta = $class_meta->all_property_metas();
+    # Know which properties are ids for other properties and make them optional.
+    # It would be more correct to know that one of N properties must be specified
+    # but what really should happen is that the command should construct
+    # _before_ dispatch, and dispatch only after construction, so you can
+    # fully handle things like a smart constructor which sets odd properties
+    # according to arbitrary logic.  Bottom line: testing params pre-construct
+    # is not what this really should be doing.
+    my %id_by;
+    for my $p (@property_meta) {
+        my $id_by = $p->id_by;
+        next if not $id_by;
+        my @id_by;
+        if (ref($id_by)) {
+            @id_by = @$id_by;
+        }
+        else {
+            @id_by = ($id_by)
+        }
+        for my $id (@id_by) {
+            $id_by{$id} = $p;
+        }
+    }
 
     foreach my $type (qw/input output/) {
         my $my_method = $type . '_properties';
         unless ($self->$my_method) {
-            my @props = map {
-                $_->property_name
-            } grep { 
-                defined $_->{'is_' . $type} && $_->{'is_' . $type}
+            my @property_meta_of_type = grep { 
+                if ($type eq 'input') {
+                    (defined $_->{'is_input'} && $_->{'is_input'}) || (defined $_->{'is_param'} && $_->{'is_param'} && !$_->property_name =~ /^(lsf_queue|lsf_resource)$/)
+                }
+                elsif ($type eq 'output') {
+                    defined $_->{'is_output'} && $_->{'is_output'}
+                }
             } @property_meta;
-
-            if ($type eq 'input') {
-                my @opt_input = map {
-                    $_->property_name
-                } grep {
-                    ($_->default_value || $_->is_optional) &&
-                    defined $_->{'is_input'} && $_->{'is_input'}
-                } @property_meta;
-
+           
+            my @props = map { $_->property_name } @property_meta_of_type; 
+            $self->{$my_method} = $self->{'db_committed'}{$my_method} = \@props;
+        
+            if ($type eq 'input' or $type eq 'param') {
+                my @opt_input;
+                for my $pm (@property_meta_of_type) {
+                    if ($pm->default_value || $pm->is_optional || $pm->id_by || $pm->via || $id_by{$pm->property_name}) {
+                        push @opt_input, $pm->property_name;
+                    }
+                }
                 $self->{optional_input_properties} = $self->{'db_committed'}{optional_input_properties} = \@opt_input;
             }
-        
-            $self->{$my_method} = $self->{'db_committed'}{$my_method} = \@props;
         }
     }
 
