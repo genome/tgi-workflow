@@ -91,21 +91,21 @@ sub initialize {
             my @property_meta_of_type = grep { 
                 if ($type eq 'input') {
                     (defined $_->{'is_input'} && $_->{'is_input'}) 
-                    || 
-                    ( defined $_->{'is_param'} && $_->{'is_param'} && ! ($_->property_name =~ /^(lsf_queue|lsf_resource)$/) )
+                    #|| 
+                    #( defined $_->{'is_param'} && $_->{'is_param'} && ! ($_->property_name =~ /^(lsf_queue|lsf_resource)$/) )
                 }
                 elsif ($type eq 'output') {
                     defined $_->{'is_output'} && $_->{'is_output'}
                 }
             } @property_meta;
-           
+            
             my @props = map { $_->property_name } @property_meta_of_type; 
             $self->{$my_method} = $self->{'db_committed'}{$my_method} = \@props;
         
-            if ($type eq 'input' or $type eq 'param') {
+            if ($type eq 'input') {
                 my @opt_input;
                 for my $pm (@property_meta_of_type) {
-                    if ($pm->default_value || $pm->is_optional || $pm->id_by || $pm->via || $id_by{$pm->property_name}) {
+                    if ($pm->default_value || $pm->is_optional || $pm->id_by || $pm->via || $id_by{$pm->property_name} || $pm->{is_param}) {
                         push @opt_input, $pm->property_name;
                     }
                 }
