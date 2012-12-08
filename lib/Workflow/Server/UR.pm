@@ -10,6 +10,9 @@ use Log::Log4perl qw(:easy);
 use Workflow::Server::Hub;
 use Workflow ();
 
+use Time::HiRes;
+use Workflow::Instrumentation qw(timing);
+
 BEGIN {
     if (defined $ENV{WF_TRACE_UR}) {
         Log::Log4perl->easy_init($DEBUG);
@@ -108,6 +111,12 @@ sub _util_error_walker {
     return @errors;
 }
 
+sub _timed_commit {
+    my $time_before = Time::HiRes::time();
+    UR::Context->commit();
+    my $time_after = Time::HiRes::time();
+    timing("workflow.server.ur.commit", 1000.0 * ($time_after-$time_before));
+}
 
 sub _workflow_start {
     my ($kernel, $heap) = @_[KERNEL, HEAP];
@@ -130,7 +139,7 @@ sub _workflow_start {
         hostname => $heap->{hub_hostname},
         port => $heap->{hub_port}
     );
-    UR::Context->commit();
+    _timed_commit();
 
     $kernel->yield('announce');
     $kernel->delay('commit', 30);
@@ -141,7 +150,7 @@ sub _workflow_stop {
 
     DEBUG "workflow _stop";
     $heap->{record}->delete();
-    UR::Context->commit();
+    _timed_commit();
 }
 
 sub _workflow_announce {
@@ -154,7 +163,7 @@ sub _workflow_sig_HUP {
     my ($heap) = @_[HEAP];
 
     $heap->{record}->delete();
-    UR::Context->commit();
+    _timed_commit();
 
     # NOTE: not calling sig_handled so this is still terminal
 }
@@ -190,7 +199,7 @@ sub _workflow_commit {
 
     if($heap->{changes} > 0) {
         DEBUG sprintf("Committing %s (possible) changes.", $heap->{changes});
-        UR::Context->commit();
+        _timed_commit();
         $heap->{changes} = 0;
     }
     $kernel->delay('commit', 30);

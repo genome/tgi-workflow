@@ -5,6 +5,9 @@ use strict;
 use warnings;
 use Sys::Hostname;
 
+use Time::HiRes;
+use Workflow::Instrumentation qw(timing);
+
 class Workflow::OperationType::Event {
     isa => 'Workflow::OperationType',
     is_transactional => 0,
@@ -89,7 +92,13 @@ sub stderr_log {
 
 sub shortcut {
     my $self = shift;
-    $self->call('shortcut', @_);
+
+    my $time_before = Time::HiRes::time();
+    my $output = $self->call('shortcut', @_);
+    my $time_after = Time::HiRes::time();
+    timing("workflow.operation_type.event.shortcut", 1000.0 * ($time_after-$time_before));
+
+    return $output;
 }
 
 sub execute {

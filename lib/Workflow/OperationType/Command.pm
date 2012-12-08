@@ -4,6 +4,9 @@ package Workflow::OperationType::Command;
 use strict;
 use warnings;
 
+use Time::HiRes;
+use Workflow::Instrumentation qw(timing);
+
 class Workflow::OperationType::Command {
     isa => [ 'UR::Value', 'Workflow::OperationType' ],
     is_transactional => 0,
@@ -59,28 +62,55 @@ sub initialize {
     }
 
     my @property_meta = $class_meta->all_property_metas();
-
+    # Know which properties are ids for other properties and make them optional.
+    # It would be more correct to know that one of N properties must be specified
+    # but what really should happen is that the command should construct
+    # _before_ dispatch, and dispatch only after construction, so you can
+    # fully handle things like a smart constructor which sets odd properties
+    # according to arbitrary logic.  Bottom line: testing params pre-construct
+    # is not what this really should be doing.
+    my %id_by;
+    for my $p (@property_meta) {
+        my $id_by = $p->id_by;
+        next if not $id_by;
+        my @id_by;
+        if (ref($id_by)) {
+            @id_by = @$id_by;
+        }
+        else {
+            @id_by = ($id_by)
+        }
+        for my $id (@id_by) {
+            $id_by{$id} = $p;
+        }
+    }
+    
     foreach my $type (qw/input output/) {
         my $my_method = $type . '_properties';
         unless ($self->$my_method) {
-            my @props = map {
-                $_->property_name
-            } grep { 
-                defined $_->{'is_' . $type} && $_->{'is_' . $type}
+            my @property_meta_of_type = grep { 
+                if ($type eq 'input') {
+                    (defined $_->{'is_input'} && $_->{'is_input'}) 
+                    || 
+                    ( defined $_->{'is_param'} && $_->{'is_param'} && ! ($_->property_name =~ /^(lsf_queue|lsf_resource)$/) )
+                }
+                elsif ($type eq 'output') {
+                    defined $_->{'is_output'} && $_->{'is_output'}
+                }
             } @property_meta;
-
+            
+            my @props = map { $_->property_name } @property_meta_of_type; 
+            $self->{$my_method} = $self->{'db_committed'}{$my_method} = \@props;
+        
             if ($type eq 'input') {
-                my @opt_input = map {
-                    $_->property_name
-                } grep {
-                    ($_->default_value || $_->is_optional) &&
-                    defined $_->{'is_input'} && $_->{'is_input'}
-                } @property_meta;
-
+                my @opt_input;
+                for my $pm (@property_meta_of_type) {
+                    if ($pm->default_value || $pm->is_optional || $pm->id_by || $pm->via || $id_by{$pm->property_name} || $pm->{is_param}) {
+                        push @opt_input, $pm->property_name;
+                    }
+                }
                 $self->{optional_input_properties} = $self->{'db_committed'}{optional_input_properties} = \@opt_input;
             }
-        
-            $self->{$my_method} = $self->{'db_committed'}{$my_method} = \@props;
         }
     }
 
@@ -183,7 +213,13 @@ sub _validate_property {
 
 sub shortcut {
     my $self = shift;
-    $self->call('shortcut', @_);
+
+    my $time_before = Time::HiRes::time();
+    my $output = $self->call('shortcut', @_);
+    my $time_after = Time::HiRes::time();
+    timing("workflow.operation_type.command.shortcut", 1000.0 * ($time_after-$time_before));
+
+    return $output;
 }
 
  sub execute {
@@ -195,13 +231,14 @@ sub shortcut {
 sub call {
     my $self = shift;
     my $type = shift;
-
+    
     unless ($type eq 'shortcut' || $type eq 'execute') {
         die 'invalid type: ' . $type;
     }
     my %properties = @_;
 
     my $command_name = $self->command_class_name;
+    my $class_meta = $command_name->__meta__;
 
     foreach my $key (keys %properties) {
         my $value = $properties{$key};
@@ -215,7 +252,32 @@ sub call {
                 die "Starting command $command_name: could not get object of class $class_name with id $id for property $key";
             }
             $properties{$key} = $value;
-            print "Reloaded $old_value as $value\n";
+            #print "Reloaded $old_value as $value\n";
+        }
+        my $pmeta = $class_meta->property($key);
+        unless ($pmeta) {
+            die "property $key not found on class $command_name";
+        }
+        # this is where we would handle sets, etc, as well...
+        if (ref($value) and ref($value) eq 'ARRAY') {
+            if (not $pmeta->is_many and not $pmeta->data_type eq 'ARRAY') {
+                # convert many to one if possible
+                if (@$value > 1) {
+                    die "multiple values for $key passed to $command_name!";
+                }
+                elsif (@$value == 1) {
+                    $properties{$key} = $value->[0];
+                }
+                else {
+                    $properties{$key} = undef;
+                }
+            }
+        }
+        else {
+            if ($pmeta->is_many) {
+                # convert one to a one-item list of many
+                $properties{$key} = [$value];
+            }
         }
     }
 
@@ -225,15 +287,20 @@ sub call {
 
     my @errors = ();
 
+    # override the error callback
     my $error_cb = UR::ModuleBase->message_callback('error');
     UR::ModuleBase->message_callback(
         'error',
         sub {
             my ($error, $self) = @_;
-            
-            push @errors, $error->package_name . ': ' . $error->text;
+            my $package_name = $error->package_name || 'UnknownPackage';
+            my $text = $error->text || 'No error text.';
+            push @errors, $package_name . ': ' . $text;
         }
     );
+    # when this goes out of scope or is otherwise undefined the error messaging will reset
+    # this ensures that if an exception is thrown we clean up after ourselves still
+    my $sentry = UR::Util::on_destroy sub { UR::ModuleBase->message_callback('error',$error_cb) };
 
     $command_name->dump_status_messages(1);
     $command_name->dump_warning_messages(1);
@@ -255,11 +322,16 @@ sub call {
     if (!defined $command) {
         die "Undefined value returned from $command_name->create\n" . join("\n", @errors) . "\n";
     }
+    
+    @errors = map { "$command_name: Error " . $_->desc } $command->__errors__;
+    if (@errors) {
+        die join("\n",@errors);
+    }
 
-    $command_name->dump_status_messages(1);
-    $command_name->dump_warning_messages(1);
-    $command_name->dump_error_messages(1);
-    $command_name->dump_debug_messages(0);
+    $command->dump_status_messages(1);
+    $command->dump_warning_messages(1);
+    $command->dump_error_messages(1);
+    $command->dump_debug_messages(0);
     #warn "Dispatching via OperationType::Command " . $command . "\n";
     #warn "Our LSF settings: " . ($self->lsf_queue || "undefined") . "\n";
     #warn "resource : " . ($self->lsf_resource || "undefined") . "\n";
@@ -282,11 +354,11 @@ sub call {
             $command->status_message("Unable to shortcut (rv = " . $display_retvalue . ").");
             return;
         } else {
-            die $command_name . " failed to return a positive true value (rv = " . $display_retvalue . ")";
+            unshift @errors, $command_name . " failed to return a positive true value (rv = " . $display_retvalue . ")";
+            die join("\n",@errors);
         }
     }
 
-    UR::ModuleBase->message_callback('error',$error_cb);
 
     my %outputs = ();
     foreach my $output_property (@{ $self->output_properties }) {
