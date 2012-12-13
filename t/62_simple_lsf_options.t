@@ -16,7 +16,7 @@ use File::Temp;
 use above 'Workflow';
 use Workflow::Simple;
 
-$ENV{WF_TESTDIR} = File::Temp::tempdir('WorkflowXXXXX', DIR => '/gsc/var/cache/testsuite/running_testsuites', CLEANUP => 1);
+$ENV{WF_TESTDIR} = File::Temp::tempdir('WorkflowXXXXX', DIR => $ENV{GENOME_TEST_TEMP}, CLEANUP => 1);
 
 my $op = Workflow::Operation->create(
     name => 'ls',

@@ -7,15 +7,16 @@ use Workflow;
 use Command; 
 
 my $testdir = $ENV{WF_TESTDIR};
+my $resource = "-R 'rusage[mem=100] span[hosts=1]'" . (defined $testdir ? " -o $testdir/stdout -e $testdir/stderr" : '');
 
 class Workflow::Test::Command::Ls {
     is => ['Workflow::Test::Command'],
     has_param => [
         lsf_queue => {
-            default_value => 'short',
+            default_value => $ENV{WF_TEST_QUEUE},
         },
         lsf_resource => {
-            default_value => "-R 'rusage[mem=4000] span[hosts=1]'" . (defined $testdir ? " -o $testdir/stdout -e $testdir/stderr" : ''),
+            default_value => $resource, 
         }
     ]
 };

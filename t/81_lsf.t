@@ -41,13 +41,13 @@ my $resource2 = Workflow::Resource->create(
 my $job2 = Workflow::Dispatcher::Job->create(
     resource => $resource2,
     command => 'echo "Hello world"',
-    queue => 'long',
+    queue => $ENV{WF_TEST_QUEUE},
     stdout => '/gscmnt/1234/4567/output.out',
     stderr => '/gscmnt/1234/4567/output.err'
 );
 
 $cmd = $lsf->get_command($job2);
-ok($cmd eq 'bsub -R \'select[ncpus>=1 && mem>=100 && gtmp>=1] span[hosts=1] rusage[mem=100, gtmp=1]\' -M 1024000 -n 1 -q long -o /gscmnt/1234/4567/output.out -e /gscmnt/1234/4567/output.err echo "Hello world"',
+is($cmd, 'bsub -R \'select[ncpus>=1 && mem>=100 && gtmp>=1] span[hosts=1] rusage[mem=100] rusage[gtmp=1]\' -M 1024000 -n 1 -q ' . $ENV{WF_TEST_QUEUE} . ' -o /gscmnt/1234/4567/output.out -e /gscmnt/1234/4567/output.err echo "Hello world"',
     "Job queue attribute sets queue"
 );
 
@@ -61,10 +61,11 @@ my $resource3 = Workflow::Resource->create(
 my $job3 = Workflow::Dispatcher::Job->create(
     resource => $resource3,
     command => 'echo "Hello world"',
-    queue => 'long',
-    stdout => '/gscmnt/1234/4567/output.out',
-    stderr => '/gscmnt/1234/4567/output.err'
+    queue => $ENV{WF_TEST_QUEUE},
+    stdout => '/foo/output.out',
+    stderr => '/foo/output.err'
 );
 
 $cmd = $lsf->get_command($job3);
-ok($cmd eq 'bsub -R \'select[ncpus>=4 && mem>=1000 && maxtmp>=90112 && tmp>=90112] span[hosts=1] rusage[mem=1000, tmp=90112]\' -M 10240000 -n 4 -q long -o /gscmnt/1234/4567/output.out -e /gscmnt/1234/4567/output.err echo "Hello world"', "Example from apipe-test-2 works")
+is($cmd,'bsub -R \'select[ncpus>=4 && mem>=1000 && maxtmp>=90112 && tmp>=90112] span[hosts=1] rusage[mem=1000] rusage[tmp=90112]\' -M 10240000 -n 4 -q ' . $ENV{WF_TEST_QUEUE} . ' -o /foo/output.out -e /foo/output.err echo "Hello world"', "Example from apipe-test-2 works")
+
