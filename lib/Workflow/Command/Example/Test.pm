@@ -18,7 +18,7 @@ sub pre_execute {
 
     my $urrunner = $self->_operation->operations( name => 'runner' );
 
-    $urrunner->operation_type->lsf_queue('short');
+    $urrunner->operation_type->lsf_queue($ENV{WF_TEST_QUEUE});
     $urrunner->operation_type->lsf_resource("-R 'select[type==LINUX64 && model!=Opteron250 && tmp>1000 && mem>4000] rusage[tmp=1000, mem=4000]'");
 }
 

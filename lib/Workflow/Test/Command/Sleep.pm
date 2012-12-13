@@ -17,10 +17,10 @@ class Workflow::Test::Command::Sleep {
     ],
     has_param => [
         lsf_queue => {
-            default_value => 'short',
+            default_value => $ENV{WF_TEST_QUEUE},
         },
         lsf_resource => {
-            default_value => 'rusage[mem=4000] span[hosts=1]',
+            default_value => 'rusage[mem=100] span[hosts=1]',
         }
     ]
 };

@@ -63,12 +63,17 @@ sub get_command {
         }
     }
     
-    my $rusage = join(", ", @rusages);
-    if ($rusage ne "") {
-        $cmd .= sprintf(" rusage[%s]' ", $rusage);
-    } else {
-        $cmd .= "' ";
+    #my $rusage = join(", ", @rusages);
+    #if ($rusage ne "") {
+    #    $cmd .= sprintf(" rusage[%s]' ", $rusage);
+    #} else {
+    #    $cmd .= "' ";
+    #}
+
+    if (@rusages) {
+        $cmd .= " " . join(" ", map { "rusage[$_]" } @rusages);
     }
+    $cmd .= "' ";
 
     # add memory & number of cores requirements
     if (defined $job->resource->mem_limit) {
@@ -92,7 +97,7 @@ sub get_command {
     $cmd .= sprintf("-o %s ", $job->stdout) if (defined $job->stdout); 
     $cmd .= sprintf("-e %s ", $job->stderr) if (defined $job->stderr);
     
-    $cmd .= sprintf("-g %s ", $job->group) if (defined $job->group);
+    #$cmd .= sprintf("-g %s ", $job->group) if (defined $job->group);
     
     if (defined $job->name) {
         if ($job->name =~ /\s/) {
