@@ -490,7 +490,7 @@ sub _dispatch_start_jobs {
             my $resource = $payload->{operation_type}->resource;
             my $group    = $resource->group || "/workflow-worker";
             my $queue    = $resource->queue ||
-                           $payload->{operation_type}->lsf_queue || 'long';
+                           $payload->{operation_type}->lsf_queue || $ENV{WF_JOB_QUEUE};
             my $name     = $payload->{instance}->name || 'worker';
             my $job = Workflow::Dispatcher::Job->create(
                 command  => $command,
