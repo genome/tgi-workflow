@@ -13,7 +13,7 @@ class Workflow::Command::Example::FormatResults {
         test_results => { is => 'ARRAY' }
     ],
     has_output => [ failed_tests => { is_optional => 1 } ],
-    has_param  => [ lsf_queue    => { value       => 'short' } ]
+    has_param  => [ lsf_queue    => { value       => $ENV{WF_TEST_QUEUE} } ]
 };
 
 sub execute {

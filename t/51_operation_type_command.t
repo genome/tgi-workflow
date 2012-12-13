@@ -28,8 +28,8 @@ require_ok('Workflow::OperationType::Command');
     
     ok(eq_set($o1->input_properties,['seconds']),'input properties');
     ok(eq_set($o1->output_properties,['result']),'output properties');
-    is($o1->lsf_queue,'short','lsf queue');
-    is($o1->lsf_resource,'rusage[mem=4000] span[hosts=1]','lsf resource');
+    is($o1->lsf_queue,$ENV{WF_TEST_QUEUE},'lsf queue');
+    is($o1->lsf_resource,'rusage[mem=100] span[hosts=1]','lsf resource');
     
     my $o2 = Workflow::OperationType::Command->create(
         command_class_name => 'Workflow::Test::Command::Sleep'

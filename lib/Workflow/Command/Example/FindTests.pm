@@ -10,7 +10,7 @@ class Workflow::Command::Example::FindTests {
     is         => ['Workflow::Command'],
     has_input  => [ working_dir => { value => '.' } ],
     has_output => [ test_files => { is_optional => 1 } ],
-    has_param  => [ lsf_queue => { value => 'short' } ]
+    has_param  => [ lsf_queue => { value => $ENV{WF_TEST_QUEUE} } ]
 };
 
 sub execute {
