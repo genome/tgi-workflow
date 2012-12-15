@@ -6,9 +6,9 @@ use Carp;
 class Workflow::DataSource::InstanceSchema {
     is => ['UR::DataSource::Pg'],
     has_constant => [
-        server => { default_value => 'dbname=genome;host=gms-postgres' },
+        server => { default_value => 'dbname=genome' },
         login => { default_value => 'genome' },
-        auth => { default_value => 'TGIlab' },
+        auth => { default_value => 'changeme' },
         owner => { default_value => 'workflow' },
 	  ],
 };
