@@ -14,3 +14,5 @@ else {
     $ENV{WF_JOB_QUEUE} ||= 'normal';
 }
 
+1;
+
