@@ -115,6 +115,10 @@ sub get_command {
         $cmd .= "-x ";
     }
 
+    if ($ENV{"WF_JOB_EXTRA_PARAMS"}) {
+        $cmd .= ' ' . $ENV{"WF_JOB_EXTRA_PARAMS"} . ' ';
+    }
+
     $cmd .= $job->command;
     my $cmd_to_debug = $ENV{'WF_DEBUG_MATCH'};
     if ($cmd_to_debug and ($cmd =~ /$cmd_to_debug/)) {
