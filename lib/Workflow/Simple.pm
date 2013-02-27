@@ -113,6 +113,10 @@ sub resume_lsf {
 }
 
 sub run_workflow_lsf {
+    if ($ENV{WF_USE_FLOW}) {
+        return run_workflow_flow(@_)
+    }
+
     return run_workflow(@_) if ($override_lsf_use);
 
     # $xml can be either an xml formatted string, a GLOB ref or a Workflow::Operation.
@@ -158,6 +162,18 @@ sub run_workflow_lsf {
     }
 
     die 'confused';
+}
+
+sub run_workflow_flow {
+    # $xml can be:  an xml formatted string, a GLOB ref, or a Workflow::Operation.
+    my $xml = shift;
+    my %inputs = @_;
+
+    print "Running workflow with Flow...\n";
+
+    require Flow;
+
+    return Flow::run_workflow($xml, @_);
 }
 
 sub _advertise {
