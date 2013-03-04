@@ -97,7 +97,7 @@ sub get_command {
     $cmd .= sprintf("-o %s ", $job->stdout) if (defined $job->stdout); 
     $cmd .= sprintf("-e %s ", $job->stderr) if (defined $job->stderr);
     
-    #$cmd .= sprintf("-g %s ", $job->group) if (defined $job->group);
+    $cmd .= sprintf("-g %s ", $job->group) if !$ENV{WF_EXCLUDE_JOB_GROUP} and (defined $job->group);
     
     if (defined $job->name) {
         if ($job->name =~ /\s/) {
