@@ -46,10 +46,10 @@ if ($child) {
     my $fail = prefixlines(\*ERR_R,\*STDERR,$hostname, 1);
 
     waitpid($pid, 0);
-    my $exit = $?;
+    my $exit = $? >> 8;
     waitpid($child, 0);
 
-    exit ($fail ? $fail : $exit);
+    exit ($fail || $exit);
 } elsif (defined $child) {
     close ERR_R;
     $0 = 'annotate-log out';
