@@ -36,7 +36,36 @@ sub create {
 
 sub resource {
     my $self = shift;
-    return Workflow::LsfParser->get_resource_from_lsf_resource($self->lsf_resource);
+    Carp::confess("this should never be called!");
+}
+
+sub resource_for_instance {
+    my ($self, $instance) = @_;
+    my $command_class_name = $self->command_class_name;
+    #print STDERR "resource_for_instance for $self $instance: $command_class_name\n";
+    my $inputs = $instance->input;
+    #print STDERR Data::Dumper::Dumper($inputs);
+    my $requirements;
+    if ($command_class_name->can('resolve_resource_requirements')) {
+        #print STDERR "calling resource() on the command class...\n";
+        $requirements = $command_class_name->resolve_resource_requirements($inputs);
+        if ($requirements and not ref($requirements)) {
+            #print STDERR "got $requirements, translating...\n";
+            my $resource_obj = Workflow::LsfParser->get_resource_from_lsf_resource($requirements);
+            unless ($resource_obj) {
+                die "cannot convert $requirements into a resource object";
+            }
+            $requirements = $resource_obj;
+        }
+        print STDERR "GOT NEW " . Data::Dumper::Dumper($requirements);
+    }
+    else {
+        #print STDERR "No resolve_resource_requirements() method on $command_class_name";
+        $requirements = Workflow::LsfParser->get_resource_from_lsf_resource($self->lsf_resource);
+        #print STDERR "got $requirements from legacy implementation\n";
+        print STDERR "GOT OLD " . Data::Dumper::Dumper($requirements);
+    }
+    return $requirements;
 }
 
 sub initialize {
