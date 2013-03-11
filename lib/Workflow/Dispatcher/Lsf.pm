@@ -7,6 +7,9 @@ class Workflow::Dispatcher::Lsf {
     is => 'Workflow::Dispatcher',
 };
 
+# The OpenLava implementtion of LSF has reduced features
+our $OPENLAVA = ((`which bsub` =~ /openlava/) ? 1 : 0);
+
 sub execute {
     my $self = shift;
     my $job = shift;
@@ -41,7 +44,7 @@ sub get_command {
 
     if (defined $job->resource->tmp_space) {
         if ($job->resource->use_gtmp) {
-            push (@selects, sprintf("gtmp>=%s", $job->resource->tmp_space));
+            push (@selects, sprintf("gtmp>=%s", $job->resource->tmp_space)) unless $OPENLAVA;
         } else {
             push (@selects, sprintf("tmp>=%s", $job->resource->tmp_space * 1024));
         }
@@ -57,7 +60,7 @@ sub get_command {
 
     if (defined $job->resource->tmp_space) {
         if ($job->resource->use_gtmp) {
-            push(@rusages, sprintf("gtmp=%s", $job->resource->tmp_space));
+            push(@rusages, sprintf("gtmp=%s", $job->resource->tmp_space)) unless $OPENLAVA;
         } else {
             push(@rusages, sprintf("tmp=%s", $job->resource->tmp_space*1024));
         }
@@ -70,6 +73,7 @@ sub get_command {
     #    $cmd .= "' ";
     #}
 
+    # This is longer than the above but works with regular LSF and also OpenLava.
     if (@rusages) {
         $cmd .= " " . join(" ", map { "rusage[$_]" } @rusages);
     }
@@ -129,3 +133,5 @@ sub get_command {
     }
     return $cmd;
 }
+
+1;
