@@ -165,6 +165,7 @@ sub run_workflow_lsf {
     die 'confused';
 }
 
+
 sub _op_resource_requests {
     my $op = shift;
     if (!exists $op->{operationtype}) {
@@ -184,7 +185,7 @@ sub _op_resource_requests {
                 $optype->{lsfResource})->as_xml_simple_structure;
         my $queue_override = delete $res->{queue};
         $lsf{queue} = $queue_override if $queue_override;
-        $lsf{resource} = $res;
+        $lsf{resource} = Flow::translate_workflow_resource(%$res);
     }
 
     if (%lsf) {
@@ -199,6 +200,8 @@ sub _op_resource_requests {
 }
 
 sub run_workflow_flow {
+    require Flow;
+
     my ($wf_repr, %inputs) = @_;
 
     my $xml_text;
@@ -222,7 +225,6 @@ sub run_workflow_flow {
     my @ops = @{$xml->{operation}};
     my %resources = (map { _op_resource_requests($_) } @ops);
 
-    require Flow;
 
     return Flow::run_workflow($xml_text, \%inputs, \%resources);
 }
