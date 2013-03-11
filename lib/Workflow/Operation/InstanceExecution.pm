@@ -9,7 +9,7 @@ class Workflow::Operation::InstanceExecution {
         execution_id =>
           { is => 'Text', column_name => 'WORKFLOW_EXECUTION_ID' },
     ],
-    table_name  => 'INSTANCE_EXECUTION',
+    table_name  => 'workflow.INSTANCE_EXECUTION',
 	id_generator => '-uuid',
     schema_name => 'InstanceSchema',
     data_source => 'Workflow::DataSource::InstanceSchema',

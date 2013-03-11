@@ -13,7 +13,7 @@ class Workflow::Operation::Instance {
           { is => 'Text', column_name => 'WORKFLOW_INSTANCE_ID', len=>255 }
     ],
 	id_generator => '-uuid',
-    table_name => 'INSTANCE',
+    table_name => 'workflow.INSTANCE',
     schema_name => 'InstanceSchema',
     data_source => 'Workflow::DataSource::InstanceSchema',
     has         => [
