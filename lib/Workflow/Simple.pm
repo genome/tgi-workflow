@@ -19,6 +19,7 @@ use Workflow ();
 use Guard;
 use Workflow::Server;
 use Workflow::Server::Remote;
+use XML::Simple;
 use POSIX ":sys_wait_h"; # for non-blocking read
 
 sub run_workflow {
@@ -113,6 +114,10 @@ sub resume_lsf {
 }
 
 sub run_workflow_lsf {
+    if ($ENV{WF_USE_FLOW}) {
+        return run_workflow_flow(@_)
+    }
+
     return run_workflow(@_) if ($override_lsf_use);
 
     # $xml can be either an xml formatted string, a GLOB ref or a Workflow::Operation.
@@ -158,6 +163,68 @@ sub run_workflow_lsf {
     }
 
     die 'confused';
+}
+
+sub _op_resource_requests {
+    my $op = shift;
+    if (!exists $op->{operationtype}) {
+        die "Operation $op->{name} with no operation type!";
+    }
+
+    my %rv;
+
+    my $optype = $op->{operationtype};
+    my %lsf;
+    if (exists $optype->{lsfQueue}) {
+        $lsf{queue} = $optype->{lsfQueue};
+    }
+
+    if (exists $optype->{lsfResource}) {
+        my $res = Workflow::LsfParser::get_resource_from_lsf_resource(
+                $optype->{lsfResource})->as_xml_simple_structure;
+        my $queue_override = delete $res->{queue};
+        $lsf{queue} = $queue_override if $queue_override;
+        $lsf{resource} = $res;
+    }
+
+    if (%lsf) {
+        %rv = ($op->{name} => \%lsf);
+    }
+
+    if (exists $op->{operation}) {
+        %rv = (%lsf, map {_op_resource_requests($_)} @{$op->{operation}});
+    }
+
+    return %rv
+}
+
+sub run_workflow_flow {
+    my ($wf_repr, %inputs) = @_;
+
+    my $xml_text;
+    my @force_array = qw/operation property inputproperty outputproperty link/;
+
+    my $r = ref($wf_repr);
+    if ($r) {
+        if ($r eq 'GLOB') {
+            $xml_text = $wf_repr;
+        } elsif (UNIVERSAL::isa($wf_repr, 'Workflow::Operation')) {
+            $xml_text = $wf_repr->save_to_xml;
+        } else {
+            die 'unrecognized reference';
+        }
+    } else {
+        $xml_text = $wf_repr;
+    }
+
+    my $xml = XMLin($xml_text, KeyAttr => [], ForceArray => \@force_array);
+
+    my @ops = @{$xml->{operation}};
+    my %resources = (map { _op_resource_requests($_) } @ops);
+
+    require Flow;
+
+    return Flow::run_workflow($xml_text, \%inputs, \%resources);
 }
 
 sub _advertise {
