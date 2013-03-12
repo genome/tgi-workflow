@@ -233,7 +233,7 @@ sub run_workflow_flow {
 
     #save xml as file
     my $fh = File::Temp->new();
-    $fh->print($xml);
+    $fh->print($xml_text);
     $fh->close();
     my $filename = $fh->filename;
 
