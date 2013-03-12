@@ -17,6 +17,7 @@ use strict;
 
 use Workflow ();
 use Guard;
+use File::Slurp qw/read_file/;
 use Workflow::Server;
 use Workflow::Server::Remote;
 use XML::Simple;
@@ -216,6 +217,8 @@ sub run_workflow_flow {
         } else {
             die 'unrecognized reference';
         }
+    } elsif (-s $wf_repr) {
+        $xml_text = read_file($wf_repr);
     } else {
         $xml_text = $wf_repr;
     }
