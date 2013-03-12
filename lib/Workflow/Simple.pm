@@ -21,6 +21,9 @@ use File::Slurp qw/read_file/;
 use Workflow::Server;
 use Workflow::Server::Remote;
 use XML::Simple;
+use File::Temp;
+use File::Basename;
+use File::Spec;
 use POSIX ":sys_wait_h"; # for non-blocking read
 
 sub run_workflow {
@@ -228,8 +231,20 @@ sub run_workflow_flow {
     my @ops = @{$xml->{operation}};
     my %resources = (map { _op_resource_requests($_) } @ops);
 
+    #save xml as file
+    my $fh = File::Temp->new();
+    $fh->print($xml);
+    $fh->close();
+    my $filename = $fh->filename;
 
-    return Flow::run_workflow($xml_text, \%inputs, \%resources);
+    my $executable = File::Spec->join(File::Basename::dirname(__FILE__), 'Cache', 'save.pl');
+    my $plan_id = `$^X $executable $filename`;
+    if ($? or not $plan_id) {
+        die "'$^X $executable $filename' did not return successfully";
+    }
+    chomp($plan_id);
+
+    return Flow::run_workflow($xml_text, \%inputs, \%resources, $plan_id);
 }
 
 sub _advertise {
