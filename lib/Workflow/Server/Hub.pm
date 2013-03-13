@@ -453,11 +453,27 @@ sub _construct_command {
         $libstring .= 'use lib "' . $lib . '"; ';
     }
 
-    my $command = sprintf("annotate-log $^X -e '%s use %s; use %s;" .
+    my $use_class_name = $command_class_name;
+    for (1) {
+        eval "use $command_class_name";
+        if ($@) {
+            if ($use_class_name =~ s/::[^\:]+$//) {
+                redo;
+            }
+            else {
+                $use_class_name = '';
+            }
+        }
+    };
+
+    my $command = sprintf(
+            "annotate-log $^X -e '%s use %s;" .
+            ($use_class_name ? " use %s;" : '') .
             " use Workflow::Server::Worker;" .
             " Workflow::Server::Worker->start(\"%s\", %s)'",
-            $libstring, $namespace, $command_class_name,
-            hostname(), $hub_port);
+        $libstring, $namespace, 
+        ($use_class_name ? ($use_class_name) : ()),
+        hostname(), $hub_port);
     return $command;
 }
 
