@@ -16,6 +16,7 @@ if (defined $ENV{NO_LSF} && $ENV{NO_LSF}) {
 use strict;
 
 use Workflow ();
+use Data::Dumper;
 use Guard;
 use File::Slurp qw/read_file/;
 use Workflow::Server;
@@ -228,8 +229,13 @@ sub run_workflow_flow {
 
     my $xml = XMLin($xml_text, KeyAttr => [], ForceArray => \@force_array);
 
-    my @ops = @{$xml->{operation}};
-    my %resources = (map { _op_resource_requests($_) } @ops);
+    my %resources;
+    if (exists $xml->{operation} and ref $xml->{operation} eq 'ARRAY') {
+        my @ops = @{$xml->{operation}};
+        %resources = (map { _op_resource_requests($_) } @ops);
+    } else {
+        %resources = _op_resource_requests($xml);
+    }
 
     #save xml as file
     my $fh = File::Temp->new();
