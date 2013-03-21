@@ -585,7 +585,7 @@ sub input_value {
 
     $method ||= 'value';
 
-    return undef unless $self->input->{$input_name};
+    return undef unless ref $self->input eq 'HASH' and $self->input->{$input_name};
 
     #    return $self->input->{$input_name}->value;
 
