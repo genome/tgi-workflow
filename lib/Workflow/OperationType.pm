@@ -34,6 +34,14 @@ class Workflow::OperationType {
     ]
 };
 
+sub resource_for_instance {
+    # by default, fall back to the ->resource value on the operation_type
+    # most operation types should implement this method to produce per-instance resource values
+    my ($self,$instance) = @_;
+    warn "resource_for_instance not implemented for $self, falling-back to per-operation-type resource evaluation...\n";
+    return $self->resource; 
+}
+
 sub create_from_xml_simple_structure {
     my ($my_class, $struct) = @_;
 

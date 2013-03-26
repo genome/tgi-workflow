@@ -25,6 +25,11 @@ class Workflow::Test::Command::Sleep {
     ]
 };
 
+sub resolve_resource_requirements {
+    my ($class,$params) = @_;
+    'rusage[mem=200] span[hosts=1]'
+}
+
 sub sub_command_sort_position { 10 }
 
 sub help_brief {

@@ -502,8 +502,15 @@ sub _dispatch_start_jobs {
             $heap->{fork_count}++;
             $heap->{job_count}++;
         } else {
+
+
             my $command  = _construct_command($payload, $heap->{hub_port});
-            my $resource = $payload->{operation_type}->resource;
+            
+            #my $resource = $payload->{operation_type}->resource();
+            my $type     = $payload->{operation_type};
+            my $instance = $payload->{instance};
+            my $resource = $type->resource_for_instance($instance);
+            
             my $group    = $resource->group || "/workflow-worker";
             my $queue    = $resource->queue ||
                            $payload->{operation_type}->lsf_queue || $ENV{WF_JOB_QUEUE};
