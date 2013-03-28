@@ -120,7 +120,7 @@ sub resume_lsf {
 
 sub run_workflow_lsf {
     if ($ENV{WF_USE_FLOW}) {
-        return run_workflow_flow(@_)
+        return run_workflow_flow(@_);
     }
 
     return run_workflow(@_) if ($override_lsf_use);
@@ -204,12 +204,53 @@ sub _op_resource_requests {
     return %rv
 }
 
+sub _wrap_simple_op_in_model {
+    my $op = shift;
+    my %inputs = @_;
+
+    print "Wrapping simple workflow operation " . $op->name .
+        " in a Workflow::Model";
+
+    my @input_properties = keys %inputs;
+    my $output_properties = $op->operation_type->output_properties;
+    my $model = Workflow::Model->create(
+        name => $op->name . " (model)",
+        input_properties => \@input_properties,
+        output_properties => $output_properties,
+        );
+
+    $op->workflow_model($model);
+
+    my $in = $model->get_input_connector;
+    my $out = $model->get_output_connector;
+    for my $p (@input_properties) {
+        $model->add_link(
+            left_operation => $in,
+            right_operation => $op,
+            left_property => $p,
+            right_property => $p,
+            );
+    }
+
+    for my $p (@$output_properties) {
+        $model->add_link(
+            left_operation => $op,
+            right_operation => $out,
+            left_property => $p,
+            right_property => $p,
+            );
+    }
+
+    return $model;
+}
+
 sub run_workflow_flow {
     require Flow;
 
     my ($wf_repr, %inputs) = @_;
 
     my $xml_text;
+    my $wf_object;
     my @force_array = qw/operation property inputproperty outputproperty link/;
 
     my $r = ref($wf_repr);
@@ -218,6 +259,7 @@ sub run_workflow_flow {
             $xml_text = $wf_repr;
         } elsif (UNIVERSAL::isa($wf_repr, 'Workflow::Operation')) {
             $xml_text = $wf_repr->save_to_xml;
+            $wf_object = $wf_repr;
         } else {
             die 'unrecognized reference';
         }
@@ -225,6 +267,17 @@ sub run_workflow_flow {
         $xml_text = read_file($wf_repr);
     } else {
         $xml_text = $wf_repr;
+    }
+
+    unless ($wf_object) {
+        $wf_object = Workflow::Operation->create_from_xml($xml_text);
+    }
+
+    if ($wf_object->class eq 'Workflow::Operation') {
+        my $log_dir = $wf_object->log_dir;
+        $wf_object = _wrap_simple_op_in_model($wf_object, %inputs);
+        $wf_object->log_dir($log_dir);
+        $xml_text = $wf_object->save_to_xml;
     }
 
     my $xml = XMLin($xml_text, KeyAttr => [], ForceArray => \@force_array);
