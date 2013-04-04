@@ -28,6 +28,10 @@ use File::Spec;
 use POSIX ":sys_wait_h"; # for non-blocking read
 
 sub run_workflow {
+    if ($ENV{WF_USE_FLOW}) {
+        return run_workflow_flow(@_);
+    }
+
     my $xml = shift;
     my %inputs = @_;
 
