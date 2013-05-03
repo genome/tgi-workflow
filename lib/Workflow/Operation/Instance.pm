@@ -279,8 +279,8 @@ our @observers = (
 
             $self->load_operation;
 
-            $self->__input( thaw $self->input_stored );
-            $self->__output( thaw $self->output_stored );
+            $self->__input( thaw $self->input_stored ) if $self->input_stored;
+            $self->__output( thaw $self->output_stored ) if $self->output_stored;
 
             my $parent;
 
@@ -586,7 +586,7 @@ sub input_value {
 
     $method ||= 'value';
 
-    return undef unless $self->input->{$input_name};
+    return undef unless ref $self->input eq 'HASH' and $self->input->{$input_name};
 
     #    return $self->input->{$input_name}->value;
 

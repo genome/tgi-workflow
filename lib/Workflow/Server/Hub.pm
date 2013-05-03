@@ -453,11 +453,27 @@ sub _construct_command {
         $libstring .= 'use lib "' . $lib . '"; ';
     }
 
-    my $command = sprintf("annotate-log $^X -e '%s use %s; use %s;" .
+    my $use_class_name = $command_class_name;
+    for (1) {
+        eval "use $command_class_name";
+        if ($@) {
+            if ($use_class_name =~ s/::[^\:]+$//) {
+                redo;
+            }
+            else {
+                $use_class_name = '';
+            }
+        }
+    };
+
+    my $command = sprintf(
+            "annotate-log $^X -e '%s use %s;" .
+            ($use_class_name ? " use %s;" : '') .
             " use Workflow::Server::Worker;" .
             " Workflow::Server::Worker->start(\"%s\", %s)'",
-            $libstring, $namespace, $command_class_name,
-            hostname(), $hub_port);
+        $libstring, $namespace, 
+        ($use_class_name ? ($use_class_name) : ()),
+        hostname(), $hub_port);
     return $command;
 }
 
@@ -486,8 +502,15 @@ sub _dispatch_start_jobs {
             $heap->{fork_count}++;
             $heap->{job_count}++;
         } else {
+
+
             my $command  = _construct_command($payload, $heap->{hub_port});
-            my $resource = $payload->{operation_type}->resource;
+            
+            #my $resource = $payload->{operation_type}->resource();
+            my $type     = $payload->{operation_type};
+            my $instance = $payload->{instance};
+            my $resource = $type->resource_for_instance($instance);
+            
             my $group    = $resource->group || "/workflow-worker";
             my $queue    = $resource->queue ||
                            $payload->{operation_type}->lsf_queue || $ENV{WF_JOB_QUEUE};

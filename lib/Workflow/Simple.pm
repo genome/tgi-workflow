@@ -16,13 +16,22 @@ if (defined $ENV{NO_LSF} && $ENV{NO_LSF}) {
 use strict;
 
 use Workflow ();
+use Data::Dumper;
 use Guard;
+use File::Slurp qw/read_file/;
 use Workflow::Server;
 use Workflow::Server::Remote;
 use XML::Simple;
+use File::Temp;
+use File::Basename;
+use File::Spec;
 use POSIX ":sys_wait_h"; # for non-blocking read
 
 sub run_workflow {
+    if ($ENV{WF_USE_FLOW}) {
+        return run_workflow_flow(@_);
+    }
+
     my $xml = shift;
     my %inputs = @_;
 
@@ -115,7 +124,7 @@ sub resume_lsf {
 
 sub run_workflow_lsf {
     if ($ENV{WF_USE_FLOW}) {
-        return run_workflow_flow(@_)
+        return run_workflow_flow(@_);
     }
 
     return run_workflow(@_) if ($override_lsf_use);
@@ -165,6 +174,7 @@ sub run_workflow_lsf {
     die 'confused';
 }
 
+
 sub _op_resource_requests {
     my $op = shift;
     if (!exists $op->{operationtype}) {
@@ -184,7 +194,7 @@ sub _op_resource_requests {
                 $optype->{lsfResource})->as_xml_simple_structure;
         my $queue_override = delete $res->{queue};
         $lsf{queue} = $queue_override if $queue_override;
-        $lsf{resource} = $res;
+        $lsf{resource} = Flow::translate_workflow_resource(%$res);
     }
 
     if (%lsf) {
@@ -198,10 +208,53 @@ sub _op_resource_requests {
     return %rv
 }
 
+sub _wrap_simple_op_in_model {
+    my $op = shift;
+    my %inputs = @_;
+
+    print "Wrapping simple workflow operation " . $op->name .
+        " in a Workflow::Model";
+
+    my @input_properties = keys %inputs;
+    my $output_properties = $op->operation_type->output_properties;
+    my $model = Workflow::Model->create(
+        name => $op->name . " (model)",
+        input_properties => \@input_properties,
+        output_properties => $output_properties,
+        );
+
+    $op->workflow_model($model);
+
+    my $in = $model->get_input_connector;
+    my $out = $model->get_output_connector;
+    for my $p (@input_properties) {
+        $model->add_link(
+            left_operation => $in,
+            right_operation => $op,
+            left_property => $p,
+            right_property => $p,
+            );
+    }
+
+    for my $p (@$output_properties) {
+        $model->add_link(
+            left_operation => $op,
+            right_operation => $out,
+            left_property => $p,
+            right_property => $p,
+            );
+    }
+
+    return $model;
+}
+
 sub run_workflow_flow {
+    require Flow;
+
     my ($wf_repr, %inputs) = @_;
 
     my $xml_text;
+    my $wf_object;
     my @force_array = qw/operation property inputproperty outputproperty link/;
 
     my $r = ref($wf_repr);
@@ -210,21 +263,51 @@ sub run_workflow_flow {
             $xml_text = $wf_repr;
         } elsif (UNIVERSAL::isa($wf_repr, 'Workflow::Operation')) {
             $xml_text = $wf_repr->save_to_xml;
+            $wf_object = $wf_repr;
         } else {
             die 'unrecognized reference';
         }
+    } elsif (-s $wf_repr) {
+        $xml_text = read_file($wf_repr);
     } else {
         $xml_text = $wf_repr;
     }
 
+    unless ($wf_object) {
+        $wf_object = Workflow::Operation->create_from_xml($xml_text);
+    }
+
+    if ($wf_object->class eq 'Workflow::Operation') {
+        my $log_dir = $wf_object->log_dir;
+        $wf_object = _wrap_simple_op_in_model($wf_object, %inputs);
+        $wf_object->log_dir($log_dir);
+        $xml_text = $wf_object->save_to_xml;
+    }
+
     my $xml = XMLin($xml_text, KeyAttr => [], ForceArray => \@force_array);
 
-    my @ops = @{$xml->{operation}};
-    my %resources = (map { _op_resource_requests($_) } @ops);
+    my %resources;
+    if (exists $xml->{operation} and ref $xml->{operation} eq 'ARRAY') {
+        my @ops = @{$xml->{operation}};
+        %resources = (map { _op_resource_requests($_) } @ops);
+    } else {
+        %resources = _op_resource_requests($xml);
+    }
 
-    require Flow;
+    #save xml as file
+    my $fh = File::Temp->new();
+    $fh->print($xml_text);
+    $fh->close();
+    my $filename = $fh->filename;
 
-    return Flow::run_workflow($xml_text, \%inputs, \%resources);
+    my $executable = File::Spec->join(File::Basename::dirname(__FILE__), 'Cache', 'save.pl');
+    my $plan_id = `$^X $executable $filename`;
+    if ($? or not $plan_id) {
+        die "'$^X $executable $filename' did not return successfully";
+    }
+    chomp($plan_id);
+
+    return Flow::run_workflow($xml_text, \%inputs, \%resources, $plan_id);
 }
 
 sub _advertise {

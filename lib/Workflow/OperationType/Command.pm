@@ -36,7 +36,28 @@ sub create {
 
 sub resource {
     my $self = shift;
-    return Workflow::LsfParser->get_resource_from_lsf_resource($self->lsf_resource);
+    Carp::confess("this should never be called!");
+}
+
+sub resource_for_instance {
+    my ($self, $instance) = @_;
+    my $command_class_name = $self->command_class_name;
+    my $inputs = $instance->input;
+    my $requirements;
+    if ($command_class_name->can('resolve_resource_requirements')) {
+        $requirements = $command_class_name->resolve_resource_requirements($inputs);
+        if ($requirements and not ref($requirements)) {
+            my $resource_obj = Workflow::LsfParser->get_resource_from_lsf_resource($requirements);
+            unless ($resource_obj) {
+                die "cannot convert $requirements into a resource object";
+            }
+            $requirements = $resource_obj;
+        }
+    }
+    else {
+        $requirements = Workflow::LsfParser->get_resource_from_lsf_resource($self->lsf_resource);
+    }
+    return $requirements;
 }
 
 sub initialize {
