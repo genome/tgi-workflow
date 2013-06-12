@@ -65,7 +65,14 @@ sub get_command {
             push(@rusages, sprintf("tmp=%s", $job->resource->tmp_space*1024));
         }
     }
-    
+
+    if (defined $job->resource->upload_bandwidth) {
+        push @rusages, sprintf("internet_upload_mbps=%s", $job->resource->upload_bandwidth);
+    }
+    if (defined $job->resource->download_bandwidth) {
+        push @rusages, sprintf("internet_download_mbps=%s", $job->resource->download_bandwidth);
+    }
+
     my $rusage = join(", ", @rusages);
     if ($rusage ne "") {
         $cmd .= sprintf(" rusage[%s]' ", $rusage);

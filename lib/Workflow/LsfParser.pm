@@ -80,10 +80,10 @@ sub get_resource_from_lsf_resource {
     my ($rusage) = ($lsf_resource =~ /rusage\[([^\]]*)/);
     if (defined $rusage) { 
         # check there isn't something we haven't seen
-        my @rusage_preds = ($rusage =~ /([a-z]+)\s*[!=><]/g);
+        my @rusage_preds = ($rusage =~ /([_a-z]+)\s*[!=><]/g);
 
         foreach (@rusage_preds) {
-            confess("Unknown rusage predicate: " . $_) unless ($_ =~ /^(model|type|gtmp|tmp|mem)$/);
+            confess("Unknown rusage predicate: " . $_) unless ($_ =~ /^(model|type|gtmp|tmp|mem|internet_download_mbps|internet_upload_mbps)$/);
         }
     
         # parse mem request rusage[mem=###mb, ...]
@@ -107,6 +107,17 @@ sub get_resource_from_lsf_resource {
             # round up, better safe than sorry
             $resource->tmp_space($tmp);
         }
+
+        my ($upload_bandwidth) = ($rusage =~ /internet_upload_mbps=(\d+)/);
+        if (defined $upload_bandwidth) {
+            $resource->upload_bandwidth($upload_bandwidth);
+        }
+
+        my ($download_bandwidth) = ($rusage =~ /internet_download_mbps=(\d+)/);
+        if (defined $download_bandwidth) {
+            $resource->download_bandwidth($download_bandwidth);
+        }
+
     } else {
         warn("No rusage statement included in LSF pattern");
     }
