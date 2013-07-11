@@ -7,6 +7,8 @@ $Workflow::Command::OPTS_SPEC = [
               'files',
               'working-dir=s',
               'files',
+              'debug!',
+              undef,
               'test-files=s',
               'files',
               'help!',
@@ -20,6 +22,8 @@ $Workflow::Command::OPTS_SPEC = [
               undef,
               'test-results=s',
               undef,
+              'debug!',
+              undef,
               'failed-tests=s',
               'files',
               'help!',
@@ -31,6 +35,8 @@ $Workflow::Command::OPTS_SPEC = [
               'files',
               'sleep-time=s',
               'files',
+              'debug!',
+              undef,
               'output-string=s',
               'files',
               'today=s',
@@ -42,6 +48,8 @@ $Workflow::Command::OPTS_SPEC = [
             [
               'working-dir=s',
               'files',
+              'debug!',
+              undef,
               'failures=s',
               'files',
               'help!',
@@ -58,6 +66,8 @@ $Workflow::Command::OPTS_SPEC = [
             'files',
             'class-name=s',
             'files',
+            'debug!',
+            undef,
             'xml=s',
             'files',
             'help!',
@@ -117,6 +127,8 @@ $Workflow::Command::OPTS_SPEC = [
           [
             'instance-ids=s',
             'files',
+            'debug!',
+            undef,
             'status=s',
             [
               'crashed',
@@ -131,6 +143,8 @@ $Workflow::Command::OPTS_SPEC = [
           [
             'instance-id=s',
             undef,
+            'debug!',
+            undef,
             'namespace=s',
             'files',
             'reset-status-on-id=s',
@@ -143,6 +157,8 @@ $Workflow::Command::OPTS_SPEC = [
             'instance-id=s',
             undef,
             'all-deps!',
+            undef,
+            'debug!',
             undef,
             'deps!',
             undef,
@@ -159,6 +175,8 @@ $Workflow::Command::OPTS_SPEC = [
           ],
           '>server',
           [
+            'debug!',
+            undef,
             'hub-port=s',
             undef,
             'type=s',
@@ -181,6 +199,8 @@ $Workflow::Command::OPTS_SPEC = [
           [
             'announce-location-fifo=s',
             'files',
+            'debug!',
+            undef,
             'help!',
             undef
           ],
@@ -189,6 +209,8 @@ $Workflow::Command::OPTS_SPEC = [
             'hub-hostname=s',
             'files',
             'hub-port=s',
+            undef,
+            'debug!',
             undef,
             'help!',
             undef
