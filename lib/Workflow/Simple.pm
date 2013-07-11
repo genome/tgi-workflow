@@ -29,7 +29,7 @@ use POSIX ":sys_wait_h"; # for non-blocking read
 
 sub run_workflow {
     if ($ENV{WF_USE_FLOW}) {
-        return run_workflow_flow(@_);
+        return run_workflow_flow(0, @_);
     }
 
     my $xml = shift;
@@ -124,7 +124,7 @@ sub resume_lsf {
 
 sub run_workflow_lsf {
     if ($ENV{WF_USE_FLOW}) {
-        return run_workflow_flow(@_);
+        return run_workflow_flow(1, @_);
     }
 
     return run_workflow(@_) if ($override_lsf_use);
@@ -251,7 +251,7 @@ sub _wrap_simple_op_in_model {
 sub run_workflow_flow {
     require Flow;
 
-    my ($wf_repr, %inputs) = @_;
+    my ($use_lsf, $wf_repr, %inputs) = @_;
 
     my $xml_text;
     my $wf_object;
@@ -307,7 +307,11 @@ sub run_workflow_flow {
     }
     chomp($plan_id);
 
-    return Flow::run_workflow($xml_text, \%inputs, \%resources, $plan_id);
+    if ($use_lsf) {
+        return Flow::run_workflow_lsf($xml_text, \%inputs, \%resources, $plan_id);
+    } else {
+        return Flow::run_workflow($xml_text, \%inputs, \%resources, $plan_id);
+    }
 }
 
 sub _advertise {
