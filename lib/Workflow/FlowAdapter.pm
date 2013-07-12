@@ -22,10 +22,11 @@ sub run_workflow_flow {
     my ($use_lsf, $wf_repr, %inputs) = @_;
 
     my $xml = extract_xml_hashref($wf_repr);
-    my $xml_text = XMLout($xml);
+    add_output_property_list_if_needed($xml);
 
     my $resources = parse_resources($xml);
 
+    my $xml_text = XMLout($xml);
     my $plan_id = _get_plan_id($xml_text);
 
     if ($use_lsf) {
@@ -71,6 +72,30 @@ sub extract_xml_hashref {
             'outputproperty',
             'property',
         ]);
+}
+
+
+sub add_output_property_list_if_needed {
+    my $xml = shift;
+
+    if ($xml->{operationtype}{typeClass}
+            eq 'Workflow::OperationType::Command') {
+        $xml->{operationtype}{outputproperty} = _command_output_properties(
+            $xml->{operationtype}{commandClass})
+    }
+}
+
+
+sub _command_output_properties {
+    my $command_class = shift;
+
+
+    my $meta = $command_class->__meta__;
+    my @output_properties =
+        map {$_->property_name}
+        grep {$_->can('is_output') && $_->is_output} $meta->properties;
+
+    return \@output_properties;
 }
 
 

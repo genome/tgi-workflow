@@ -1,5 +1,6 @@
 #!/usr/bin/env perl
 
+use Storable;
 use Test::More;
 use Data::Dumper;
 use above 'Workflow';
@@ -9,9 +10,9 @@ use warnings;
 
 use_ok('Workflow::FlowAdapter');
 
-sub simple_resource_test {
+sub model_resource_test {
     my $xml = Workflow::FlowAdapter::extract_xml_hashref(
-        't/001_flow_simple_wf.xml');
+        't/001_flow_model_wf.xml');
 
     my $per_command_resources = {
         'require' => {
@@ -48,7 +49,7 @@ sub simple_resource_test {
 
 
     my $resources = Workflow::FlowAdapter::parse_resources($xml);
-    is_deeply($expected_resources, $resources, 'parse_resources simple case');
+    is_deeply($resources, $expected_resources, 'parse_resources model case');
 }
 
 sub nested_resource_test {
@@ -90,10 +91,39 @@ sub nested_resource_test {
 
     my $resources = Workflow::FlowAdapter::parse_resources($xml);
 
-    is_deeply($expected_resources, $resources, 'parse_resources nested case');
+    is_deeply($resources, $expected_resources, 'parse_resources nested case');
 }
 
-simple_resource_test();
+
+sub model_output_property_test {
+    my $xml = Workflow::FlowAdapter::extract_xml_hashref(
+        't/001_flow_model_wf.xml');
+
+    my $expected_xml = Storable::dclone($xml);
+
+    Workflow::FlowAdapter::add_output_property_list_if_needed($xml);
+
+    is_deeply($xml, $expected_xml, 'model output property test');
+}
+
+sub no_model_output_property_test {
+    my $xml = Workflow::FlowAdapter::extract_xml_hashref(
+        't/001_flow_simple_wf.xml');
+
+    my $expected_xml = Storable::dclone($xml);
+    $expected_xml->{operationtype}->{outputproperty} = [
+        'output',
+        'result',
+    ];
+
+    Workflow::FlowAdapter::add_output_property_list_if_needed($xml);
+
+    is_deeply($xml, $expected_xml, 'no model output property test');
+}
+model_resource_test();
 nested_resource_test();
+
+model_output_property_test();
+no_model_output_property_test();
 
 done_testing();
