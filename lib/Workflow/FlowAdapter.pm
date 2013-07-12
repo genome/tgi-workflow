@@ -42,7 +42,6 @@ sub extract_xml_hashref {
 
     my $xml_text;
     my $wf_object;
-    my @force_array = qw/operation property inputproperty outputproperty link/;
 
     my $r = ref($wf_repr);
     if ($r) {
@@ -64,7 +63,14 @@ sub extract_xml_hashref {
         $wf_object = Workflow::Operation->create_from_xml($xml_text);
     }
 
-    return XMLin($xml_text, KeyAttr => [], ForceArray => \@force_array);
+    return XMLin($xml_text, KeyAttr => [],
+        ForceArray => [
+            'inputproperty',
+            'link',
+            'operation',
+            'outputproperty',
+            'property',
+        ]);
 }
 
 
