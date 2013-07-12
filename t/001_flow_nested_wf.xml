@@ -32,7 +32,7 @@
             toOperation="output connector" toProperty="out_b" />
 
         <operation name="A">
-          <operationtype commandClass="NullCommand"
+          <operationtype commandClass="Workflow::Test::Command::Echo"
               typeClass="Workflow::OperationType::Command"
               lsfResource="-R 'select[type==LINUX64] rusage[mem=16000]' -M 16000000"
               lsfQueue="test_queue"
@@ -40,7 +40,7 @@
         </operation>
 
         <operation name="B">
-          <operationtype commandClass="NullCommand"
+          <operationtype commandClass="Workflow::Test::Command::Echo"
               typeClass="Workflow::OperationType::Command"
               lsfResource="-R 'select[type==LINUX64] rusage[mem=16000]' -M 16000000"
               lsfQueue="test_queue"
@@ -69,7 +69,7 @@
             toOperation="output connector" toProperty="out_b" />
 
         <operation name="A">
-          <operationtype commandClass="NullCommand"
+          <operationtype commandClass="Workflow::Test::Command::Echo"
               typeClass="Workflow::OperationType::Command"
               lsfResource="-R 'select[type==LINUX64] rusage[mem=16000]' -M 16000000"
               lsfQueue="test_queue"
@@ -77,7 +77,7 @@
         </operation>
 
         <operation name="B">
-          <operationtype commandClass="NullCommand"
+          <operationtype commandClass="Workflow::Test::Command::Echo"
               typeClass="Workflow::OperationType::Command"
               lsfResource="-R 'select[type==LINUX64] rusage[mem=16000]' -M 16000000"
               lsfQueue="test_queue"

@@ -4,53 +4,53 @@
     logDir="test_logs/n-shaped">
 
     <link fromOperation="input connector" fromProperty="a"
-        toOperation="A" toProperty="param" />
+        toOperation="A" toProperty="input" />
     <link fromOperation="input connector" fromProperty="b"
-        toOperation="B" toProperty="param" />
+        toOperation="B" toProperty="input" />
     <link fromOperation="input connector" fromProperty="c"
-        toOperation="C" toProperty="param" />
+        toOperation="C" toProperty="input" />
     <link fromOperation="input connector" fromProperty="d"
-        toOperation="D" toProperty="param" />
+        toOperation="D" toProperty="input" />
 
-    <link fromOperation="A" fromProperty="result"
+    <link fromOperation="A" fromProperty="output"
         toOperation="output connector" toProperty="out_a" />
-    <link fromOperation="B" fromProperty="result"
+    <link fromOperation="B" fromProperty="output"
         toOperation="output connector" toProperty="out_b" />
-    <link fromOperation="C" fromProperty="result"
+    <link fromOperation="C" fromProperty="output"
         toOperation="output connector" toProperty="out_c" />
-    <link fromOperation="D" fromProperty="result"
+    <link fromOperation="D" fromProperty="output"
         toOperation="output connector" toProperty="out_d" />
 
-    <link fromOperation="A" fromProperty="result"
+    <link fromOperation="A" fromProperty="output"
         toOperation="C" toProperty="res1" />
-    <link fromOperation="A" fromProperty="result"
+    <link fromOperation="A" fromProperty="output"
         toOperation="D" toProperty="res1" />
-    <link fromOperation="B" fromProperty="result"
+    <link fromOperation="B" fromProperty="output"
         toOperation="D" toProperty="res2" />
 
     <operation name="A">
-      <operationtype commandClass="NullCommand"
+      <operationtype commandClass="Workflow::Test::Command::Echo"
           typeClass="Workflow::OperationType::Command"
           lsfResource="-R 'select[type==LINUX64] rusage[mem=16000]' -M 16000000"
           lsfQueue="test_queue"
           />
     </operation>
     <operation name="B">
-      <operationtype commandClass="NullCommand"
+      <operationtype commandClass="Workflow::Test::Command::Echo"
           typeClass="Workflow::OperationType::Command"
           lsfResource="-R 'select[type==LINUX64] rusage[mem=16000]' -M 16000000"
           lsfQueue="test_queue"
           />
     </operation>
     <operation name="C">
-      <operationtype commandClass="NullCommand"
+      <operationtype commandClass="Workflow::Test::Command::Echo"
           typeClass="Workflow::OperationType::Command"
           lsfResource="-R 'select[type==LINUX64] rusage[mem=16000]' -M 16000000"
           lsfQueue="test_queue"
           />
     </operation>
     <operation name="D">
-      <operationtype commandClass="NullCommand"
+      <operationtype commandClass="Workflow::Test::Command::Echo"
           typeClass="Workflow::OperationType::Command"
           lsfResource="-R 'select[type==LINUX64] rusage[mem=16000]' -M 16000000"
           lsfQueue="test_queue"
