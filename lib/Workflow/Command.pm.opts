@@ -195,6 +195,15 @@ $Workflow::Command::OPTS_SPEC = [
             'help!',
             undef
           ],
+          '>show-xml',
+          [
+            'debug!',
+            undef,
+            'instance-id=s',
+            undef,
+            'help!',
+            undef
+          ],
           '>start-hub',
           [
             'announce-location-fifo=s',
