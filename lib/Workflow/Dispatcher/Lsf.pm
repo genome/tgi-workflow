@@ -66,12 +66,18 @@ sub get_command {
         }
     }
     
-    my $rusage = join(", ", @rusages);
-    if ($rusage ne "") {
-        $cmd .= sprintf(" rusage[%s]' ", $rusage);
-    } else {
-        $cmd .= "' ";
+    #my $rusage = join(", ", @rusages);
+    #if ($rusage ne "") {
+    #    $cmd .= sprintf(" rusage[%s]' ", $rusage);
+    #} else {
+    #    $cmd .= "' ";
+    #}
+
+    # This is longer than the above but works with regular LSF and also OpenLava.
+    if (@rusages) {
+        $cmd .= " " . join(" ", map { "rusage[$_]" } @rusages);
     }
+    $cmd .= "' ";
 
     # add memory & number of cores requirements
     if (defined $job->resource->mem_limit) {
