@@ -571,7 +571,8 @@ sub _dispatch_start_jobs {
             DEBUG sprintf("dispatch start_jobs submitted %s %s",
                     $lsf_job_id, $payload->{shortcut_flag});
         } else {
-            DEBUG "dispatch failed to start job, will retry on next cycle";
+            DEBUG "dispatch failed to start job!";
+            die "error submitting job!";
         }
     }
 
