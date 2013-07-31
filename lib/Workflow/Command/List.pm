@@ -9,8 +9,8 @@ use Command;
 class Workflow::Operation::RootInstance {
     table_name => "
         (SELECT wi.workflow_instance_id, wi.name, wie.status, wie.user_name, wie.start_time 
-           FROM workflow.workflow_instance wi
-           JOIN workflow.workflow_instance_execution wie ON (wi.current_execution_id = wie.workflow_execution_id)
+           FROM workflow.instance wi
+           JOIN workflow.instance_execution wie ON (wi.current_execution_id = wie.workflow_execution_id)
           WHERE wi.parent_instance_id IS NULL 
             AND (wi.peer_instance_id IS NULL OR wi.peer_instance_id = wi.workflow_instance_id)) workflow_instance", 
     id_properties => ['workflow_instance_id'],
