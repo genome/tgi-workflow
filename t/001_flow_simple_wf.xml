@@ -1,0 +1,6 @@
+<?xml version='1.0' standalone='yes'?>
+<operation name="Simple Workflow">
+    <operationtype commandClass="Workflow::Test::Command::Echo"
+        typeClass="Workflow::OperationType::Command" />
+</operation>
+

@@ -16,6 +16,8 @@ class Workflow::Resource {
         mem_request => { is => 'Number', doc => 'Memory allocation request. (MB)', is_optional => 1 },
         queue => { is => 'String', doc => 'Job queue in which to run', is_optional => 1 },
         group => { is => 'String', doc => 'Job group in which to run', is_optional => 1 },
+        download_bandwidth => { is => 'Number', doc => 'Amount of download bandiwidth to be consumed (MB)', is_optional => 1 },
+        upload_bandwidth => { is => 'Number', doc => 'Amount of upload bandiwidth to be consumed (MB)', is_optional => 1 },
     ]
 };
 

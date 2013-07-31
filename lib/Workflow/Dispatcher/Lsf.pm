@@ -65,19 +65,27 @@ sub get_command {
             push(@rusages, sprintf("tmp=%s", $job->resource->tmp_space*1024));
         }
     }
-    
-    #my $rusage = join(", ", @rusages);
-    #if ($rusage ne "") {
-    #    $cmd .= sprintf(" rusage[%s]' ", $rusage);
-    #} else {
-    #    $cmd .= "' ";
-    #}
 
-    # This is longer than the above but works with regular LSF and also OpenLava.
-    if (@rusages) {
-        $cmd .= " " . join(" ", map { "rusage[$_]" } @rusages);
+    if (defined $job->resource->upload_bandwidth) {
+        push @rusages, sprintf("internet_upload_mbps=%s", $job->resource->upload_bandwidth);
     }
-    $cmd .= "' ";
+    if (defined $job->resource->download_bandwidth) {
+        push @rusages, sprintf("internet_download_mbps=%s", $job->resource->download_bandwidth);
+    }
+
+    if ($OPENLAVA and @rusages > 1) {
+        my @new = ($rusages[0]);
+        shift @rusages;
+        warn "Discarding part of rusaage for OpenLava.  Keep: @new.  Discard: @rusages.\n";
+        @rusages = @new;
+    }
+
+    my $rusage = join(", ", @rusages);
+    if ($rusage ne "") {
+        $cmd .= sprintf(" rusage[%s]' ", $rusage);
+    } else {
+        $cmd .= "' ";
+    }
 
     # add memory & number of cores requirements
     if (defined $job->resource->mem_limit) {

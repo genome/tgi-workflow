@@ -1,0 +1,103 @@
+<?xml version='1.0' standalone='yes'?>
+<workflow name="Nested model test"
+    executor="Workflow::Executor::SerialDeferred">
+
+    <link fromOperation="input connector" fromProperty="Aa"
+        toOperation="Inner Model A" toProperty="in_a" />
+    <link fromOperation="input connector" fromProperty="Ab"
+        toOperation="Inner Model A" toProperty="in_b" />
+    <link fromOperation="input connector" fromProperty="Ba"
+        toOperation="Inner Model B" toProperty="in_a" />
+    <link fromOperation="input connector" fromProperty="Bb"
+        toOperation="Inner Model B" toProperty="in_b" />
+
+    <link fromOperation="Inner Model A" fromProperty="out_a"
+        toOperation="output connector" toProperty="OAa" />
+    <link fromOperation="Inner Model A" fromProperty="out_b"
+        toOperation="output connector" toProperty="OAb" />
+    <link fromOperation="Inner Model B" fromProperty="out_a"
+        toOperation="output connector" toProperty="OBa" />
+    <link fromOperation="Inner Model B" fromProperty="out_b"
+        toOperation="output connector" toProperty="OBb" />
+
+    <operation name="Inner Model A">
+        <link fromOperation="input connector" fromProperty="a"
+            toOperation="A" toProperty="param" />
+        <link fromOperation="input connector" fromProperty="b"
+            toOperation="B" toProperty="param" />
+
+        <link fromOperation="A" fromProperty="result"
+            toOperation="output connector" toProperty="out_a" />
+        <link fromOperation="B" fromProperty="result"
+            toOperation="output connector" toProperty="out_b" />
+
+        <operation name="A">
+          <operationtype commandClass="Workflow::Test::Command::Echo"
+              typeClass="Workflow::OperationType::Command"
+              lsfResource="-R 'select[type==LINUX64] rusage[mem=16000]' -M 16000000"
+              lsfQueue="test_queue"
+              />
+        </operation>
+
+        <operation name="B">
+          <operationtype commandClass="Workflow::Test::Command::Echo"
+              typeClass="Workflow::OperationType::Command"
+              lsfResource="-R 'select[type==LINUX64] rusage[mem=16000]' -M 16000000"
+              lsfQueue="test_queue"
+              />
+        </operation>
+
+      <operationtype typeClass="Workflow::OperationType::Model"
+          lsfResource="-R 'select[type==LINUX64] rusage[mem=16000]' -M 16000000"
+          lsfQueue="test_queue">
+          <inputproperty>in_a</inputproperty>
+          <inputproperty>in_b</inputproperty>
+          <outputproperty>out_a</outputproperty>
+          <outputproperty>out_b</outputproperty>
+      </operationtype>
+    </operation>
+
+    <operation name="Inner Model B">
+        <link fromOperation="input connector" fromProperty="a"
+            toOperation="A" toProperty="param" />
+        <link fromOperation="input connector" fromProperty="b"
+            toOperation="B" toProperty="param" />
+
+        <link fromOperation="A" fromProperty="result"
+            toOperation="output connector" toProperty="out_a" />
+        <link fromOperation="B" fromProperty="result"
+            toOperation="output connector" toProperty="out_b" />
+
+        <operation name="A">
+          <operationtype commandClass="Workflow::Test::Command::Echo"
+              typeClass="Workflow::OperationType::Command"
+              lsfResource="-R 'select[type==LINUX64] rusage[mem=16000]' -M 16000000"
+              lsfQueue="test_queue"
+              />
+        </operation>
+
+        <operation name="B">
+          <operationtype commandClass="Workflow::Test::Command::Echo"
+              typeClass="Workflow::OperationType::Command"
+              lsfResource="-R 'select[type==LINUX64] rusage[mem=16000]' -M 16000000"
+              lsfQueue="test_queue"
+              />
+        </operation>
+
+      <operationtype typeClass="Workflow::OperationType::Model"
+          lsfResource="-R 'select[type==LINUX64] rusage[mem=16000]' -M 16000000"
+          lsfQueue="test_queue">
+          <inputproperty>in_a</inputproperty>
+          <inputproperty>in_b</inputproperty>
+          <outputproperty>out_a</outputproperty>
+          <outputproperty>out_b</outputproperty>
+      </operationtype>
+    </operation>
+
+    <operationtype typeClass="Workflow::OperationType::Model">
+        <inputproperty>a</inputproperty>
+        <inputproperty>b</inputproperty>
+        <outputproperty>out_a</outputproperty>
+        <outputproperty>out_b</outputproperty>
+    </operationtype>
+</workflow>
