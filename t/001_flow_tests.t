@@ -15,8 +15,9 @@ sub model_resource_test {
         't/001_flow_model_wf.xml');
 
     my $per_command_resources = {
-        'require' => {
-            'min_proc' => 1
+        'request' => {
+            'min_cores' => 1,
+            'max_cores' => 1,
         },
         'reserve' => {
             'memory' => '16000'
@@ -26,14 +27,22 @@ sub model_resource_test {
         }
     };
 
+    my $a_command_resources = Storable::dclone($per_command_resources);
+    $a_command_resources->{request}{min_cores} = 4;
+    $a_command_resources->{request}{max_cores} = 4;
+
+    my $b_command_resources = Storable::dclone($per_command_resources);
+    $b_command_resources->{request}{min_cores} = 3;
+    $b_command_resources->{request}{max_cores} = 3;
+
     my $expected_resources = {
         "children" => {
             "A" => {
-                "resources" => $per_command_resources,
+                "resources" => $a_command_resources,
                 "queue" => "test_queue",
             },
             "B" => {
-                "resources" => $per_command_resources,
+                "resources" => $b_command_resources,
                 "queue" => "test_queue",
             },
             "C" => {
@@ -57,8 +66,9 @@ sub nested_resource_test {
         't/001_flow_nested_wf.xml');
 
     my $per_command_resources = {
-        'require' => {
-            'min_proc' => 1
+        'request' => {
+            'min_cores' => 1,
+            'max_cores' => 1,
         },
         'reserve' => {
             'memory' => '16000'
