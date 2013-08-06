@@ -23,7 +23,7 @@ sub model_resource_test {
             'memory' => '16000'
         },
         'limit' => {
-            'max_resident_memory' => 16000000
+            'max_resident_memory' => 15625
         }
     };
 
@@ -74,7 +74,7 @@ sub nested_resource_test {
             'memory' => '16000'
         },
         'limit' => {
-            'max_resident_memory' => 16000000
+            'max_resident_memory' => 15625
         }
     };
 

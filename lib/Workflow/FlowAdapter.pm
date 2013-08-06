@@ -180,8 +180,9 @@ sub _translate_workflow_resource {
         $f{request}{temp_space} = $r{tmpSpace};
         $f{reserve}{temp_space} = $r{tmpSpace} if exists $r{useGtmp};
     }
+
     $f{reserve}{memory} = $r{memRequest} if exists $r{memRequest};
-    $f{limit}{max_resident_memory} = $r{memLimit} * 1024 if exists $r{memLimit};
+    $f{limit}{max_resident_memory} = $r{memLimit} if exists $r{memLimit};
 
     $f{limit}{cpu_time} = $r{timeLimit} if exists $r{timeLimit};
 
