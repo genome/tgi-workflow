@@ -39,7 +39,7 @@ sub _sync_database {
     my @params = @_;
 
     $self->_retriable_operation( sub {
-        $self->_set_date_forma();
+        $self->_set_date_format();
         $self->SUPER::_sync_database(@params);
     });
 }
