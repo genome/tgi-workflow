@@ -7,7 +7,7 @@ use File::lockf;
 
 
 class Workflow::DataSource::InstanceSchema {
-    is => ['UR::DataSource::Oracle'],
+    is => ['UR::DataSource::RDBMSRetriableOperations', 'UR::DataSource::Oracle'],
 };
 
 sub table_and_column_names_are_upper_case { 1; }
@@ -132,6 +132,27 @@ sub _sync_database {
     return 1;
 }
 
+sub create_iterator_closure_for_rule {
+    my $self = shift;
+    my @params = @_;
+
+    $self->_retriable_operation( sub {
+        $self->pause_db_queries_if_necessary();
+        $self->SUPER::create_iterator_closure_for_rule(@params);
+    });
+}
+
+sub create_dbh {
+    my $self = shift;
+    my @params = @_;
+
+    $self->_retriable_operation( sub {
+        $self->pause_db_queries_if_necessary();
+        $self->SUPER::create_dbh(@params);
+    });
+}
+
+
 sub log_commit_time {
     my($db_name, $time) = @_;
 
@@ -248,6 +269,27 @@ sub pause_db_if_necessary {
     print "Database updating has been resumed, continuing commit!\n";
     return 1;
 }
+
+sub pause_db_queries_if_necessary {
+    my $self = shift;
+    return 1 unless $ENV{GENOME_DB_QUERY_PAUSE} and -e $ENV{GENOME_DB_QUERY_PAUSE};
+
+    print "Database querying has been paused; disconnecting db handles.  Please wait until the query pause is released...\n";
+
+    my @data_sources = UR::Context->all_objects_loaded('UR::DataSource::RDBMS');
+    for my $ds (@data_sources) {
+        $ds->disconnect_default_handle if $ds->has_default_handle;
+    }
+
+    while (1) {
+        sleep 30;
+        last unless $ENV{GENOME_DB_QUERY_PAUSE} and -e $ENV{GENOME_DB_QUERY_PAUSE};
+    }
+
+    print "Database updating has been resumed, continuing query!\n";
+    return 1;
+}
+
 
 sub sleep_length {
     return 30;
