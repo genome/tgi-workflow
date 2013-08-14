@@ -466,8 +466,11 @@ sub _construct_command {
         }
     };
 
+    my $outf = $payload->{out_log}; 
+    my $errf = $payload->{err_log}; 
+
     my $command = sprintf(
-            "annotate-log $^X -e '%s use %s;" .
+            "prefix-and-tee-output $outf $errf  $^X -e '%s use %s;" .
             ($use_class_name ? " use %s;" : '') .
             " use Workflow::Server::Worker;" .
             " Workflow::Server::Worker->start(\"%s\", %s)'",
@@ -594,8 +597,11 @@ sub _dispatch_fork_worker {
     my $namespace = (split(/::/,$command_class))[0];
     my $hostname = hostname();
     my $port = $heap->{hub_port};
-    my @cmd = ( 'annotate-log', $^X, '-e',
-        sprintf('%s BEGIN {use Time::HiRes; our $time_before = Time::HiRes::time();}; ' .
+    my @cmd = ( 'prefix-and-tee-output', 
+                $stdout_file, 
+                $stderr_file, 
+                $^X, '-e',
+                sprintf('%s BEGIN {use Time::HiRes; our $time_before = Time::HiRes::time();}; ' .
                 'use %s; use %s; ' .
                 'use Workflow::Server::Worker; ' .
                 'use Workflow::Instrumentation qw(timing); ' .
@@ -616,6 +622,9 @@ sub _dispatch_fork_worker {
         DEBUG "dispatch fork_worker started $$";
         open STDOUT, '>>', $stdout_file if $stdout_file;
         open STDERR, '>>', $stderr_file if $stderr_file;
+        use IO::Handle;
+        STDOUT->autoflush(1);
+        STDERR->autoflush(1);
         exec @cmd;
     }
 }
