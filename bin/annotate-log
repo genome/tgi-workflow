@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use POSIX qw(strftime uname);
 use IPC::Open3 qw(open3);
+use IO::Handle;
 
 $0 = 'annotate-log err';
 
@@ -33,6 +34,10 @@ $hostname = substr($hostname,0,index($hostname,'.'));
 
 pipe OUT_R, OUT_W;
 pipe ERR_R, ERR_W;
+OUT_R->autoflush(1);
+OUT_W->autoflush(1);
+ERR_R->autoflush(1);
+ERR_W->autoflush(1);
 
 my $pid = open3('<&STDIN', '>&OUT_W', '>&ERR_W', @ARGV);
 
