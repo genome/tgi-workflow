@@ -40,11 +40,16 @@ sub sorted_child_instances {
     my $i = 0;
     my %ops = map { $_->name() => $i++ } $self->operation->operations_in_series();
 
+    # This section is needlessly noisy, so turn off warnings
+    no warnings;
+
     my @child = sort {
         $ops{ $a->name } <=> $ops{ $b->name }
         || $a->name cmp $b->name
         || $a->parallel_index <=> $b->parallel_index
     } $self->child_instances(@_);
+
+    use warnings;
 
     return @child;
 }
