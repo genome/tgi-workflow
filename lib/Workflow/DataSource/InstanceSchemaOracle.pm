@@ -66,6 +66,7 @@ sub _lookup_class_for_table_name {
 my @retriable_operations = (
     qr(ORA-25408), # can not safely replay call
     qr(ORA-03135), # connection lost contact
+    qw(ORA-03114), # not connected to ORACLE
 );
 sub should_retry_operation_after_error {
     my($self, $sql, $dbi_errstr) = @_;
