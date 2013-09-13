@@ -156,7 +156,7 @@ sub autogenerate_new_object_id_for_class_name_and_rule {
     my $self = shift;
     my @params = @_;
 
-    $self->retriable_operation( sub {
+    $self->_retriable_operation( sub {
         $self->pause_db_queries_if_necessary();
         $self->SUPER::autogenerate_new_object_id_for_class_name_and_rule(@params);
     });
