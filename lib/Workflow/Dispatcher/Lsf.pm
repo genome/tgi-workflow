@@ -92,7 +92,9 @@ sub get_command {
         $cmd .= sprintf("-M %s ", $job->resource->mem_limit * 1024);
     }
     if (defined $job->resource->min_proc) {
-        $cmd .= sprintf("-n %s ", $job->resource->min_proc);
+        unless ($OPENLAVA) {
+            $cmd .= sprintf("-n %s ", $job->resource->min_proc);
+        }
     }
 
     # set queue
