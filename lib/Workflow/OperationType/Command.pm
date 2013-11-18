@@ -105,24 +105,28 @@ sub initialize {
             $id_by{$id} = $p;
         }
     }
-    
+
     foreach my $type (qw/input output/) {
         my $my_method = $type . '_properties';
         unless ($self->$my_method) {
-            my @property_meta_of_type = grep { 
+            my @property_meta_of_type = grep {
                 if ($type eq 'input') {
-                    (defined $_->{'is_input'} && $_->{'is_input'}) 
-                    || 
+                    (defined $_->{'is_input'} && $_->{'is_input'})
+                    ||
+                    ($_->can('is_input') && $_->is_input)
+                    ||
                     ( defined $_->{'is_param'} && $_->{'is_param'} && ! ($_->property_name =~ /^(lsf_queue|lsf_resource)$/) )
                 }
                 elsif ($type eq 'output') {
                     defined $_->{'is_output'} && $_->{'is_output'}
+                    ||
+                    ($_->can('is_output') && $_->is_output)
                 }
             } @property_meta;
-            
-            my @props = map { $_->property_name } @property_meta_of_type; 
+
+            my @props = map { $_->property_name } @property_meta_of_type;
             $self->{$my_method} = $self->{'db_committed'}{$my_method} = \@props;
-        
+
             if ($type eq 'input') {
                 my @opt_input;
                 for my $pm (@property_meta_of_type) {
@@ -149,7 +153,7 @@ sub initialize {
             }
         }
     }
-    
+
     return $self;
 }
 
@@ -158,7 +162,7 @@ sub create_from_xml_simple_structure {
 
     my $command = delete $struct->{commandClass};
     my $self = $class->get($command);
-    
+
     $self->lsf_resource(delete $struct->{lsfResource}) if (exists $struct->{lsfResource});
     $self->lsf_queue(delete $struct->{lsfQueue}) if (exists $struct->{lsfQueue});
     $self->lsf_project(delete $struct->{lsfProject}) if (exists $struct->{lsfProject});
@@ -252,7 +256,7 @@ sub shortcut {
 sub call {
     my $self = shift;
     my $type = shift;
-    
+
     unless ($type eq 'shortcut' || $type eq 'execute') {
         die 'invalid type: ' . $type;
     }
@@ -263,7 +267,7 @@ sub call {
 
     foreach my $key (keys %properties) {
         my $value = $properties{$key};
-        if ((defined $value) and (Scalar::Util::blessed $value) 
+        if ((defined $value) and (Scalar::Util::blessed $value)
                 and $value->isa('UR::Object')){
             my $id = $value->id;
             my $class_name = $value->class;
@@ -343,7 +347,7 @@ sub call {
     if (!defined $command) {
         die "Undefined value returned from $command_name->create\n" . join("\n", @errors) . "\n";
     }
-    
+
     @errors = map { "$command_name: Error " . $_->desc } $command->__errors__;
     if (@errors) {
         die join("\n",@errors);
