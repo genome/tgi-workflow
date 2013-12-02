@@ -572,6 +572,7 @@ sub _dispatch_start_jobs {
                     $lsf_job_id, $payload->{shortcut_flag});
         } else {
             DEBUG "dispatch failed to start job, will retry on next cycle";
+            push @requeue, $payload;
         }
     }
 
