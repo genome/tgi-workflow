@@ -115,7 +115,9 @@ sub initialize {
                     ||
                     ($_->can('is_input') && $_->is_input)
                     ||
-                    ( defined $_->{'is_param'} && $_->{'is_param'} && ! ($_->property_name =~ /^(lsf_queue|lsf_resource)$/) )
+                    ( ((defined $_->{'is_param'} && $_->{'is_param'})
+                        || ($_->can('is_param') && $_->is_param))
+                        && ! ($_->property_name =~ /^(lsf_queue|lsf_resource)$/) )
                 }
                 elsif ($type eq 'output') {
                     defined $_->{'is_output'} && $_->{'is_output'}
