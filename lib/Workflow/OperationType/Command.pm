@@ -64,9 +64,14 @@ sub initialize {
     my $self = shift;
     my $command = $self->command_class_name;
 
-    eval "use $command";
-    if ($@) {
-        die $@;
+    # Old-style definations call a function after setting up the class
+
+    my $namespace = (split(/::/,$command))[0];
+    if (defined $namespace && !exists $INC{"$namespace.pm"}){
+        eval "use " . $namespace;
+        if ($@) {
+            die $@;
+        }
     }
 
     my $class_meta = eval { $command->__meta__ };
