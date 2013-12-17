@@ -73,14 +73,15 @@ sub get_command {
         push @rusages, sprintf("internet_download_mbps=%s", $job->resource->download_bandwidth);
     }
 
-    if ($OPENLAVA and @rusages > 1) {
-        my @new = ($rusages[0]);
-        shift @rusages;
-        warn "Discarding part of rusaage for OpenLava.  Keep: @new.  Discard: @rusages.\n";
-        @rusages = @new;
+    my $rusage;
+    #OPENLAVA uses colon as a delimiter for rusage.
+    if ($OPENLAVA) {
+      $rusage = join(":", @rusages);
+    }
+    else {
+      $rusage = join(", ", @rusages);
     }
 
-    my $rusage = join(", ", @rusages);
     if ($rusage ne "") {
         $cmd .= sprintf(" rusage[%s]' ", $rusage);
     } else {
