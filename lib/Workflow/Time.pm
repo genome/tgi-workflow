@@ -124,7 +124,7 @@ sub date_now
     my $format = $class->config('date');
     if ($format)
     {
-        $class->debug_message("got date format $format");
+        $class->debug_message("got date format %s", $format);
     }
     else
     {
@@ -155,7 +155,7 @@ sub time_now
     my $format = $class->config('time');
     if ($format)
     {
-        $class->debug_message("got date format $format");
+        $class->debug_message("got date format %s", $format);
     }
     else
     {
@@ -241,7 +241,7 @@ sub from_integer
     my $format = $class->config('datetime');
     if ($format)
     {
-        $class->debug_message("got datetime format $format");
+        $class->debug_message("got datetime format %s", $format);
     }
     else
     {
@@ -402,7 +402,7 @@ sub numbers_to_datetime
     my $format = $class->config('datetime');
     if ($format)
     {
-        $class->debug_message("got datetime format $format");
+        $class->debug_message("got datetime format %s", $format);
     }
     else
     {
@@ -474,7 +474,7 @@ sub add_date_delta_days
     my $format = $class->config('date');
     if ($format)
     {
-        $class->debug_message("got date format $format");
+        $class->debug_message("got date format %s", $format);
     }
     else
     {

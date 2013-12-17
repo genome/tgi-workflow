@@ -588,6 +588,10 @@ sub parent_workflow_log_dir {
         $class->warning_message('Ingoring passed object and looking in current environment for parent log directory');
     }
 
+    if ($ENV{'FLOW_PARENT_WORKFLOW_LOG_DIR'}) {
+        return $ENV{'FLOW_PARENT_WORKFLOW_LOG_DIR'};
+    }
+
     #not running under another workflow
     return unless exists $ENV{'WORKFLOW_PARENT_EXECUTION'};
 
