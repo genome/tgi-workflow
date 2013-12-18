@@ -5,6 +5,8 @@ package Workflow::DataSource::InstanceSchemaOracle;
 
 use Workflow;
 
+use List::MoreUtils qw(any);
+
 class Workflow::DataSource::InstanceSchemaOracle {
     is => ['UR::DataSource::RDBMSRetriableOperations', 'UR::DataSource::Oracle'],
     type_name => 'workflow datasource instanceschema',
