@@ -73,7 +73,15 @@ sub get_command {
         push @rusages, sprintf("internet_download_mbps=%s", $job->resource->download_bandwidth);
     }
 
-    my $rusage = join(", ", @rusages);
+    my $rusage;
+    #OPENLAVA uses colon as a delimiter for rusage.
+    if ($OPENLAVA) {
+      $rusage = join(":", @rusages);
+    }
+    else {
+      $rusage = join(", ", @rusages);
+    }
+
     if ($rusage ne "") {
         $cmd .= sprintf(" rusage[%s]' ", $rusage);
     } else {
@@ -85,7 +93,9 @@ sub get_command {
         $cmd .= sprintf("-M %s ", $job->resource->mem_limit * 1024);
     }
     if (defined $job->resource->min_proc) {
-        $cmd .= sprintf("-n %s ", $job->resource->min_proc);
+        unless ($OPENLAVA) {
+            $cmd .= sprintf("-n %s ", $job->resource->min_proc);
+        }
     }
 
     # set queue
