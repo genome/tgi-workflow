@@ -152,7 +152,7 @@ sub _get_command_meta {
         $failed_to_use_comand = $@;
     }
 
-    # Old-style definations call a function after setting up the class
+    # Old-style definitions call a function after setting up the class
 
     my $failed_to_use_namespace;
     my $namespace = (split(/::/,$command))[0];
