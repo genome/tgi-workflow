@@ -64,26 +64,7 @@ sub initialize {
     my $self = shift;
     my $command = $self->command_class_name;
 
-    eval "use $command";
-    if ($@) {
-        # Old-style definations call a function after setting up the class
-
-        my $namespace = (split(/::/,$command))[0];
-        if (defined $namespace && !exists $INC{"$namespace.pm"}){
-            eval "use " . $namespace;
-            if ($@) {
-                die $@;
-            }
-        }
-    }
-
-    my $class_meta = eval { $command->__meta__ };
-    if($@ or not $class_meta) {
-        warn 'Could not find command class ' . $command;
-        $self->{input_properties} = [];
-        $self->{output_properties} = [];
-        return $self;
-    }
+    my $class_meta = $self->_get_command_meta($command);
 
     my @property_meta = $class_meta->all_property_metas();
     # Know which properties are ids for other properties and make them optional.
@@ -160,6 +141,43 @@ sub initialize {
     }
 
     return $self;
+}
+
+sub _get_command_meta {
+    my ($self, $command) = @_;
+
+    my $failed_to_use_comand;
+    eval "use $command";
+    if ($@) {
+        $failed_to_use_comand = $@;
+    }
+
+    # Old-style definations call a function after setting up the class
+
+    my $failed_to_use_namespace;
+    my $namespace = (split(/::/,$command))[0];
+    if (defined $namespace && !exists $INC{"$namespace.pm"}) {
+        eval "use " . $namespace;
+        if ($@) {
+            $failed_to_use_namespace = $@;
+        }
+    }
+
+    if ($failed_to_use_comand && $failed_to_use_namespace) {
+        Carp::confess(sprintf(
+                "Failed to load command with direct use and via namespace.\n"
+                . "Error message from use: %s"
+                . "\nError message from namespace: %s",
+                $failed_to_use_comand,
+                $failed_to_use_namespace));
+    }
+
+    my $class_meta = eval { $command->__meta__ };
+    if($@ or not $class_meta) {
+        Carp::confess('Could not find command class ' . $command);
+    }
+
+    return $class_meta;
 }
 
 sub create_from_xml_simple_structure {
