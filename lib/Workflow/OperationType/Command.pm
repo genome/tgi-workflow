@@ -146,13 +146,13 @@ sub initialize {
 sub _get_command_meta {
     my ($self, $command) = @_;
 
-    my $failed_to_use_comand;
-    eval "use $command";
-    if ($@) {
-        $failed_to_use_comand = $@;
-    }
+    # This function has significant side effects.
 
-    # Old-style definitions call a function after setting up the class
+    # If you try to use a UR object without first using that object's
+    # namespace, then it appears you will never be able to properly load that
+    # object even if you load the namespace later.
+    # Therefore, we must first try to load any UR namespaces, and only then try
+    # to load the particular command object.
 
     my $failed_to_use_namespace;
     my $namespace = (split(/::/,$command))[0];
@@ -161,6 +161,12 @@ sub _get_command_meta {
         if ($@) {
             $failed_to_use_namespace = $@;
         }
+    }
+
+    my $failed_to_use_comand;
+    eval "use $command";
+    if ($@) {
+        $failed_to_use_comand = $@;
     }
 
     if ($failed_to_use_comand && $failed_to_use_namespace) {
