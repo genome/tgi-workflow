@@ -174,7 +174,10 @@ sub _get_command_meta {
 
     my $class_meta = eval { $command->__meta__ };
     if($@ or not $class_meta) {
-        Carp::confess('Could not find command class ' . $command);
+        Carp::confess(sprintf(
+                "Could not find __meta__ for command '%s'.  This may "
+                . "indicate a partially (incompletely) loaded class.",
+                $command));
     }
 
     return $class_meta;
