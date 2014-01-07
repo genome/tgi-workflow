@@ -1,29 +1,46 @@
-CREATE TABLE workflow_cache (
-    workflow_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    xml BLOB
+CREATE TABLE WORKFLOW_INSTANCE (
+    WORKFLOW_INSTANCE_ID integer primary key not null,
+    PARENT_INSTANCE_ID integer,
+    PEER_INSTANCE_ID integer,
+    CURRENT_EXECUTION_ID integer,
+    WORKFLOW_PLAN_ID integer not null,
+    NAME varchar not null,
+    INPUT_STORED varchar,
+    OUTPUT_STORED varchar,
+    PARALLEL_INDEX integer,
+    PARENT_EXECUTION_ID integer,
+    INTENTION varchar
 );
 
-CREATE TABLE instance (
-    instance_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    parent_instance_id INTEGER,
-    peer_instance_id INTEGER,
-    current_execution_id INTEGER,
-    cache_workflow_id INTEGER,
-    name TEXT NOT NULL,
-    input_stored BLOB,
-    output_stored BLOB,
-    parallel_index INTEGER
+CREATE TABLE WORKFLOW_INSTANCE_EXECUTION (
+    WORKFLOW_EXECUTION_ID integer primary key not null,
+    WORKFLOW_INSTANCE_ID integer not null,
+    STATUS varchar not null,
+    START_TIME timestamp,
+    END_TIME timestamp,
+    EXIT_CODE integer,
+    STDOUT varchar,
+    STDERR varchar,
+    IS_DONE integer,
+    IS_RUNNING integer,
+    DISPATCH_ID varchar,
+    CPU_TIME float,
+    MAX_MEMORY integer,
+    MAX_SWAP integer,
+    MAX_PROCESSES integer,
+    MAX_THREADS integer,
+    USER_NAME varchar
 );
 
-CREATE TABLE instance_execution (
-    execution_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    instance_id INTEGER NOT NULL,
-    status TEXT NOT NULL,
-    start_time TEXT,
-    end_time TEXT,
-    exit_code INTEGER,
-    stdout TEXT,
-    stderr TEXT,
-    is_done INTEGER,
-    is_running INTEGER
+CREATE TABLE WORKFLOW_HISTORIAN (
+    NET_KEY varchar not null,
+    OPERATION_ID integer not null,
+    COLOR integer not null,
+    WORKFLOW_INSTANCE_ID integer,
+    PRIMARY KEY (NET_KEY, OPERATION_ID, COLOR)
+);
+
+CREATE TABLE WORKFLOW_PLAN (
+    WORKFLOW_PLAN_ID integer primary key not null,
+    XML varchar
 );
