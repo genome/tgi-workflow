@@ -7,15 +7,15 @@ use warnings;
 class Workflow::Operation::InstanceExecution {
     id_by => [
         execution_id =>
-          { is => 'Text', column_name => 'WORKFLOW_EXECUTION_ID' },
+          { is => 'Intever', column_name => 'WORKFLOW_EXECUTION_ID' },
     ],
     table_name  => 'workflow.INSTANCE_EXECUTION',
-	id_generator => '-uuid',
+	id_generator => 'workflow.workflow_id_seq',
     schema_name => 'InstanceSchema',
     data_source => 'Workflow::DataSource::InstanceSchema',
     has         => [
         instance_id =>
-          { is => 'Text', column_name => 'WORKFLOW_INSTANCE_ID' },
+          { is => 'Integer', column_name => 'WORKFLOW_INSTANCE_ID' },
         operation_instance =>
           { is => 'Workflow::Operation::Instance', id_by => 'instance_id' },
         status       => { is => 'VARCHAR2',  len => 15, value       => 'new' },

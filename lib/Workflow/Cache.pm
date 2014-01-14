@@ -7,9 +7,9 @@ use Workflow;
 class Workflow::Cache {
     type_name  => 'workflow cache',
     table_name => 'workflow.PLAN',
-	id_generator => '-uuid',
+	id_generator => 'workflow.workflow_id_seq',
     id_by      => [
-        workflow_id => { is => 'Text', column_name => 'workflow_plan_id' },
+        workflow_id => { is => 'Integer', column_name => 'workflow_plan_id' },
     ],
     has => [
         xml  => { is => 'XmlBlob', is_optional => 1 },
