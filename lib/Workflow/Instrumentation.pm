@@ -27,8 +27,8 @@ BEGIN {
         $Net::Statsd::HOST = ''; # disabled if testing
         $Net::Statsd::PORT = 0;
     } else {
-        $Net::Statsd::HOST = $ENV{GENOME_STATSD_HOST} || 'localhost';
-        $Net::Statsd::PORT = $ENV{GENOME_STATSD_PORT} || 8125;
+        $Net::Statsd::HOST = $ENV{WORKFLOW_STATSD_HOST} || 'localhost';
+        $Net::Statsd::PORT = $ENV{WORKFLOW_STATSD_PORT} || 8125;
     }
 };
 
