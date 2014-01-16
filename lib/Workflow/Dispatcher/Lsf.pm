@@ -7,7 +7,7 @@ class Workflow::Dispatcher::Lsf {
     is => 'Workflow::Dispatcher',
 };
 
-# The OpenLava implementtion of LSF has reduced features
+# The OpenLava implementation of LSF has reduced features
 our $OPENLAVA = ((`which bsub` =~ /openlava/) ? 1 : 0);
 
 sub execute {
@@ -26,8 +26,20 @@ sub get_command {
     my $self = shift;
     my $job = shift;
     my $cmd = "bsub ";
+
     # set LSF rusage
-    
+
+    #For testing on small resource machines, reduce memory and core requirements by some factor (or to some max)
+    #For OPENLAVA (standalone) situations only
+    if ($OPENLAVA && $ENV{'WF_LOW_RESOURCES'}==1){
+      if($job->resource->min_proc>4){
+        $job->resource->min_proc(4);
+      }
+      if($job->resource->mem_request>4000){
+        $job->resource->mem_request(4000);
+      }
+    }
+
     # select string consists of a series of args
     # of RESOURCE >= NUMBER && together
     my @selects;
