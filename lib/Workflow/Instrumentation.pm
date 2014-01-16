@@ -29,8 +29,8 @@ BEGIN {
 
     } else {
         #Not sure if these ENV variables are actually defined in workflow code yet. 
-        $Net::Statsd::HOST = $ENV{WORKFLOW_STATSD_HOST} || 'localhost';
-        $Net::Statsd::PORT = $ENV{WORKFLOW_STATSD_PORT} || 8125;
+        $Net::Statsd::HOST = $ENV{WF_STATSD_HOST} || 'localhost';
+        $Net::Statsd::PORT = $ENV{WF_STATSD_PORT} || 8125;
 
     }
 };
