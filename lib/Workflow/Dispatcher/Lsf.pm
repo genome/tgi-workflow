@@ -31,7 +31,7 @@ sub get_command {
 
     #For testing on small resource machines, reduce memory and core requirements by some factor (or to some max)
     #For OPENLAVA (standalone) situations only
-    if ($OPENLAVA && $ENV{'WF_LOW_RESOURCES'}==1){
+    if ($OPENLAVA && $ENV{'WF_LOW_RESOURCES'}){
       if($job->resource->min_proc>4){
         $job->resource->min_proc(4);
       }
