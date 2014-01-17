@@ -7,15 +7,15 @@ use warnings;
 class Workflow::Operation::InstanceExecution {
     id_by => [
         execution_id =>
-          { is => 'Text', column_name => 'WORKFLOW_EXECUTION_ID' },
+          { is => 'Text', column_name => 'workflow_execution_id' },
     ],
-    table_name  => 'workflow.INSTANCE_EXECUTION',
+    table_name  => 'workflow.instance_execution',
 	id_generator => '-uuid',
     schema_name => 'InstanceSchema',
     data_source => 'Workflow::DataSource::InstanceSchema',
     has         => [
         instance_id =>
-          { is => 'Text', column_name => 'WORKFLOW_INSTANCE_ID' },
+          { is => 'Text', column_name => 'workflow_instance_id' },
         operation_instance =>
           { is => 'Workflow::Operation::Instance', id_by => 'instance_id' },
         status       => { is => 'VARCHAR2',  len => 15, value       => 'new' },
@@ -66,7 +66,7 @@ class Workflow::Operation::InstanceExecution {
         dispatch_identifier => {
             is          => 'VARCHAR2',
             len         => 10,
-            column_name => 'DISPATCH_ID',
+            column_name => 'dispatch_id',
             is_optional => 1
         },
         cpu_time      => { is => 'NUMBER',   len => 11, is_optional => 1 },

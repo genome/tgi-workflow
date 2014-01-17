@@ -6,7 +6,7 @@ use warnings;
 use Workflow;
 class Workflow::Cache {
     type_name  => 'workflow cache',
-    table_name => 'workflow.PLAN',
+    table_name => 'workflow.plan',
 	id_generator => '-uuid',
     id_by      => [
         workflow_id => { is => 'Text', column_name => 'workflow_plan_id' },

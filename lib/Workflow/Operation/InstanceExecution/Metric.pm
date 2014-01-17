@@ -6,7 +6,7 @@ use warnings;
 use Workflow;
 class Workflow::Operation::InstanceExecution::Metric {
     type_name  => 'workflow execution metric',
-    table_name => 'workflow.EXECUTION_METRIC',
+    table_name => 'workflow.execution_metric',
     id_by      => [
         name                  => { is => 'VARCHAR2', len => 100 },
         workflow_execution_id => { is => 'Text' },

@@ -8,7 +8,7 @@ use IO::File;
 use Workflow;
 class Workflow::Service {
     type_name => 'workflow service',
-    table_name => 'workflow.SERVICE',
+    table_name => 'workflow.service',
     id_by => [
         hostname   => { is => 'VARCHAR2', len => 255 },
         username   => { is => 'VARCHAR2', len => 20 },

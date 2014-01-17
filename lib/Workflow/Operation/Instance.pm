@@ -10,10 +10,10 @@ class Workflow::Operation::Instance {
     sub_classification_method_name => '_resolve_subclass_name',
     id_by                          => [
         instance_id =>
-          { is => 'Text', column_name => 'WORKFLOW_INSTANCE_ID', len=>255 }
+          { is => 'Text', column_name => 'workflow_instance_id', len=>255 }
     ],
 	id_generator => '-uuid',
-    table_name => 'workflow.INSTANCE',
+    table_name => 'workflow.instance',
     schema_name => 'InstanceSchema',
     data_source => 'Workflow::DataSource::InstanceSchema',
     has         => [
@@ -24,7 +24,7 @@ class Workflow::Operation::Instance {
         },
         cache_workflow_id => {
             is          => 'Text',
-            column_name => 'WORKFLOW_PLAN_ID',
+            column_name => 'workflow_plan_id',
             implied_by  => 'cache_workflow',
             is_optional => 1
         },
