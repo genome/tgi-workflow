@@ -1,2 +1,3 @@
 lib/Workflow/DataSource/Meta.sqlite3
 lib/Workflow/DataSource/Meta.sqlite3n
+lib/Workflow/DataSource/InstanceSchema.sqlite3
