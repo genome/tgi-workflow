@@ -54,7 +54,7 @@ sub extract_xml_hashref {
         } else {
             die 'unrecognized reference';
         }
-    } elsif (-s $wf_repr) {
+    } elsif (!($wf_repr =~ m/\n/) && -s $wf_repr) {
         $xml_text = read_file($wf_repr);
     } else {
         $xml_text = $wf_repr;
