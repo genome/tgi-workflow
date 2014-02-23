@@ -35,8 +35,8 @@ sub get_command {
       if($job->resource->min_proc>4){
         $job->resource->min_proc(4);
       }
-      if($job->resource->mem_request>4000){
-        $job->resource->mem_request(4000);
+      if($job->resource->mem_request>1000){
+        $job->resource->mem_request(1000);
       }
     }
 
