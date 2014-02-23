@@ -64,23 +64,7 @@ sub initialize {
     my $self = shift;
     my $command = $self->command_class_name;
 
-    # Old-style definations call a function after setting up the class
-
-    my $namespace = (split(/::/,$command))[0];
-    if (defined $namespace && !exists $INC{"$namespace.pm"}){
-        eval "use " . $namespace;
-        if ($@) {
-            die $@;
-        }
-    }
-
-    my $class_meta = eval { $command->__meta__ };
-    if($@ or not $class_meta) {
-        warn 'Could not find command class ' . $command;
-        $self->{input_properties} = [];
-        $self->{output_properties} = [];
-        return $self;
-    }
+    my $class_meta = $self->_get_command_meta($command);
 
     my @property_meta = $class_meta->all_property_metas();
     # Know which properties are ids for other properties and make them optional.
@@ -105,24 +89,30 @@ sub initialize {
             $id_by{$id} = $p;
         }
     }
-    
+
     foreach my $type (qw/input output/) {
         my $my_method = $type . '_properties';
         unless ($self->$my_method) {
-            my @property_meta_of_type = grep { 
+            my @property_meta_of_type = grep {
                 if ($type eq 'input') {
-                    (defined $_->{'is_input'} && $_->{'is_input'}) 
-                    || 
-                    ( defined $_->{'is_param'} && $_->{'is_param'} && ! ($_->property_name =~ /^(lsf_queue|lsf_resource)$/) )
+                    (defined $_->{'is_input'} && $_->{'is_input'})
+                    ||
+                    ($_->can('is_input') && $_->is_input)
+                    ||
+                    ( ((defined $_->{'is_param'} && $_->{'is_param'})
+                        || ($_->can('is_param') && $_->is_param))
+                        && ! ($_->property_name =~ /^(lsf_queue|lsf_resource)$/) )
                 }
                 elsif ($type eq 'output') {
                     defined $_->{'is_output'} && $_->{'is_output'}
+                    ||
+                    ($_->can('is_output') && $_->is_output)
                 }
             } @property_meta;
-            
-            my @props = map { $_->property_name } @property_meta_of_type; 
+
+            my @props = map { $_->property_name } @property_meta_of_type;
             $self->{$my_method} = $self->{'db_committed'}{$my_method} = \@props;
-        
+
             if ($type eq 'input') {
                 my @opt_input;
                 for my $pm (@property_meta_of_type) {
@@ -149,8 +139,54 @@ sub initialize {
             }
         }
     }
-    
+
     return $self;
+}
+
+sub _get_command_meta {
+    my ($self, $command) = @_;
+
+    # This function has significant side effects.
+
+    # If you try to use a UR object without first using that object's
+    # namespace, then it appears you will never be able to properly load that
+    # object even if you load the namespace later.
+    # Therefore, we must first try to load any UR namespaces, and only then try
+    # to load the particular command object.
+
+    my $failed_to_use_namespace;
+    my $namespace = (split(/::/,$command))[0];
+    if (defined $namespace && !exists $INC{"$namespace.pm"}) {
+        eval "use " . $namespace;
+        if ($@) {
+            $failed_to_use_namespace = $@;
+        }
+    }
+
+    my $failed_to_use_comand;
+    eval "use $command";
+    if ($@) {
+        $failed_to_use_comand = $@;
+    }
+
+    if ($failed_to_use_comand && $failed_to_use_namespace) {
+        Carp::confess(sprintf(
+                "Failed to load command with direct use and via namespace.\n"
+                . "Error message from use: %s"
+                . "\nError message from namespace: %s",
+                $failed_to_use_comand,
+                $failed_to_use_namespace));
+    }
+
+    my $class_meta = eval { $command->__meta__ };
+    if($@ or not $class_meta) {
+        Carp::confess(sprintf(
+                "Could not find __meta__ for command '%s'.  This may "
+                . "indicate a partially (incompletely) loaded class.",
+                $command));
+    }
+
+    return $class_meta;
 }
 
 sub create_from_xml_simple_structure {
@@ -158,7 +194,7 @@ sub create_from_xml_simple_structure {
 
     my $command = delete $struct->{commandClass};
     my $self = $class->get($command);
-    
+
     $self->lsf_resource(delete $struct->{lsfResource}) if (exists $struct->{lsfResource});
     $self->lsf_queue(delete $struct->{lsfQueue}) if (exists $struct->{lsfQueue});
     $self->lsf_project(delete $struct->{lsfProject}) if (exists $struct->{lsfProject});
@@ -252,7 +288,7 @@ sub shortcut {
 sub call {
     my $self = shift;
     my $type = shift;
-    
+
     unless ($type eq 'shortcut' || $type eq 'execute') {
         die 'invalid type: ' . $type;
     }
@@ -263,7 +299,7 @@ sub call {
 
     foreach my $key (keys %properties) {
         my $value = $properties{$key};
-        if ((defined $value) and (Scalar::Util::blessed $value) 
+        if ((defined $value) and (Scalar::Util::blessed $value)
                 and $value->isa('UR::Object')){
             my $id = $value->id;
             my $class_name = $value->class;
@@ -343,7 +379,7 @@ sub call {
     if (!defined $command) {
         die "Undefined value returned from $command_name->create\n" . join("\n", @errors) . "\n";
     }
-    
+
     @errors = map { "$command_name: Error " . $_->desc } $command->__errors__;
     if (@errors) {
         die join("\n",@errors);

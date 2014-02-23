@@ -514,7 +514,7 @@ sub _dispatch_start_jobs {
             my $instance = $payload->{instance};
             my $resource = $type->resource_for_instance($instance);
             
-            my $group    = $resource->group || "/workflow-worker";
+            my $group    = $resource->group || "/apipe-workflow-worker";
             my $queue    = $resource->queue ||
                            $payload->{operation_type}->lsf_queue || $ENV{WF_JOB_QUEUE};
             my $name     = $payload->{instance}->name || 'worker';
@@ -574,8 +574,8 @@ sub _dispatch_start_jobs {
             DEBUG sprintf("dispatch start_jobs submitted %s %s",
                     $lsf_job_id, $payload->{shortcut_flag});
         } else {
-            DEBUG "dispatch failed to start job!";
-            die "error submitting job!";
+            DEBUG "dispatch failed to start job, will retry on next cycle";
+            push @requeue, $payload;
         }
     }
 
@@ -604,9 +604,6 @@ sub _dispatch_fork_worker {
                 sprintf('%s BEGIN {use Time::HiRes; our $time_before = Time::HiRes::time();}; ' .
                 'use %s; use %s; ' .
                 'use Workflow::Server::Worker; ' .
-                'use Workflow::Instrumentation qw(timing); ' .
-                'my $time_after = Time::HiRes::time(); ' .
-                'timing("workflow.server.worker.load_libraries", 1000.0 *($time_after-$time_before)); '.
                 'Workflow::Server::Worker->start("%s" , %s, 2)',
         $libstring, $namespace, $command_class,
         $hostname, $port)

@@ -11,4 +11,9 @@ class Workflow {
     type_name => 'workflow',
 };
 
+BEGIN {
+    $ENV{'GENOME_DB_PAUSE'} ||= '/gsc/var/lock/database/pause_updates';
+    $ENV{GENOME_DB_QUERY_PAUSE} ||= '/gsc/var/lock/database/pause_queries';
+}
+
 1;

@@ -5,8 +5,10 @@ package Workflow::DataSource::InstanceSchemaOracle;
 
 use Workflow;
 
+use List::MoreUtils qw(any);
+
 class Workflow::DataSource::InstanceSchemaOracle {
-    is => ['UR::DataSource::Oracle'],
+    is => ['UR::DataSource::RDBMSRetriableOperations', 'UR::DataSource::Oracle'],
     type_name => 'workflow datasource instanceschema',
 };
 
@@ -36,15 +38,12 @@ my($self,$sequence_name) = @_;
 
 sub _sync_database {
     my $self = shift;
+    my @params = @_;
 
-    my $dbh = $self->get_default_handle;
-    unless ($dbh->do("alter session set NLS_DATE_FORMAT = 'YYYY-MM-DD HH24:MI:SS'")
-            and
-            $dbh->do("alter session set NLS_TIMESTAMP_FORMAT = 'YYYY-MM-DD HH24:MI:SSXFF'"))
-    {
-        Carp::croak("Can't set date format: $DBI::errstr");
-    }
-    $self->SUPER::_sync_database(@_);
+    $self->_retriable_operation( sub {
+        $self->_set_date_format();
+        $self->SUPER::_sync_database(@params);
+    });
 }
 
 sub _my_data_source_id {
@@ -64,6 +63,16 @@ sub _lookup_class_for_table_name {
         my $is = Workflow::DataSource::InstanceSchema->get();
         $class = $is->_lookup_class_for_table_name($table_name);
     }
+}
+
+my @retriable_operations = (
+    qr(ORA-25408), # can not safely replay call
+    qr(ORA-03135), # connection lost contact
+    qw(ORA-03114), # not connected to ORACLE
+);
+sub should_retry_operation_after_error {
+    my($self, $sql, $dbi_errstr) = @_;
+    return any { $dbi_errstr =~ /$_/ } @retriable_operations;
 }
 
 1;

@@ -31,14 +31,14 @@
     <operation name="A">
       <operationtype commandClass="Workflow::Test::Command::Echo"
           typeClass="Workflow::OperationType::Command"
-          lsfResource="-R 'select[type==LINUX64] rusage[mem=16000]' -M 16000000"
+          lsfResource="-R 'select[ncpus>=4, type==LINUX64] rusage[mem=16000]' -M 16000000"
           lsfQueue="test_queue"
           />
     </operation>
     <operation name="B">
       <operationtype commandClass="Workflow::Test::Command::Echo"
           typeClass="Workflow::OperationType::Command"
-          lsfResource="-R 'select[type==LINUX64] rusage[mem=16000]' -M 16000000"
+          lsfResource="-R 'select[type==LINUX64] rusage[mem=16000]' -n 3 -M 16000000"
           lsfQueue="test_queue"
           />
     </operation>
