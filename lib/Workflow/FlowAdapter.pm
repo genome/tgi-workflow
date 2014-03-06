@@ -29,12 +29,19 @@ sub run_workflow_flow {
     my $xml_text = XMLout($xml);
     my $plan_id = _get_plan_id($xml_text);
 
+    my $result;
     if ($use_lsf) {
-        return Flow::run_workflow_lsf($xml_text, \%inputs,
+        $result = Flow::run_workflow_lsf($xml_text, \%inputs,
             $resources, $plan_id);
     } else {
-        return Flow::run_workflow($xml_text, \%inputs, $resources, $plan_id);
+        $result = Flow::run_workflow($xml_text, \%inputs, $resources, $plan_id);
     }
+
+    unless(defined $result) {
+        push @Workflow::Simple::ERROR, Workflow::FlowAdapter::Error->create(error => 'Workflow failed to complete.');
+    }
+
+    return $result;
 }
 
 
