@@ -14,4 +14,3 @@ class Workflow::DataSource::InstanceSchema {
 };
 
 1;
-

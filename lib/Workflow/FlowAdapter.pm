@@ -164,18 +164,25 @@ sub _translate_workflow_resource {
     my %f = (
         limit => {},
         reserve => {},
-        require => {},
+        request => {},
     );
 
-    $f{require}{min_proc} = $r{minProc} if exists $r{minProc};
-    $f{require}{max_proc} = $r{maxProc} if exists $r{maxProc};
+    $f{request}{max_cores} = $r{maxProc} if exists $r{maxProc};
+    if (exists $r{minProc}) {
+        $f{request}{min_cores} = $r{minProc};
+        if (!exists $r{maxProc} || $r{maxProc} < $r{minProc}) {
+            $f{request}{max_cores} = $r{minProc};
+        }
+    }
+
 
     if (exists $r{tmpSpace}) {
-        $f{require}{temp_space} = $r{tmpSpace};
+        $f{request}{temp_space} = $r{tmpSpace};
         $f{reserve}{temp_space} = $r{tmpSpace} if exists $r{useGtmp};
     }
+
     $f{reserve}{memory} = $r{memRequest} if exists $r{memRequest};
-    $f{limit}{max_resident_memory} = $r{memLimit} * 1024 if exists $r{memLimit};
+    $f{limit}{max_resident_memory} = $r{memLimit} if exists $r{memLimit};
 
     $f{limit}{cpu_time} = $r{timeLimit} if exists $r{timeLimit};
 
