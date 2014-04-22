@@ -32,16 +32,22 @@ sub get_command {
     #For testing on small resource machines, reduce memory and core requirements by some factor (or to some max)
     #For OPENLAVA (standalone) situations only
     if ($OPENLAVA && $ENV{'WF_LOW_RESOURCES'}){
-      if($job->resource->min_proc>4){
-        $job->resource->min_proc(4);
-      }
-      if($ENV{'WF_LOW_MEMORY'}) { #ENV for memory request usage. specified in MB.
-        if($job->resource->mem_request>$ENV{'WF_LOW_MEMORY'}){
-          $job->resource->mem_request($ENV{'WF_LOW_MEMORY'});
+      if(defined $job->resource->min_proc) {
+        if($job->resource->min_proc>4){
+          $job->resource->min_proc(4);
         }
       }
-      elsif($job->resource->mem_request>1000){
+      if($ENV{'WF_LOW_MEMORY'}) { #ENV for memory request usage. specified in MB.
+        if(defined $job->resource->mem_request) {
+          if($job->resource->mem_request>$ENV{'WF_LOW_MEMORY'}){
+            $job->resource->mem_request($ENV{'WF_LOW_MEMORY'});
+          }
+        }
+      }
+      elsif(defined $job->resource->mem_request) {
+        if($job->resource->mem_request>1000){
           $job->resource->mem_request(1000);
+        }
       }
     }
 
