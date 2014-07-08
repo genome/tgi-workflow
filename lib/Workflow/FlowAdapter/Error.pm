@@ -10,6 +10,7 @@ class Workflow::FlowAdapter::Error {
         error => {
             is => 'Text',
         },
+        name => { is => 'Text', is_constant => 1, default_value => __PACKAGE__ },
     ]
 };
 
