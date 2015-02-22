@@ -16,4 +16,5 @@ BEGIN {
     $ENV{GENOME_DB_QUERY_PAUSE} ||= '/gsc/var/lock/database/pause_queries';
 }
 
+
 1;

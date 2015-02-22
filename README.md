@@ -1,5 +1,0 @@
-## Workflow Server ##
-
-### Dispatcher
-
-### Resource

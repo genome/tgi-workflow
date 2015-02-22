@@ -12,5 +12,3 @@ class Workflow::DataSource::InstanceSchema {
         owner => { default_value => 'workflow' },
 	  ],
 };
-
-1;
