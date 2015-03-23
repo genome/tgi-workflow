@@ -381,7 +381,7 @@ sub call {
         die "Undefined value returned from $command_name->create\n" . join("\n", @errors) . "\n";
     }
 
-    @errors = map { "$command_name: Error " . $_->desc } $command->__errors__;
+    @errors = map { "$command_name: " . join(', ', $_->properties) . ": Error " . $_->desc } $command->__errors__;
     if (@errors) {
         die join("\n",@errors);
     }
