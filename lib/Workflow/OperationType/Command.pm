@@ -5,6 +5,7 @@ use strict;
 use warnings;
 
 use Time::HiRes;
+use Workflow;
 use Workflow::Instrumentation qw(timing);
 
 class Workflow::OperationType::Command {
