@@ -18,7 +18,7 @@ CREATE TABLE dd_fk_constraint (
 );
 INSERT INTO "dd_fk_constraint" VALUES('Workflow::DataSource::InstanceSchema','workflow','workflow','workflow_instance','workflow_plan','WI_WPID_FK','2009-02-03 15:31:57');
 INSERT INTO "dd_fk_constraint" VALUES('Workflow::DataSource::InstanceSchema','workflow','workflow','workflow_instance','workflow_instance_execution','WI_WIE_FK','2009-02-03 15:31:57');
-INSERT INTO "dd_fk_constraint" VALUES('Workflow::DataSource::InstanceSchema','workflow','workflow','workflow_instance','workflow_instance','WI_PEID_FK','2009-02-03 15:31:57');
+INSERT INTO "dd_fk_constraint" VALUES('Workflow::DataSource::InstanceSchema','workflow','workflow','workflow_instance','workflow_instance','instance_peer_instance_id_fkey','2009-02-03 15:31:57');
 INSERT INTO "dd_fk_constraint" VALUES('Workflow::DataSource::InstanceSchema','workflow','workflow','workflow_instance','workflow_instance','WI_PID_FK','2009-02-03 15:31:57');
 INSERT INTO "dd_fk_constraint" VALUES('Workflow::DataSource::InstanceSchema','workflow','workflow','workflow_execution_metric','workflow_instance_execution','WEM_WIE_FK','2010-11-19 14:04:58');
 CREATE TABLE dd_fk_constraint_column (
@@ -34,7 +34,7 @@ CREATE TABLE dd_fk_constraint_column (
 );
 INSERT INTO "dd_fk_constraint_column" VALUES('WI_PID_FK','Workflow::DataSource::InstanceSchema','workflow','workflow_instance','workflow_instance','parent_instance_id','workflow_instance_id');
 INSERT INTO "dd_fk_constraint_column" VALUES('WI_WIE_FK','Workflow::DataSource::InstanceSchema','workflow','workflow_instance','workflow_instance_execution','current_execution_id','workflow_execution_id');
-INSERT INTO "dd_fk_constraint_column" VALUES('WI_PEID_FK','Workflow::DataSource::InstanceSchema','workflow','workflow_instance','workflow_instance','peer_instance_id','workflow_instance_id');
+INSERT INTO "dd_fk_constraint_column" VALUES('instance_peer_instance_id_fkey','Workflow::DataSource::InstanceSchema','workflow','workflow_instance','workflow_instance','peer_instance_id','workflow_instance_id');
 INSERT INTO "dd_fk_constraint_column" VALUES('WI_WPID_FK','Workflow::DataSource::InstanceSchema','workflow','workflow_instance','workflow_plan','workflow_plan_id','workflow_plan_id');
 INSERT INTO "dd_fk_constraint_column" VALUES('WEM_WIE_FK','Workflow::DataSource::InstanceSchema','workflow','workflow_execution_metric','workflow_instance_execution','workflow_execution_id','workflow_execution_id');
 CREATE TABLE dd_pk_constraint_column (
@@ -48,11 +48,11 @@ CREATE TABLE dd_pk_constraint_column (
 INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::InstanceSchema','workflow','workflow_instance_execution','WORKFLOW_EXECUTION_ID',1);
 INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::InstanceSchema','workflow','workflow_plan','workflow_plan_id',1);
 INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::InstanceSchema','workflow','workflow_instance','workflow_instance_id',1);
-INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::InstanceSchema','workflow','workflow_service','port',2);
-INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::InstanceSchema','workflow','workflow_service','username',5);
-INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::InstanceSchema','workflow','workflow_service','process_id',4);
-INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::InstanceSchema','workflow','workflow_service','start_time',3);
-INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::InstanceSchema','workflow','workflow_service','hostname',1);
+INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::InstanceSchema','workflow','service','port',2);
+INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::InstanceSchema','workflow','service','username',5);
+INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::InstanceSchema','workflow','service','process_id',4);
+INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::InstanceSchema','workflow','service','start_time',3);
+INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::InstanceSchema','workflow','service','hostname',1);
 INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::InstanceSchema','workflow','workflow_execution_metric','workflow_execution_id',1);
 INSERT INTO "dd_pk_constraint_column" VALUES('Workflow::DataSource::InstanceSchema','workflow','workflow_execution_metric','name',2);
 CREATE TABLE dd_table (
@@ -69,7 +69,7 @@ CREATE TABLE dd_table (
 INSERT INTO "dd_table" VALUES('Workflow::DataSource::InstanceSchema','workflow','workflow_instance','TABLE','entity','2010-05-06 13:53:11','2010-05-07 15:40:22',NULL);
 INSERT INTO "dd_table" VALUES('Workflow::DataSource::InstanceSchema','workflow','workflow_plan','TABLE','entity','2010-01-20 10:05:02','2009-02-03 15:32:01',NULL);
 INSERT INTO "dd_table" VALUES('Workflow::DataSource::InstanceSchema','workflow','workflow_instance_execution','TABLE','entity','2010-01-20 10:05:02','2010-01-12 16:16:22',NULL);
-INSERT INTO "dd_table" VALUES('Workflow::DataSource::InstanceSchema','workflow','workflow_service','TABLE','entity','2010-01-20 10:05:02','2009-02-23 14:46:28',NULL);
+INSERT INTO "dd_table" VALUES('Workflow::DataSource::InstanceSchema','workflow','service','TABLE','entity','2010-01-20 10:05:02','2009-02-23 14:46:28',NULL);
 INSERT INTO "dd_table" VALUES('Workflow::DataSource::InstanceSchema','workflow','workflow_execution_metric','TABLE','entity','2010-11-18 15:53:09','2010-11-19 14:04:58',NULL);
 CREATE TABLE dd_table_column (
     data_source varchar NOT NULL,
@@ -110,11 +110,11 @@ INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','wor
 INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','workflow','workflow_instance_execution','max_processes','NUMBER','4','Y','2009-02-17 13:19:34',NULL);
 INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','workflow','workflow_instance_execution','max_swap','NUMBER','10','Y','2010-01-12 16:16:22',NULL);
 INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','workflow','workflow_instance_execution','dispatch_id','VARCHAR2','10','Y','2009-02-17 13:24:59',NULL);
-INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','workflow','workflow_service','hostname','varchar2','255','N','2009-02-23 14:46:28',NULL);
-INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','workflow','workflow_service','port','NUMBER','7','N','2009-02-23 14:46:28',NULL);
-INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','workflow','workflow_service','start_time','TIMESTAMP(6)','11','N','2009-02-23 14:46:28',NULL);
-INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','workflow','workflow_service','process_id','NUMBER','10','N','2009-02-23 14:46:28',NULL);
-INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','workflow','workflow_service','username','VARCHAR2','10','N','2009-02-23 15:57:56',NULL);
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','workflow','service','hostname','varchar2','255','N','2009-02-23 14:46:28',NULL);
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','workflow','service','port','NUMBER','7','N','2009-02-23 14:46:28',NULL);
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','workflow','service','start_time','TIMESTAMP(6)','11','N','2009-02-23 14:46:28',NULL);
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','workflow','service','process_id','NUMBER','10','N','2009-02-23 14:46:28',NULL);
+INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','workflow','service','username','VARCHAR2','10','N','2009-02-23 15:57:56',NULL);
 INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','workflow','workflow_instance_execution','user_name','VARCHAR2','20','Y','2010-01-12 16:16:22',NULL);
 INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','workflow','workflow_instance','intention','VARCHAR2','15','Y','2010-05-07 15:40:22',NULL);
 INSERT INTO "dd_table_column" VALUES('Workflow::DataSource::InstanceSchema','workflow','workflow_instance','parent_execution_id','NUMBER','11','Y','2010-05-07 15:40:22',NULL);
