@@ -21,13 +21,15 @@ class Workflow::OperationType::Command {
     ],
 };
 
-__PACKAGE__->add_observer(
+UR::Observer->register_callback(
+    subject_class_name => __PACKAGE__,
     aspect => 'load',
     callback => sub {
         my $self = shift;
 
         $self->initialize;
-});
+    },
+);
 
 sub create {
     my $cls = shift;

@@ -74,40 +74,39 @@ class Workflow::Operation::InstanceExecution::Error {
     ]
 };
 
-our @observers = (
-    __PACKAGE__->add_observer(
-        aspect => 'create',
-        callback => sub {
-            my $self = shift;
+UR::Observer->register_callback(
+    subject_class_name => __PACKAGE__,
+    aspect => 'create',
+    callback => sub {
+        my $self = shift;
 
-            my $class_meta = $self->__meta__;
-            my @property_meta = $class_meta->all_property_metas();
-            
-            foreach my $property (grep { defined $_->{copy_on_create} } @property_meta) {
-                my $property_name = $property->property_name;
-                if (exists $property->{copy_on_create}) {
-                    my $copy_from = $property->{copy_on_create};
+        my $class_meta = $self->__meta__;
+        my @property_meta = $class_meta->all_property_metas();
 
-                    my $intermediate = $self->$copy_from;
-                    if (defined $intermediate) {
-                        $self->$property_name( $intermediate->$property_name );
-                    } else {
-                        $self->$property_name(undef);
-                    }
+        foreach my $property (grep { defined $_->{copy_on_create} } @property_meta) {
+            my $property_name = $property->property_name;
+            if (exists $property->{copy_on_create}) {
+                my $copy_from = $property->{copy_on_create};
+
+                my $intermediate = $self->$copy_from;
+                if (defined $intermediate) {
+                    $self->$property_name( $intermediate->$property_name );
+                } else {
+                    $self->$property_name(undef);
                 }
             }
-            foreach my $property_name (
-                map { 
-                    $_->property_name 
-                } grep { 
-                    exists $_->{calculate} && $_->is_constant 
-                } @property_meta
-            ) {
-                # properties like this get memoized by UR the first time you call them
-                $self->$property_name;
-            }
         }
-    )
+        foreach my $property_name (
+            map { 
+                $_->property_name 
+            } grep { 
+                exists $_->{calculate} && $_->is_constant 
+            } @property_meta
+        ) {
+            # properties like this get memoized by UR the first time you call them
+            $self->$property_name;
+        }
+    },
 );
 
 # the calling mechanics of this function are stupid because UR runs calculated 
