@@ -238,97 +238,105 @@ sub load_operation {
 ## used as a unique Set, values are always 1.
 my %active_notification_url = ();
 
-our @observers = (
-    UR::Context->add_observer(
-        aspect => 'commit',
-        callback => sub {
-            my ( $self ) = @_;
+UR::Observer->register_callback(
+    subject_class_name => 'UR::Context',
+    aspect => 'commit',
+    callback => sub {
+        my ( $self ) = @_;
 
-            for my $url (keys %active_notification_url) {
-                system("curl -k $url >/dev/null 2>/dev/null </dev/null &");
-            }
+        for my $url (keys %active_notification_url) {
+            system("curl -k $url >/dev/null 2>/dev/null </dev/null &");
         }
-      ),
-      Workflow::Operation::InstanceExecution->add_observer(
-        aspect   => 'status',
-        callback => sub {
-            my ( $self, $property, $old, $new ) = @_;
+    },
+);
 
-            if ( $new ne $old ) {
-                my $root = $self->operation_instance->root;
-                if (my $url = $root->operation->notify_url) {
-                    my $root_id = $root->id;
-                    for (split(/\s+/, $url)) {
-                        $_ =~ s/\[WORKFLOW_ID\]/$root_id/g;
-                        $active_notification_url{$_} = 1;
-                    }
+UR::Observer->register_callback(
+    subject_class_name => 'Workflow::Operation::InstanceExecution',
+    aspect   => 'status',
+    callback => sub {
+        my ( $self, $property, $old, $new ) = @_;
+
+        if ( $new ne $old ) {
+            my $root = $self->operation_instance->root;
+            if (my $url = $root->operation->notify_url) {
+                my $root_id = $root->id;
+                for (split(/\s+/, $url)) {
+                    $_ =~ s/\[WORKFLOW_ID\]/$root_id/g;
+                    $active_notification_url{$_} = 1;
                 }
             }
-
-            if ( $old eq 'done' && $new ne $old ) {
-                $self->operation_instance->_undo_done_instance( $old, $new );
-            }
         }
-      ),
 
-      __PACKAGE__->add_observer(
-        aspect   => 'load',
-        callback => sub {
-            my ($self) = @_;
-
-            $self->load_operation;
-
-            $self->__input( thaw $self->input_stored ) if $self->input_stored;
-            $self->__output( thaw $self->output_stored ) if $self->output_stored;
-
-            my $parent;
-
-            if (
-                $parent
-                && (   $self->name eq 'input connector'
-                    || $self->name eq 'output connector' )
-              )
-            {
-
-                my $name = $self->name;
-                $name =~ s/ /_/g;
-
-                $parent->$name($self);
-            }
+        if ( $old eq 'done' && $new ne $old ) {
+            $self->operation_instance->_undo_done_instance( $old, $new );
         }
-      ),
-    __PACKAGE__->add_observer(
-        aspect => 'create',    # due to weird inheritance this is better as an observer
-        callback => sub {
-            my $self = shift;
+    },
+);
 
-            if (   !defined $self->cache_workflow_id
-                && !defined $self->parent_instance
-                && !defined $self->peer_of )
-            {
-                my $c =
-                  Workflow::Cache->create(
-                    xml => $self->operation->save_to_xml );
+UR::Observer->register_callback(
+    subject_class_name => __PACKAGE__,
+    aspect   => 'load',
+    callback => sub {
+        my ($self) = @_;
 
-                $self->cache_workflow($c);
-            } elsif ( defined $self->parent_instance ) {
-                $self->cache_workflow( $self->parent_instance->cache_workflow );
-            } elsif ( defined $self->peer_of ) {
-                $self->cache_workflow( $self->peer_of->cache_workflow );
-            }
+        $self->load_operation;
 
-            $self->name( $self->operation->name );
+        $self->__input( thaw $self->input_stored ) if $self->input_stored;
+        $self->__output( thaw $self->output_stored ) if $self->output_stored;
 
+        my $parent;
+
+        if (
+            $parent
+            && (   $self->name eq 'input connector'
+                || $self->name eq 'output connector' )
+        )
+        {
+
+            my $name = $self->name;
+            $name =~ s/ /_/g;
+
+            $parent->$name($self);
         }
-    ),
-    __PACKAGE__->add_observer(
-        aspect   => 'input',
-        callback => \&serialize_input
-    ),
-    __PACKAGE__->add_observer(
-        aspect   => 'output',
-        callback => \&serialize_output
-    )
+    },
+);
+
+UR::Observer->register_callback(
+    subject_class_name => __PACKAGE__,
+    aspect => 'create',    # due to weird inheritance this is better as an observer
+    callback => sub {
+        my $self = shift;
+
+        if (   !defined $self->cache_workflow_id
+            && !defined $self->parent_instance
+            && !defined $self->peer_of )
+        {
+            my $c =
+            Workflow::Cache->create(
+                xml => $self->operation->save_to_xml );
+
+            $self->cache_workflow($c);
+        } elsif ( defined $self->parent_instance ) {
+            $self->cache_workflow( $self->parent_instance->cache_workflow );
+        } elsif ( defined $self->peer_of ) {
+            $self->cache_workflow( $self->peer_of->cache_workflow );
+        }
+
+        $self->name( $self->operation->name );
+
+    },
+);
+
+UR::Observer->register_callback(
+    subject_class_name => __PACKAGE__,
+    aspect   => 'input',
+    callback => \&serialize_input,
+);
+
+UR::Observer->register_callback(
+    subject_class_name => __PACKAGE__,
+    aspect   => 'output',
+    callback => \&serialize_output,
 );
 
 sub _undo_done_instance {

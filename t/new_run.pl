@@ -6,12 +6,13 @@ use warnings;
 use above 'Workflow';
 use Data::Dumper;
 
-Workflow::Executor::SerialDeferred->add_observer(
+UR::Observer->register_callback(
+    subject_class_name => 'Workflow::Executor::SerialDeferred',
     aspect => 'count',
     callback => sub {
         my ($self) = @_;
         print $self->id . ' ' . $self->count . "\n";
-    }
+    },
 );
 
 my $w = Workflow::Model->create_from_xml($ARGV[0] || 'xml.d/00_basic.xml');
