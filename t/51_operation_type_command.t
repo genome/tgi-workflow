@@ -10,7 +10,7 @@ use warnings;
 
 use Test::More;
 
-my $static_test_count = 9;
+my $static_test_count = 10;
 
 use above 'Workflow';
 my @subcommands = Workflow::Test::Command->sub_command_classes;
@@ -47,4 +47,16 @@ foreach my $cmd (@subcommands) {
     isa_ok($o,'Workflow::OperationType::Command',$cmd);
 }
 
-
+UR::Object::Type->define(
+    class_name => 'Workflow::Test::Command::CalculatedDefaultDummy',
+    is => 'Command',
+    has_param => {
+        lsf_queue => {
+            calculated_default => sub { 'my_lsf_queue' },
+        },
+    },
+);
+my $o = Workflow::OperationType::Command->create(
+    command_class_name => 'Workflow::Test::Command::CalculatedDefaultDummy',
+);
+is($o->lsf_queue, 'my_lsf_queue', 'Workflow::OperationType::Command used calculated_default');
