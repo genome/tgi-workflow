@@ -136,7 +136,7 @@ sub initialize {
             if ($prop && $prop->{is_param}) {
                 if (defined $prop->default_value) {
                     $self->$param_name($prop->default_value);
-                } elsif ($prop->calculated_default) {
+                } elsif (defined $prop->calculated_default) {
                     $self->$param_name($prop->calculated_default->());
                 } else {
                     warn "$command property $param_name should have a default_value or a calculated_default if it is a parameter.  to be fixed in a future workflow version";
