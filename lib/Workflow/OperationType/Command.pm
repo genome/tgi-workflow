@@ -134,10 +134,12 @@ sub initialize {
             my $prop = $class_meta->property_meta_for_name($param_name);
 
             if ($prop && $prop->{is_param}) {
-                if ($prop->default_value) {
+                if (defined $prop->default_value) {
                     $self->$param_name($prop->default_value);
+                } elsif (defined $prop->calculated_default) {
+                    $self->$param_name($prop->calculated_default->());
                 } else {
-                    warn "$command property $param_name should have a default value if it is a parameter.  to be fixed in a future workflow version";
+                    warn "$command property $param_name should have a default_value or a calculated_default if it is a parameter.  to be fixed in a future workflow version";
                 }
             }
         }
