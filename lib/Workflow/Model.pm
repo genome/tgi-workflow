@@ -106,6 +106,12 @@ sub save_to_xml {
     return XMLout($self->as_xml_simple_structure, RootName=>'workflow', XMLDecl=>1, %args);
 }
 
+sub get_xml {
+    my $self = shift;
+
+    return $self->save_to_xml();
+}
+
 sub create_from_xml_simple_structure {
     my $class = shift;
     my $struct = shift;
